@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { loginUser } from '../api/auth.api'
 
 function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(true)
   const [message, setMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     if (!email.trim() || !password.trim()) {
@@ -15,7 +17,23 @@ function LoginPage() {
       return
     }
 
-    setMessage(`Welcome back, ${email}! Your HealthGate dashboard is ready.`)
+    setIsLoading(true)
+    setMessage('')
+
+    try {
+      const data = await loginUser({ email, password })
+      setMessage(
+        `Welcome back, ${data.user?.email || email}! Your HealthGate dashboard is ready.`,
+      )
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to sign in right now. Please try again.',
+      )
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -81,8 +99,8 @@ function LoginPage() {
 
             {message ? <p className="status-message">{message}</p> : null}
 
-            <button type="submit" className="signin-button">
-              Sign in
+            <button type="submit" className="signin-button" disabled={isLoading}>
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 

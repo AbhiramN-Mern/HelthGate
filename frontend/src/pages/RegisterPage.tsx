@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { registerUser } from '../api/auth.api'
 
 function RegisterPage() {
   const [fullName, setFullName] = useState('')
@@ -7,8 +8,9 @@ function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [message, setMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     if (!fullName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -21,7 +23,30 @@ function RegisterPage() {
       return
     }
 
-    setMessage(`Account created for ${fullName}. You can now sign in to HelthGate.`)
+    setIsLoading(true)
+    setMessage('')
+
+    try {
+      const data = await registerUser({
+        name: fullName,
+        email,
+        password,
+      })
+
+      setMessage(`Account created for ${data.user?.name || fullName}. You can now sign in to HelthGate.`)
+      setFullName('')
+      setEmail('')
+      setPassword('')
+      setConfirmPassword('')
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to connect to the server. Please try again.',
+      )
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -96,8 +121,8 @@ function RegisterPage() {
 
             {message ? <p className="status-message">{message}</p> : null}
 
-            <button type="submit" className="signin-button">
-              Create account
+            <button type="submit" className="signin-button" disabled={isLoading}>
+              {isLoading ? 'Creating account...' : 'Create account'}
             </button>
           </form>
 
