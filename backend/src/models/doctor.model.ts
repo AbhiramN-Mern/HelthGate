@@ -38,6 +38,11 @@ const doctorSchema = new Schema(
       default: 0,
       min: 0,
     },
+    verificationStatus: {
+      type: String,
+      enum: ["pending", "verified", "rejected"],
+      default: "pending",
+    },
     available: {
       type: Boolean,
       default: true,

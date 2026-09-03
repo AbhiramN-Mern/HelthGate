@@ -117,6 +117,183 @@ export const getAllDoctors = async (req: Request, res: Response) => {
   }
 };
 
+export const getDoctorById = async (req: Request, res: Response) => {
+  try {
+    const doctor = await DoctorModel.findById(req.params.id).populate(
+      "user",
+      "name email role",
+    );
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      doctor,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch doctor details",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+const doctorAdminUpdateFields = [
+  "specialization",
+  "qualification",
+  "profileImage",
+  "experienceYears",
+  "licenseNumber",
+  "consultationFee",
+  "available",
+] as const;
+
+export const updateDoctorById = async (req: Request, res: Response) => {
+  try {
+    const updates = Object.fromEntries(
+      doctorAdminUpdateFields
+        .filter((field) => req.body[field] !== undefined)
+        .map((field) => [field, req.body[field]]),
+    );
+
+    const doctor = await DoctorModel.findByIdAndUpdate(
+      req.params.id,
+      { $set: updates },
+      { new: true, runValidators: true },
+    ).populate("user", "name email role");
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor updated successfully",
+      doctor,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update doctor",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const verifyDoctor = async (req: Request, res: Response) => {
+  try {
+    const doctor = await DoctorModel.findById(req.params.id);
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found",
+      });
+    }
+
+    doctor.verificationStatus = "verified";
+    doctor.available = true;
+    await doctor.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor verified successfully",
+      doctor,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to verify doctor",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const rejectDoctor = async (req: Request, res: Response) => {
+  try {
+    const doctor = await DoctorModel.findById(req.params.id);
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found",
+      });
+    }
+
+    doctor.verificationStatus = "rejected";
+    doctor.available = false;
+    await doctor.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor rejected successfully",
+      doctor,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to reject doctor",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+const patientAdminUpdateFields = [
+  "dateOfBirth",
+  "gender",
+  "phone",
+  "address",
+  "bloodGroup",
+  "allergies",
+  "medicalHistory",
+  "profileImage",
+  "active",
+] as const;
+
+export const updatePatientById = async (req: Request, res: Response) => {
+  try {
+    const updates = Object.fromEntries(
+      patientAdminUpdateFields
+        .filter((field) => req.body[field] !== undefined)
+        .map((field) => [field, req.body[field]]),
+    );
+
+    const patient = await PatientModel.findByIdAndUpdate(
+      req.params.id,
+      { $set: updates },
+      { new: true, runValidators: true },
+    ).populate("user", "name email role");
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Patient updated successfully",
+      patient,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update patient",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
 export const getAllAdmins = async (req: Request, res: Response) => {
   try {
     const admins = await AdminModel.find()

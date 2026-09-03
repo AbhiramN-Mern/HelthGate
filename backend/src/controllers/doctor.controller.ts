@@ -94,10 +94,10 @@ export const getAvailableDoctors = async (
   res: Response,
 ) => {
   try {
-    const doctors = await DoctorModel.find({ available: true }).populate(
-      "user",
-      "name email role",
-    );
+    const doctors = await DoctorModel.find({
+      available: true,
+      verificationStatus: "verified",
+    }).populate("user", "name email role");
 
     return res.status(200).json({
       success: true,

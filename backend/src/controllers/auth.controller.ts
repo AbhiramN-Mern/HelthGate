@@ -169,6 +169,31 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    if (user.role === "doctor") {
+      const doctorProfile = await DoctorModel.findOne({ user: user.id });
+
+      if (!doctorProfile) {
+        return res.status(403).json({
+          success: false,
+          message: "Doctor profile not found. Please contact admin.",
+        });
+      }
+
+      if (doctorProfile.verificationStatus === "pending") {
+        return res.status(403).json({
+          success: false,
+          message: "Doctor account is pending admin verification",
+        });
+      }
+
+      if (doctorProfile.verificationStatus === "rejected") {
+        return res.status(403).json({
+          success: false,
+          message: "Doctor account was rejected by admin",
+        });
+      }
+    }
+
     const token = generateToken(user.id, user.role);
 
     return res.status(200).json({

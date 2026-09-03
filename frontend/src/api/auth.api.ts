@@ -37,6 +37,7 @@ export type DoctorProfile = {
   licenseNumber?: string
   consultationFee?: number
   available?: boolean
+  verificationStatus?: 'pending' | 'verified' | 'rejected'
 }
 
 const request = async <T>(endpoint: string, options: RequestInit, token?: string): Promise<T> => {
@@ -158,6 +159,27 @@ export type AdminPatient = {
   address?: string
   gender?: string
   bloodGroup?: string
+  allergies?: string[]
+  medicalHistory?: string[]
+  dateOfBirth?: string
+  user?: {
+    _id?: string
+    name?: string
+    email?: string
+    role?: string
+  }
+}
+
+export type AdminDoctor = {
+  _id?: string
+  profileImage?: string
+  specialization?: string
+  qualification?: string
+  licenseNumber?: string
+  consultationFee?: number
+  experienceYears?: number
+  available?: boolean
+  verificationStatus?: 'pending' | 'verified' | 'rejected'
   user?: {
     _id?: string
     name?: string
@@ -177,11 +199,62 @@ export const getPatientByIdForAdmin = async (
   return request<{ success: boolean; patient?: AdminPatient }>(`/api/admin/patients/${id}`, { method: 'GET' }, token)
 }
 
+export const updatePatientByIdForAdmin = async (
+  id: string,
+  payload: Record<string, unknown>,
+  token: string,
+): Promise<{ success: boolean; patient?: AdminPatient; message?: string }> => {
+  return request<{ success: boolean; patient?: AdminPatient; message?: string }>(`/api/admin/patients/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }, token)
+}
+
 export const togglePatientStatusForAdmin = async (
   id: string,
   token: string,
 ): Promise<{ success: boolean; message?: string; patient?: AdminPatient }> => {
   return request<{ success: boolean; message?: string; patient?: AdminPatient }>(`/api/admin/patients/${id}/status`, {
+    method: 'PATCH',
+  }, token)
+}
+
+export const getAllDoctorsForAdmin = async (token: string): Promise<{ success: boolean; doctors?: AdminDoctor[] }> => {
+  return request<{ success: boolean; doctors?: AdminDoctor[] }>('/api/admin/doctors', { method: 'GET' }, token)
+}
+
+export const getDoctorByIdForAdmin = async (
+  id: string,
+  token: string,
+): Promise<{ success: boolean; doctor?: AdminDoctor }> => {
+  return request<{ success: boolean; doctor?: AdminDoctor }>(`/api/admin/doctors/${id}`, { method: 'GET' }, token)
+}
+
+export const updateDoctorByIdForAdmin = async (
+  id: string,
+  payload: Record<string, unknown>,
+  token: string,
+): Promise<{ success: boolean; doctor?: AdminDoctor; message?: string }> => {
+  return request<{ success: boolean; doctor?: AdminDoctor; message?: string }>(`/api/admin/doctors/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }, token)
+}
+
+export const verifyDoctorForAdmin = async (
+  id: string,
+  token: string,
+): Promise<{ success: boolean; message?: string; doctor?: AdminDoctor }> => {
+  return request<{ success: boolean; message?: string; doctor?: AdminDoctor }>(`/api/admin/doctors/${id}/verify`, {
+    method: 'PATCH',
+  }, token)
+}
+
+export const rejectDoctorForAdmin = async (
+  id: string,
+  token: string,
+): Promise<{ success: boolean; message?: string; doctor?: AdminDoctor }> => {
+  return request<{ success: boolean; message?: string; doctor?: AdminDoctor }>(`/api/admin/doctors/${id}/reject`, {
     method: 'PATCH',
   }, token)
 }
