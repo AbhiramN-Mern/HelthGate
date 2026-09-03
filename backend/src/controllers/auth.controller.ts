@@ -169,6 +169,24 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    if (user.role === "patient") {
+      const patientProfile = await PatientModel.findOne({ user: user.id });
+
+      if (!patientProfile) {
+        return res.status(403).json({
+          success: false,
+          message: "Patient profile not found. Please contact admin.",
+        });
+      }
+
+      if (!patientProfile.active) {
+        return res.status(403).json({
+          success: false,
+          message: "Patient account is blocked by admin",
+        });
+      }
+    }
+
     if (user.role === "doctor") {
       const doctorProfile = await DoctorModel.findOne({ user: user.id });
 
