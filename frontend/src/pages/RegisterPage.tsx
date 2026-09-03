@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
+import type { FormEvent } from 'react'
 import { registerUser } from '../api/auth.api'
 
 type RegisterPageProps = {
@@ -16,23 +16,8 @@ function RegisterPage({ onSuccess, onSwitchToLogin }: RegisterPageProps) {
   const [specialization, setSpecialization] = useState('')
   const [qualification, setQualification] = useState('')
   const [licenseNumber, setLicenseNumber] = useState('')
-  const [profileImage, setProfileImage] = useState('')
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-
-  const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-
-    if (!file) {
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      setProfileImage(String(reader.result || ''))
-    }
-    reader.readAsDataURL(file)
-  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -56,9 +41,7 @@ function RegisterPage({ onSuccess, onSwitchToLogin }: RegisterPageProps) {
     setMessage('')
 
     try {
-      const profile: Record<string, unknown> = {
-        profileImage,
-      }
+      const profile: Record<string, unknown> = {}
 
       if (role === 'doctor') {
         Object.assign(profile, {
@@ -206,11 +189,6 @@ function RegisterPage({ onSuccess, onSwitchToLogin }: RegisterPageProps) {
                 placeholder="Re-enter your password"
                 aria-label="Confirm password"
               />
-            </label>
-
-            <label className="input-group">
-              <span>Profile image</span>
-              <input type="file" accept="image/*" onChange={handleImageUpload} />
             </label>
 
             {message ? <p className="status-message">{message}</p> : null}

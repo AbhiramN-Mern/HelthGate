@@ -43,6 +43,61 @@ export const getAllPatients = async (req: Request, res: Response) => {
   }
 };
 
+export const getPatientById = async (req: Request, res: Response) => {
+  try {
+    const patient = await PatientModel.findById(req.params.id).populate(
+      "user",
+      "name email role",
+    );
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      patient,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch patient details",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const togglePatientStatus = async (req: Request, res: Response) => {
+  try {
+    const patient = await PatientModel.findById(req.params.id);
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    patient.active = !patient.active;
+    await patient.save();
+
+    return res.status(200).json({
+      success: true,
+      message: patient.active ? "Patient activated" : "Patient deactivated",
+      patient,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update patient status",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
 export const getAllDoctors = async (req: Request, res: Response) => {
   try {
     const doctors = await DoctorModel.find()

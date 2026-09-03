@@ -5,14 +5,18 @@ import {
   getAllDoctors,
   getAllPatients,
   getAllUsers,
+  getPatientById,
+  togglePatientStatus,
 } from "../controllers/admin.controller.js";
-import { authorize, protect } from "../middleware/auth.middleware.js";
+import { adminOnly, protect } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-router.get("/users", protect, authorize("admin"), getAllUsers);
-router.get("/patients", protect, authorize("admin"), getAllPatients);
-router.get("/doctors", protect, authorize("admin"), getAllDoctors);
-router.get("/admins", protect, authorize("admin"), getAllAdmins);
+router.get("/users", protect, adminOnly, getAllUsers);
+router.get("/patients", protect, adminOnly, getAllPatients);
+router.get("/patients/:id", protect, adminOnly, getPatientById);
+router.patch("/patients/:id/status", protect, adminOnly, togglePatientStatus);
+router.get("/doctors", protect, adminOnly, getAllDoctors);
+router.get("/admins", protect, adminOnly, getAllAdmins);
 
 export default router;

@@ -70,3 +70,5 @@ export const authorize = (...roles: UserRole[]) => {
     return next();
   };
 };
+
+export const adminOnly = authorize("admin");

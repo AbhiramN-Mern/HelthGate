@@ -23,6 +23,10 @@ const patientSchema = new Schema(
       type: String,
       trim: true,
     },
+    active: {
+      type: Boolean,
+      default: true,
+    },
     profileImage: {
       type: String,
       default: "",

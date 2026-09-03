@@ -149,3 +149,39 @@ export const updateDoctorProfile = async (
     body: formData,
   }, token)
 }
+
+export type AdminPatient = {
+  _id?: string
+  active?: boolean
+  profileImage?: string
+  phone?: string
+  address?: string
+  gender?: string
+  bloodGroup?: string
+  user?: {
+    _id?: string
+    name?: string
+    email?: string
+    role?: string
+  }
+}
+
+export const getAllPatientsForAdmin = async (token: string): Promise<{ success: boolean; patients?: AdminPatient[] }> => {
+  return request<{ success: boolean; patients?: AdminPatient[] }>('/api/admin/patients', { method: 'GET' }, token)
+}
+
+export const getPatientByIdForAdmin = async (
+  id: string,
+  token: string,
+): Promise<{ success: boolean; patient?: AdminPatient }> => {
+  return request<{ success: boolean; patient?: AdminPatient }>(`/api/admin/patients/${id}`, { method: 'GET' }, token)
+}
+
+export const togglePatientStatusForAdmin = async (
+  id: string,
+  token: string,
+): Promise<{ success: boolean; message?: string; patient?: AdminPatient }> => {
+  return request<{ success: boolean; message?: string; patient?: AdminPatient }>(`/api/admin/patients/${id}/status`, {
+    method: 'PATCH',
+  }, token)
+}
