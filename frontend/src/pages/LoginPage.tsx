@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { loginUser } from '../api/auth.api'
 
 type LoginPageProps = {
-  onSuccess: (user: { name?: string; email?: string; role?: string }) => void
+  onSuccess: (user: { name?: string; email?: string; role?: string }, token?: string) => void
   onSwitchToRegister: () => void
 }
 
@@ -38,7 +38,7 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
         localStorage.setItem('helthgate_user', JSON.stringify(user))
       }
 
-      onSuccess(user)
+      onSuccess(user, data.token)
     } catch (error) {
       setMessage(
         error instanceof Error

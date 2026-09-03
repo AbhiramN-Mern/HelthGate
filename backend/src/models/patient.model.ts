@@ -23,6 +23,10 @@ const patientSchema = new Schema(
       type: String,
       trim: true,
     },
+    profileImage: {
+      type: String,
+      default: "",
+    },
     bloodGroup: {
       type: String,
       enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],

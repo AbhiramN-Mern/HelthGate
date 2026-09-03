@@ -1,8 +1,9 @@
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import './App.css'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
-import HomePage from './pages/HomePage'
+import ProfilePage from './pages/ProfilePage'
 
 type AuthUser = {
   name?: string
@@ -10,8 +11,8 @@ type AuthUser = {
   role?: string
 }
 
-function App() {
-  const [screen, setScreen] = useState<'login' | 'register' | 'home'>('login')
+function AppShell() {
+  const navigate = useNavigate()
   const [user, setUser] = useState<AuthUser | null>(null)
 
   useEffect(() => {
@@ -19,41 +20,75 @@ function App() {
     const userData = localStorage.getItem('helthgate_user')
 
     if (token && userData) {
-      setUser(JSON.parse(userData))
-      setScreen('home')
+      setUser(JSON.parse(userData) as AuthUser)
     }
   }, [])
 
-  const handleAuthSuccess = (userData: AuthUser) => {
-    localStorage.setItem('helthgate_token', 'demo-token')
+  const handleAuthSuccess = (userData: AuthUser, token?: string) => {
+    const activeToken = token || localStorage.getItem('helthgate_token') || 'demo-token'
+    localStorage.setItem('helthgate_token', activeToken)
     localStorage.setItem('helthgate_user', JSON.stringify(userData))
     setUser(userData)
-    setScreen('home')
+    navigate('/profile')
   }
 
   const handleLogout = () => {
     localStorage.removeItem('helthgate_token')
     localStorage.removeItem('helthgate_user')
     setUser(null)
-    setScreen('login')
+    navigate('/login')
   }
 
   const requireAuth = () => {
     if (!localStorage.getItem('helthgate_token')) {
       setUser(null)
-      setScreen('login')
+      navigate('/login')
     }
   }
 
-  if (screen === 'home') {
-    return <HomePage user={user} onLogout={handleLogout} onRequireAuth={requireAuth} />
-  }
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to={localStorage.getItem('helthgate_token') ? '/profile' : '/login'} replace />} />
+      <Route
+        path="/login"
+        element={
+          localStorage.getItem('helthgate_token') ? (
+            <Navigate to="/profile" replace />
+          ) : (
+            <LoginPage onSuccess={handleAuthSuccess} onSwitchToRegister={() => navigate('/register')} />
+          )
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          localStorage.getItem('helthgate_token') ? (
+            <Navigate to="/profile" replace />
+          ) : (
+            <RegisterPage onSuccess={handleAuthSuccess} onSwitchToLogin={() => navigate('/login')} />
+          )
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          localStorage.getItem('helthgate_token') ? (
+            <ProfilePage user={user} onLogout={handleLogout} onRequireAuth={requireAuth} />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+    </Routes>
+  )
+}
 
-  if (screen === 'register') {
-    return <RegisterPage onSuccess={handleAuthSuccess} onSwitchToLogin={() => setScreen('login')} />
-  }
-
-  return <LoginPage onSuccess={handleAuthSuccess} onSwitchToRegister={() => setScreen('register')} />
+function App() {
+  return (
+    <BrowserRouter>
+      <AppShell />
+    </BrowserRouter>
+  )
 }
 
 export default App

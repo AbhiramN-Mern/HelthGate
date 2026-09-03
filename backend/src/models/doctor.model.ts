@@ -18,6 +18,10 @@ const doctorSchema = new Schema(
       required: true,
       trim: true,
     },
+    profileImage: {
+      type: String,
+      default: "",
+    },
     experienceYears: {
       type: Number,
       default: 0,

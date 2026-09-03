@@ -6,6 +6,7 @@ import type { AuthenticatedRequest } from "../types/auth.js";
 const doctorUpdateFields = [
   "specialization",
   "qualification",
+  "profileImage",
   "experienceYears",
   "licenseNumber",
   "consultationFee",
@@ -58,10 +59,12 @@ export const updateMyDoctorProfile = async (
     const updates = pickDoctorUpdates(req.body as Record<string, unknown>);
     const doctor = await DoctorModel.findOneAndUpdate(
       { user: req.user?.id },
-      updates,
+      { $set: { user: req.user?.id, ...updates } },
       {
         new: true,
         runValidators: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
       },
     ).populate("user", "name email role");
 

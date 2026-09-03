@@ -128,7 +128,9 @@
   font-size: 0.95rem;
 }
 
-.input-group input {
+.input-group input,
+.input-group select,
+.input-group textarea {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid #d6e1eb;
@@ -140,11 +142,135 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
-.input-group input:focus {
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus {
   outline: none;
   border-color: #0ea5a4;
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(14, 165, 164, 0.12);
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 28px;
+  width: min(1120px, 100%);
+}
+
+.profile-summary,
+.profile-card {
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(17, 76, 95, 0.12);
+  padding: 28px;
+}
+
+.profile-summary {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
+  display: block;
+  border: 4px solid #e8f6f5;
+}
+
+.profile-name {
+  margin: 0;
+  font-size: 2rem;
+  color: #1b2430;
+}
+
+.profile-role-tag {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(14, 165, 164, 0.12);
+  color: #0d5c63;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.profile-meta {
+  display: grid;
+  gap: 10px;
+  color: #53657a;
+  font-size: 0.96rem;
+}
+
+.profile-card {
+  display: grid;
+  gap: 24px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.input-group textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.inline-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.secondary-button {
+  border: 1px solid #d6e1eb;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1b2430;
+  padding: 12px 18px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profile-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.profile-list li {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f3f9fa;
+  color: #274157;
+}
+
+.loading-state,
+.empty-state {
+  color: #53657a;
+  font-size: 0.96rem;
+}
+
+@media (max-width: 900px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .form-options {

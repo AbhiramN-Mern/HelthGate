@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { registerUser } from '../api/auth.api'
 
 type RegisterPageProps = {
-  onSuccess: (user: { name?: string; email?: string; role?: string }) => void
+  onSuccess: (user: { name?: string; email?: string; role?: string }, token?: string) => void
   onSwitchToLogin: () => void
 }
 
@@ -12,8 +12,27 @@ function RegisterPage({ onSuccess, onSwitchToLogin }: RegisterPageProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [role, setRole] = useState<'patient' | 'doctor'>('patient')
+  const [specialization, setSpecialization] = useState('')
+  const [qualification, setQualification] = useState('')
+  const [licenseNumber, setLicenseNumber] = useState('')
+  const [profileImage, setProfileImage] = useState('')
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setProfileImage(String(reader.result || ''))
+    }
+    reader.readAsDataURL(file)
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -28,25 +47,44 @@ function RegisterPage({ onSuccess, onSwitchToLogin }: RegisterPageProps) {
       return
     }
 
+    if (role === 'doctor' && (!specialization.trim() || !qualification.trim() || !licenseNumber.trim())) {
+      setMessage('Doctor profile requires specialization, qualification, and license number.')
+      return
+    }
+
     setIsLoading(true)
     setMessage('')
 
     try {
+      const profile: Record<string, unknown> = {
+        profileImage,
+      }
+
+      if (role === 'doctor') {
+        Object.assign(profile, {
+          specialization,
+          qualification,
+          licenseNumber,
+        })
+      }
+
       const data = await registerUser({
         name: fullName,
         email,
         password,
+        role,
+        profile,
       })
 
       const user = {
         name: data.user?.name || fullName,
         email: data.user?.email || email,
-        role: data.user?.role || 'patient',
+        role: data.user?.role || role,
       }
 
       localStorage.setItem('helthgate_token', data.token || 'demo-token')
       localStorage.setItem('helthgate_user', JSON.stringify(user))
-      onSuccess(user)
+      onSuccess(user, data.token)
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -96,6 +134,48 @@ function RegisterPage({ onSuccess, onSwitchToLogin }: RegisterPageProps) {
             </label>
 
             <label className="input-group">
+              <span>Account role</span>
+              <select value={role} onChange={(event) => setRole(event.target.value as 'patient' | 'doctor')}>
+                <option value="patient">Patient</option>
+                <option value="doctor">Doctor</option>
+              </select>
+            </label>
+
+            {role === 'doctor' ? (
+              <>
+                <label className="input-group">
+                  <span>Specialization</span>
+                  <input
+                    type="text"
+                    value={specialization}
+                    onChange={(event) => setSpecialization(event.target.value)}
+                    placeholder="Cardiology"
+                  />
+                </label>
+
+                <label className="input-group">
+                  <span>Qualification</span>
+                  <input
+                    type="text"
+                    value={qualification}
+                    onChange={(event) => setQualification(event.target.value)}
+                    placeholder="MD, Cardiologist"
+                  />
+                </label>
+
+                <label className="input-group">
+                  <span>License number</span>
+                  <input
+                    type="text"
+                    value={licenseNumber}
+                    onChange={(event) => setLicenseNumber(event.target.value)}
+                    placeholder="LIC-12345"
+                  />
+                </label>
+              </>
+            ) : null}
+
+            <label className="input-group">
               <span>Email address</span>
               <input
                 type="email"
@@ -126,6 +206,11 @@ function RegisterPage({ onSuccess, onSwitchToLogin }: RegisterPageProps) {
                 placeholder="Re-enter your password"
                 aria-label="Confirm password"
               />
+            </label>
+
+            <label className="input-group">
+              <span>Profile image</span>
+              <input type="file" accept="image/*" onChange={handleImageUpload} />
             </label>
 
             {message ? <p className="status-message">{message}</p> : null}

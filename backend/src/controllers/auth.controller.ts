@@ -79,6 +79,27 @@ export const register = async (req: Request, res: Response) => {
       });
     }
 
+    if (role === "doctor") {
+      const doctorProfile = profile as Record<string, unknown>;
+      const requiredDoctorFields = [
+        "specialization",
+        "qualification",
+        "licenseNumber",
+      ];
+
+      const missingDoctorFields = requiredDoctorFields.filter(
+        (field) => !doctorProfile[field],
+      );
+
+      if (missingDoctorFields.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Doctor profile requires specialization, qualification, and licenseNumber",
+        });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await UserModel.create({
       name,

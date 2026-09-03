@@ -8,6 +8,7 @@ const patientUpdateFields = [
   "gender",
   "phone",
   "address",
+  "profileImage",
   "bloodGroup",
   "allergies",
   "medicalHistory",
@@ -59,10 +60,12 @@ export const updateMyPatientProfile = async (
     const updates = pickPatientUpdates(req.body as Record<string, unknown>);
     const patient = await PatientModel.findOneAndUpdate(
       { user: req.user?.id },
-      updates,
+      { $set: { user: req.user?.id, ...updates } },
       {
         new: true,
         runValidators: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
       },
     ).populate("user", "name email role");
 
