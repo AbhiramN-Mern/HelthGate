@@ -172,6 +172,7 @@ export type AdminPatient = {
 
 export type AdminDoctor = {
   _id?: string
+  active?: boolean
   profileImage?: string
   specialization?: string
   qualification?: string
@@ -219,6 +220,27 @@ export const togglePatientStatusForAdmin = async (
   }, token)
 }
 
+export const createDoctorForAdmin = async (
+  payload: {
+    name: string
+    email: string
+    password: string
+    specialization: string
+    qualification: string
+    licenseNumber: string
+    consultationFee?: number
+    experienceYears?: number
+    available?: boolean
+    profileImage?: string
+  },
+  token: string,
+): Promise<{ success: boolean; message?: string; doctor?: AdminDoctor; user?: AuthUser }> => {
+  return request<{ success: boolean; message?: string; doctor?: AdminDoctor; user?: AuthUser }>('/api/admin/doctors', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token)
+}
+
 export const getAllDoctorsForAdmin = async (token: string): Promise<{ success: boolean; doctors?: AdminDoctor[] }> => {
   return request<{ success: boolean; doctors?: AdminDoctor[] }>('/api/admin/doctors', { method: 'GET' }, token)
 }
@@ -241,6 +263,15 @@ export const updateDoctorByIdForAdmin = async (
   }, token)
 }
 
+export const toggleDoctorStatusForAdmin = async (
+  id: string,
+  token: string,
+): Promise<{ success: boolean; message?: string; doctor?: AdminDoctor }> => {
+  return request<{ success: boolean; message?: string; doctor?: AdminDoctor }>(`/api/admin/doctors/${id}/status`, {
+    method: 'PATCH',
+  }, token)
+}
+
 export const verifyDoctorForAdmin = async (
   id: string,
   token: string,
@@ -256,5 +287,14 @@ export const rejectDoctorForAdmin = async (
 ): Promise<{ success: boolean; message?: string; doctor?: AdminDoctor }> => {
   return request<{ success: boolean; message?: string; doctor?: AdminDoctor }>(`/api/admin/doctors/${id}/reject`, {
     method: 'PATCH',
+  }, token)
+}
+
+export const deleteDoctorForAdmin = async (
+  id: string,
+  token: string,
+): Promise<{ success: boolean; message?: string }> => {
+  return request<{ success: boolean; message?: string }>(`/api/admin/doctors/${id}`, {
+    method: 'DELETE',
   }, token)
 }

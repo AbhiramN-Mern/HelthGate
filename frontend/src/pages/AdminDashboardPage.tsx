@@ -87,6 +87,18 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'patients' }: Adm
   const [selectedDoctor, setSelectedDoctor] = useState<AdminDoctor | null>(null)
   const [patientForm, setPatientForm] = useState<PatientFormState>(defaultPatientForm())
   const [doctorForm, setDoctorForm] = useState<DoctorFormState>(defaultDoctorForm())
+  const [doctorCreateForm, setDoctorCreateForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    specialization: '',
+    qualification: '',
+    licenseNumber: '',
+    consultationFee: '0',
+    experienceYears: '0',
+    available: true,
+  })
+  const [showDoctorForm, setShowDoctorForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -343,6 +355,93 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'patients' }: Adm
     }
   }
 
+  const handleDoctorCreate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!token) return
+
+    try {
+      setSaving(true)
+      setError('')
+      const payload = {
+        name: doctorCreateForm.name,
+        email: doctorCreateForm.email,
+        password: doctorCreateForm.password,
+        specialization: doctorCreateForm.specialization,
+        qualification: doctorCreateForm.qualification,
+        licenseNumber: doctorCreateForm.licenseNumber,
+        consultationFee: Number(doctorCreateForm.consultationFee) || 0,
+        experienceYears: Number(doctorCreateForm.experienceYears) || 0,
+        available: doctorCreateForm.available,
+      }
+
+      const data = await (await import('../api/auth.api')).createDoctorForAdmin(payload, token)
+      if (data.doctor) {
+        setDoctors((current) => [data.doctor as AdminDoctor, ...current])
+      }
+      setDoctorCreateForm({
+        name: '',
+        email: '',
+        password: '',
+        specialization: '',
+        qualification: '',
+        licenseNumber: '',
+        consultationFee: '0',
+        experienceYears: '0',
+        available: true,
+      })
+      setShowDoctorForm(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create doctor.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDoctorDelete = async (doctorId: string) => {
+    if (!token) return
+
+    try {
+      setSaving(true)
+      setError('')
+      await (await import('../api/auth.api')).deleteDoctorForAdmin(doctorId, token)
+      setDoctors((current) => current.filter((doctor) => doctor._id !== doctorId))
+      if (selectedDoctor && selectedDoctor._id === doctorId) {
+        setSelectedDoctor(null)
+        navigate('/admin/doctors')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete doctor.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDoctorToggle = async (doctorId: string) => {
+    if (!token) return
+
+    try {
+      setSaving(true)
+      setError('')
+      const data = await (await import('../api/auth.api')).toggleDoctorStatusForAdmin(doctorId, token)
+      setDoctors((current) =>
+        current.map((doctor) =>
+          doctor._id === doctorId ? { ...doctor, active: data.doctor?.active ?? !doctor.active, available: data.doctor?.available ?? !Boolean(doctor.available) } : doctor,
+        ),
+      )
+      if (selectedDoctor && selectedDoctor._id === doctorId) {
+        setSelectedDoctor((current) => ({
+          ...(current || {}),
+          active: data.doctor?.active ?? !Boolean(current?.active),
+          available: data.doctor?.available ?? !Boolean(current?.available),
+        }))
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update doctor status.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (!user || user.role !== 'admin') {
     return (
       <main className="login-page">
@@ -562,6 +661,9 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'patients' }: Adm
             <button type="button" className="secondary-button" onClick={() => handleDoctorReject(selectedDoctor._id || '')} disabled={saving || doctorForm.verificationStatus === 'rejected'}>
               Reject
             </button>
+            <button type="button" className="secondary-button" onClick={() => handleDoctorDelete(selectedDoctor._id || '')} disabled={saving}>
+              Delete
+            </button>
           </div>
         </form>
       )
@@ -569,6 +671,86 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'patients' }: Adm
 
     return (
       <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+          <h3 style={{ margin: 0 }}>Doctors</h3>
+          <button
+            type="button"
+            className="signin-button"
+            onClick={() => setShowDoctorForm((current) => !current)}
+            style={{ padding: '10px 16px', minWidth: '140px' }}
+          >
+            {showDoctorForm ? 'Close form' : 'Add doctor'}
+          </button>
+        </div>
+
+        {showDoctorForm && (
+          <form className="login-form" onSubmit={handleDoctorCreate} style={{ marginBottom: '22px' }}>
+            <div className="form-header" style={{ marginBottom: '12px' }}>
+              <p className="welcome-tag">Add doctor</p>
+              <h3 style={{ margin: 0 }}>Create doctor account</h3>
+            </div>
+
+            <div className="profile-grid">
+              <div className="input-group">
+                <span>Name</span>
+                <input value={doctorCreateForm.name} onChange={(event) => setDoctorCreateForm((current) => ({ ...current, name: event.target.value }))} />
+              </div>
+
+              <div className="input-group">
+                <span>Email</span>
+                <input type="email" value={doctorCreateForm.email} onChange={(event) => setDoctorCreateForm((current) => ({ ...current, email: event.target.value }))} />
+              </div>
+
+              <div className="input-group">
+                <span>Password</span>
+                <input type="password" value={doctorCreateForm.password} onChange={(event) => setDoctorCreateForm((current) => ({ ...current, password: event.target.value }))} />
+              </div>
+
+              <div className="input-group">
+                <span>Specialization</span>
+                <input value={doctorCreateForm.specialization} onChange={(event) => setDoctorCreateForm((current) => ({ ...current, specialization: event.target.value }))} />
+              </div>
+
+              <div className="input-group">
+                <span>Qualification</span>
+                <input value={doctorCreateForm.qualification} onChange={(event) => setDoctorCreateForm((current) => ({ ...current, qualification: event.target.value }))} />
+              </div>
+
+              <div className="input-group">
+                <span>License number</span>
+                <input value={doctorCreateForm.licenseNumber} onChange={(event) => setDoctorCreateForm((current) => ({ ...current, licenseNumber: event.target.value }))} />
+              </div>
+
+              <div className="input-group">
+                <span>Consultation fee</span>
+                <input type="number" value={doctorCreateForm.consultationFee} onChange={(event) => setDoctorCreateForm((current) => ({ ...current, consultationFee: event.target.value }))} />
+              </div>
+
+              <div className="input-group">
+                <span>Experience years</span>
+                <input type="number" value={doctorCreateForm.experienceYears} onChange={(event) => setDoctorCreateForm((current) => ({ ...current, experienceYears: event.target.value }))} />
+              </div>
+
+              <label className="input-group" style={{ gridColumn: '1 / -1' }}>
+                <span>Available</span>
+                <label className="remember-me">
+                  <input type="checkbox" checked={doctorCreateForm.available} onChange={() => setDoctorCreateForm((current) => ({ ...current, available: !current.available }))} />
+                  <span>{doctorCreateForm.available ? 'Available' : 'Unavailable'}</span>
+                </label>
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <button type="submit" className="signin-button" disabled={saving}>
+                {saving ? 'Creating...' : 'Save doctor'}
+              </button>
+              <button type="button" className="secondary-button" onClick={() => setShowDoctorForm(false)}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
         {loading ? (
           <p className="loading-state">Loading doctors...</p>
         ) : (
@@ -590,18 +772,18 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'patients' }: Adm
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <span className="profile-role-tag" style={{ fontSize: '0.7rem', padding: '6px 10px' }}>
                       {statusLabel[doctor.verificationStatus || 'pending']}
                     </span>
+                    <span className="profile-role-tag" style={{ fontSize: '0.7rem', padding: '6px 10px' }}>
+                      {doctor.active === false ? 'Blocked' : 'Active'}
+                    </span>
                     <button type="button" className="secondary-button" onClick={() => navigate(`/admin/doctors/${doctor._id}`)}>View</button>
-                    <button type="button" className="secondary-button" onClick={() => navigate(`/admin/doctors/${doctor._id}`)}>Edit</button>
-                    <button type="button" className="secondary-button" onClick={() => handleDoctorVerify(doctor._id || '')} disabled={doctor.verificationStatus === 'verified'}>
-                      Verify
+                    <button type="button" className="secondary-button" onClick={() => handleDoctorToggle(doctor._id || '')}>
+                      {doctor.active === false ? 'Activate' : 'Deactivate'}
                     </button>
-                    <button type="button" className="secondary-button" onClick={() => handleDoctorReject(doctor._id || '')} disabled={doctor.verificationStatus === 'rejected'}>
-                      Reject
-                    </button>
+                    <button type="button" className="secondary-button" onClick={() => navigate(`/admin/doctors/${doctor._id}`)}>Open</button>
                   </div>
                 </li>
               ))

@@ -98,6 +98,156 @@ export const togglePatientStatus = async (req: Request, res: Response) => {
   }
 };
 
+export const toggleDoctorStatus = async (req: Request, res: Response) => {
+  try {
+    const doctor = await DoctorModel.findById(req.params.id);
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found",
+      });
+    }
+
+    doctor.active = !doctor.active;
+    doctor.available = doctor.active;
+    await doctor.save();
+
+    return res.status(200).json({
+      success: true,
+      message: doctor.active ? "Doctor activated" : "Doctor deactivated",
+      doctor,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update doctor status",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const deleteDoctor = async (req: Request, res: Response) => {
+  try {
+    const doctor = await DoctorModel.findById(req.params.id);
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found",
+      });
+    }
+
+    const userId = doctor.user;
+    await DoctorModel.findByIdAndDelete(req.params.id);
+    await UserModel.findByIdAndDelete(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete doctor",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const createDoctor = async (req: Request, res: Response) => {
+  try {
+    const {
+      name,
+      email,
+      password,
+      specialization,
+      qualification,
+      licenseNumber,
+      consultationFee,
+      experienceYears,
+      available = true,
+      profileImage,
+    } = req.body as {
+      name?: string
+      email?: string
+      password?: string
+      specialization?: string
+      qualification?: string
+      licenseNumber?: string
+      consultationFee?: number
+      experienceYears?: number
+      available?: boolean
+      profileImage?: string
+    }
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, email, and password are required",
+      })
+    }
+
+    if (!specialization || !qualification || !licenseNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Specialization, qualification, and license number are required",
+      })
+    }
+
+    const existingUser = await UserModel.findOne({ email })
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "A user with this email already exists",
+      })
+    }
+
+    const hashedPassword = await import("bcryptjs").then(({ default: bcrypt }) =>
+      bcrypt.hash(password, 10),
+    )
+
+    const user = await UserModel.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: "doctor",
+    })
+
+    const doctor = await DoctorModel.create({
+      user: user._id,
+      specialization,
+      qualification,
+      licenseNumber,
+      consultationFee: consultationFee ?? 0,
+      experienceYears: experienceYears ?? 0,
+      available,
+      active: true,
+      profileImage: profileImage || "",
+      verificationStatus: "pending",
+    })
+
+    return res.status(201).json({
+      success: true,
+      message: "Doctor created successfully",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      doctor,
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create doctor",
+      error: error instanceof Error ? error.message : "Unknown error",
+    })
+  }
+}
+
 export const getAllDoctors = async (req: Request, res: Response) => {
   try {
     const doctors = await DoctorModel.find()
@@ -151,7 +301,9 @@ const doctorAdminUpdateFields = [
   "experienceYears",
   "licenseNumber",
   "consultationFee",
+  "active",
   "available",
+  "verificationStatus",
 ] as const;
 
 export const updateDoctorById = async (req: Request, res: Response) => {

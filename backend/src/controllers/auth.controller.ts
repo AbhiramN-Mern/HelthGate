@@ -197,6 +197,13 @@ export const login = async (req: Request, res: Response) => {
         });
       }
 
+      if (!doctorProfile.active) {
+        return res.status(403).json({
+          success: false,
+          message: "Doctor account is deactivated by admin",
+        });
+      }
+
       if (doctorProfile.verificationStatus === "pending") {
         return res.status(403).json({
           success: false,
