@@ -2,7 +2,12 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { loginUser } from '../api/auth.api'
 
-function LoginPage() {
+type LoginPageProps = {
+  onSuccess: (user: { name?: string; email?: string; role?: string }) => void
+  onSwitchToRegister: () => void
+}
+
+function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(true)
@@ -22,9 +27,18 @@ function LoginPage() {
 
     try {
       const data = await loginUser({ email, password })
-      setMessage(
-        `Welcome back, ${data.user?.email || email}! Your HealthGate dashboard is ready.`,
-      )
+      const user = {
+        name: data.user?.name || 'User',
+        email: data.user?.email || email,
+        role: data.user?.role || 'patient',
+      }
+
+      if (rememberMe) {
+        localStorage.setItem('helthgate_token', data.token || 'demo-token')
+        localStorage.setItem('helthgate_user', JSON.stringify(user))
+      }
+
+      onSuccess(user)
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -105,7 +119,7 @@ function LoginPage() {
           </form>
 
           <p className="signup-link">
-            Need an account? <a href="#">Create one</a>
+            Need an account? <a href="#" onClick={onSwitchToRegister}>Create one</a>
           </p>
         </div>
       </section>

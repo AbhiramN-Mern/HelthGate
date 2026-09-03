@@ -2,7 +2,12 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { registerUser } from '../api/auth.api'
 
-function RegisterPage() {
+type RegisterPageProps = {
+  onSuccess: (user: { name?: string; email?: string; role?: string }) => void
+  onSwitchToLogin: () => void
+}
+
+function RegisterPage({ onSuccess, onSwitchToLogin }: RegisterPageProps) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,11 +38,15 @@ function RegisterPage() {
         password,
       })
 
-      setMessage(`Account created for ${data.user?.name || fullName}. You can now sign in to HelthGate.`)
-      setFullName('')
-      setEmail('')
-      setPassword('')
-      setConfirmPassword('')
+      const user = {
+        name: data.user?.name || fullName,
+        email: data.user?.email || email,
+        role: data.user?.role || 'patient',
+      }
+
+      localStorage.setItem('helthgate_token', data.token || 'demo-token')
+      localStorage.setItem('helthgate_user', JSON.stringify(user))
+      onSuccess(user)
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -127,7 +136,7 @@ function RegisterPage() {
           </form>
 
           <p className="signup-link">
-            Already have an account? <a href="#">Sign in</a>
+            Already have an account? <a href="#" onClick={onSwitchToLogin}>Sign in</a>
           </p>
         </div>
       </section>
