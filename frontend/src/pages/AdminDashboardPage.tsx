@@ -22,7 +22,7 @@ type AdminDashboardPageProps = {
     role?: string
   } | null
   onLogout: () => void
-  initialSection?: 'patients' | 'doctors'
+  initialSection?: 'patients' | 'doctors' | 'hospitals'
 }
 
 type PatientFormState = {
@@ -80,7 +80,7 @@ const statusLabel: Record<string, string> = {
 function AdminDashboardPage({ user, onLogout, initialSection = 'patients' }: AdminDashboardPageProps) {
   const navigate = useNavigate()
   const { id } = useParams()
-  const [section, setSection] = useState<'patients' | 'doctors'>(initialSection)
+  const [section, setSection] = useState<'patients' | 'doctors' | 'hospitals'>(initialSection)
   const [patients, setPatients] = useState<AdminPatient[]>([])
   const [doctors, setDoctors] = useState<AdminDoctor[]>([])
   const [selectedPatient, setSelectedPatient] = useState<AdminPatient | null>(null)
@@ -102,6 +102,11 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'patients' }: Adm
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [hospitals, setHospitals] = useState<{ _id?: string; name?: string; isActive?: boolean }[]>([])
+  const [showHospitalForm, setShowHospitalForm] = useState(false)
+  const [hospitalCreateForm, setHospitalCreateForm] = useState({ name: '', isActive: true })
+  const [editingHospitalId, setEditingHospitalId] = useState<string | null>(null)
+  const [hospitalEditForm, setHospitalEditForm] = useState({ name: '', isActive: true })
 
   const token = localStorage.getItem('helthgate_token')
 
@@ -145,9 +150,24 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'patients' }: Adm
         setLoading(false)
       }
     }
+    
+    const loadHospitals = async () => {
+      if (!token) return
+      try {
+        setLoading(true)
+        setError('')
+        const data = await (await import('../api/auth.api')).getAllHospitalsForAdmin(token)
+        setHospitals(data.hospitals || [])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to load hospitals.')
+      } finally {
+        setLoading(false)
+      }
+    }
 
     void loadPatients()
     void loadDoctors()
+    void loadHospitals()
   }, [navigate, token])
 
   useEffect(() => {
@@ -206,14 +226,119 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'patients' }: Adm
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unable to load doctor details.')
-      } finally {
-        setLoading(false)
-      }
+      } finally { setLoading(false) }
     }
 
     void fetchPatient()
     void fetchDoctor()
   }, [id, section, token, navigate])
+
+  const renderHospitals = () => {
+    const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      if (!token) return
+      try {
+        setSaving(true)
+        const data = await (await import('../api/auth.api')).createHospitalForAdmin({ name: hospitalCreateForm.name, isActive: hospitalCreateForm.isActive }, token)
+        if (data.hospital) setHospitals((c) => [data.hospital as any, ...c])
+        setHospitalCreateForm({ name: '', isActive: true })
+        setShowHospitalForm(false)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to create hospital.')
+      } finally {
+        setSaving(false)
+      }
+    }
+
+    const toggleActive = async (id: string, makeActive: boolean) => {
+      if (!token) return
+      try {
+        setSaving(true)
+        await (await import('../api/auth.api')).updateHospitalByIdForAdmin(id, { isActive: makeActive }, token)
+        setHospitals((c) => c.map((h) => h._id === id ? { ...h, isActive: makeActive } : h))
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to update hospital.')
+      } finally {
+        setSaving(false)
+      }
+    }
+
+    return (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+          <h3 style={{ margin: 0 }}>Hospitals</h3>
+          <button type="button" className="signin-button" onClick={() => setShowHospitalForm((c) => !c)}>{showHospitalForm ? 'Close form' : 'Add hospital'}</button>
+        </div>
+
+        {showHospitalForm && (
+          <form className="login-form" onSubmit={handleCreate} style={{ marginBottom: '16px' }}>
+            <div className="profile-grid">
+              <div className="input-group">
+                <span>Name</span>
+                <input value={hospitalCreateForm.name} onChange={(e) => setHospitalCreateForm((c) => ({ ...c, name: e.target.value }))} />
+              </div>
+              <div className="input-group">
+                <span>Active</span>
+                <select value={hospitalCreateForm.isActive ? 'active' : 'inactive'} onChange={(e) => setHospitalCreateForm((c) => ({ ...c, isActive: e.target.value === 'active' }))}>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+              <button type="submit" className="signin-button" disabled={saving}>{saving ? 'Creating...' : 'Create'}</button>
+              <button type="button" className="secondary-button" onClick={() => setShowHospitalForm(false)}>Cancel</button>
+            </div>
+          </form>
+        )}
+
+        <div className="profile-list">
+          {hospitals.length === 0 ? (
+            <p className="empty-state">No hospitals found.</p>
+          ) : (
+            hospitals.map((h) => (
+              <li key={h._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                {editingHospitalId === h._id ? (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
+                    <input style={{ flex: 1 }} value={hospitalEditForm.name} onChange={(e) => setHospitalEditForm((c) => ({ ...c, name: e.target.value }))} />
+                    <select value={hospitalEditForm.isActive ? 'active' : 'inactive'} onChange={(e) => setHospitalEditForm((c) => ({ ...c, isActive: e.target.value === 'active' }))}>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                    <button type="button" className="signin-button" onClick={async () => {
+                      if (!token || !h._id) return
+                      try {
+                        setSaving(true)
+                        const data = await (await import('../api/auth.api')).updateHospitalByIdForAdmin(h._id, { name: hospitalEditForm.name, isActive: hospitalEditForm.isActive }, token)
+                        if (data.hospital) setHospitals((c) => c.map((x) => x._id === h._id ? data.hospital as any : x))
+                        setEditingHospitalId(null)
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : 'Unable to save hospital.')
+                      } finally {
+                        setSaving(false)
+                      }
+                    }}>Save</button>
+                    <button type="button" className="secondary-button" onClick={() => setEditingHospitalId(null)}>Cancel</button>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{h.name}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span className="profile-role-tag" style={{ fontSize: '0.7rem', padding: '6px 10px' }}>{h.isActive ? 'Active' : 'Inactive'}</span>
+                      <button type="button" className="secondary-button" onClick={() => toggleActive(h._id || '', !h.isActive)}>{h.isActive ? 'Deactivate' : 'Activate'}</button>
+                      <button type="button" className="secondary-button" onClick={() => { setEditingHospitalId(h._id || null); setHospitalEditForm({ name: h.name || '', isActive: Boolean(h.isActive) }) }}>Edit</button>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const handlePatientSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -820,6 +945,11 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'patients' }: Adm
                 Doctors
               </button>
             </li>
+            <li>
+              <button type="button" className="secondary-button" onClick={() => { setSection('hospitals'); navigate('/admin/hospitals'); }}>
+                Hospitals
+              </button>
+            </li>
           </div>
 
           <button type="button" className="secondary-button" onClick={onLogout}>
@@ -831,13 +961,13 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'patients' }: Adm
           <div className="inline-actions">
             <div className="form-header" style={{ marginBottom: 0 }}>
               <p className="welcome-tag">Overview</p>
-              <h2>{section === 'patients' ? 'Patients management' : 'Doctors management'}</h2>
+              <h2>{section === 'patients' ? 'Patients management' : section === 'doctors' ? 'Doctors management' : 'Hospitals management'}</h2>
             </div>
           </div>
 
           {error ? <p className="status-message">{error}</p> : null}
 
-          {section === 'patients' ? renderPatients() : renderDoctors()}
+          {section === 'patients' ? renderPatients() : section === 'doctors' ? renderDoctors() : renderHospitals()}
         </section>
       </div>
     </main>

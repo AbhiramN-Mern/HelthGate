@@ -145,6 +145,26 @@ function AppShell() {
           )
         }
       />
+      <Route
+        path="/admin/hospitals"
+        element={
+          localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+            <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="hospitals" />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/admin/hospitals/:id"
+        element={
+          localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+            <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="hospitals" />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
     </Routes>
   )
 }

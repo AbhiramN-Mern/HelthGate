@@ -298,3 +298,27 @@ export const deleteDoctorForAdmin = async (
     method: 'DELETE',
   }, token)
 }
+
+export type Hospital = {
+  _id?: string
+  name?: string
+  isActive?: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+export const getActiveHospitals = async (): Promise<{ success: boolean; hospitals?: Hospital[] }> => {
+  return request<{ success: boolean; hospitals?: Hospital[] }>('/api/hospitals/active', { method: 'GET' })
+}
+
+export const getAllHospitalsForAdmin = async (token: string): Promise<{ success: boolean; hospitals?: Hospital[] }> => {
+  return request<{ success: boolean; hospitals?: Hospital[] }>('/api/hospitals', { method: 'GET' }, token)
+}
+
+export const createHospitalForAdmin = async (payload: { name: string; isActive?: boolean }, token: string): Promise<{ success: boolean; hospital?: Hospital }> => {
+  return request<{ success: boolean; hospital?: Hospital }>('/api/hospitals', { method: 'POST', body: JSON.stringify(payload) }, token)
+}
+
+export const updateHospitalByIdForAdmin = async (id: string, payload: Record<string, unknown>, token: string): Promise<{ success: boolean; hospital?: Hospital }> => {
+  return request<{ success: boolean; hospital?: Hospital }>(`/api/hospitals/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, token)
+}
