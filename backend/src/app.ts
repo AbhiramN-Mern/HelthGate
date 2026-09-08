@@ -7,6 +7,8 @@ import authRoutes from "./routes/auth.routes.js";
 import doctorRoutes from "./routes/doctor.routes.js";
 import patientRoutes from "./routes/patient.routes.js";
 import hospitalRoutes from './routes/hospital.routes.js'
+import appointmentRoutes from "./routes/appointment.routes.js";
+import specializationRoutes from "./routes/specialization.routes.js";
 
 dotenv.config();
 
@@ -21,7 +23,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/patients", patientRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/admin", adminRoutes);
-app.use('/api/hospitals', hospitalRoutes)
+app.use('/api/hospitals', hospitalRoutes);
+app.use("/api/appointments", appointmentRoutes);
+app.use("/api/specializations", specializationRoutes);
 
 // Health check route
 app.get("/api/health", (req, res) => {

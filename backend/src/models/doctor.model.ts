@@ -18,6 +18,11 @@ const doctorSchema = new Schema(
       required: true,
       trim: true,
     },
+    hospital: {
+      type: Schema.Types.ObjectId,
+      ref: "Hospital",
+      default: null,
+    },
     profileImage: {
       type: String,
       default: "",

@@ -32,6 +32,7 @@ export type DoctorProfile = {
   user?: { name?: string; email?: string; role?: string }
   specialization?: string
   qualification?: string
+  hospital?: { _id?: string; name?: string; isActive?: boolean }
   profileImage?: string
   experienceYears?: number
   licenseNumber?: string
@@ -322,3 +323,41 @@ export const createHospitalForAdmin = async (payload: { name: string; isActive?:
 export const updateHospitalByIdForAdmin = async (id: string, payload: Record<string, unknown>, token: string): Promise<{ success: boolean; hospital?: Hospital }> => {
   return request<{ success: boolean; hospital?: Hospital }>(`/api/hospitals/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, token)
 }
+
+export type AppointmentItem = {
+  _id?: string
+  patient?: { _id?: string; name?: string; email?: string }
+  doctor?: DoctorProfile
+  hospital?: Hospital
+  appointmentDate?: string
+  timeSlot?: string
+  status?: string
+  reason?: string
+  type?: string
+  createdAt?: string
+}
+
+export const getSpecializations = async (): Promise<{ success: boolean; specializations?: string[] }> => {
+  return request<{ success: boolean; specializations?: string[] }>('/api/specializations', { method: 'GET' })
+}
+
+export const getAvailableDoctors = async (
+  params?: { search?: string; specialization?: string; hospital?: string },
+  token?: string,
+): Promise<{ success: boolean; doctors?: DoctorProfile[] }> => {
+  const query = new URLSearchParams()
+  if (params?.search) query.set('search', params.search)
+  if (params?.specialization) query.set('specialization', params.specialization)
+  if (params?.hospital) query.set('hospital', params.hospital)
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request<{ success: boolean; doctors?: DoctorProfile[] }>(`/api/doctors${qs}`, { method: 'GET' }, token)
+}
+
+export const getHospitals = async (token?: string): Promise<{ success: boolean; hospitals?: Hospital[] }> => {
+  return request<{ success: boolean; hospitals?: Hospital[] }>('/api/hospitals', { method: 'GET' }, token)
+}
+
+export const getMyAppointments = async (token: string): Promise<{ success: boolean; appointments?: AppointmentItem[] }> => {
+  return request<{ success: boolean; appointments?: AppointmentItem[] }>('/api/appointments/my', { method: 'GET' }, token)
+}
+

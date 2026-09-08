@@ -7,8 +7,8 @@ const router = Router()
 // Public
 router.get('/active', getActiveHospitals)
 
-// Admin
-router.get('/', protect, adminOnly, getAllHospitals)
+// Authenticated users can list hospitals
+router.get('/', protect, getAllHospitals)
 router.post('/', protect, adminOnly, createHospital)
 router.put('/:id', protect, adminOnly, updateHospitalById)
 

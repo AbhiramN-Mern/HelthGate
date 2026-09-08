@@ -168,6 +168,7 @@ export const createDoctor = async (req: Request, res: Response) => {
       experienceYears,
       available = true,
       profileImage,
+      hospital,
     } = req.body as {
       name?: string
       email?: string
@@ -179,6 +180,7 @@ export const createDoctor = async (req: Request, res: Response) => {
       experienceYears?: number
       available?: boolean
       profileImage?: string
+      hospital?: string
     }
 
     if (!name || !email || !password) {
@@ -225,6 +227,7 @@ export const createDoctor = async (req: Request, res: Response) => {
       available,
       active: true,
       profileImage: profileImage || "",
+      hospital: hospital || null,
       verificationStatus: "pending",
     })
 
@@ -252,6 +255,7 @@ export const getAllDoctors = async (req: Request, res: Response) => {
   try {
     const doctors = await DoctorModel.find()
       .populate("user", "name email role")
+      .populate("hospital", "name isActive")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -269,10 +273,9 @@ export const getAllDoctors = async (req: Request, res: Response) => {
 
 export const getDoctorById = async (req: Request, res: Response) => {
   try {
-    const doctor = await DoctorModel.findById(req.params.id).populate(
-      "user",
-      "name email role",
-    );
+    const doctor = await DoctorModel.findById(req.params.id)
+      .populate("user", "name email role")
+      .populate("hospital", "name isActive");
 
     if (!doctor) {
       return res.status(404).json({
@@ -303,6 +306,7 @@ const doctorAdminUpdateFields = [
   "consultationFee",
   "active",
   "available",
+  "hospital",
   "verificationStatus",
 ] as const;
 

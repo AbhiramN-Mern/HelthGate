@@ -11,6 +11,7 @@ const doctorUpdateFields = [
   "licenseNumber",
   "consultationFee",
   "available",
+  "hospital",
 ] as const;
 
 const pickDoctorUpdates = (body: Record<string, unknown>) => {
@@ -26,10 +27,9 @@ export const getMyDoctorProfile = async (
   res: Response,
 ) => {
   try {
-    const doctor = await DoctorModel.findOne({ user: req.user?.id }).populate(
-      "user",
-      "name email role",
-    );
+    const doctor = await DoctorModel.findOne({ user: req.user?.id })
+      .populate("user", "name email role")
+      .populate("hospital", "name isActive");
 
     if (!doctor) {
       return res.status(404).json({
@@ -66,7 +66,9 @@ export const updateMyDoctorProfile = async (
         upsert: true,
         setDefaultsOnInsert: true,
       },
-    ).populate("user", "name email role");
+    )
+      .populate("user", "name email role")
+      .populate("hospital", "name isActive");
 
     if (!doctor) {
       return res.status(404).json({
@@ -94,10 +96,36 @@ export const getAvailableDoctors = async (
   res: Response,
 ) => {
   try {
-    const doctors = await DoctorModel.find({
+    const { search, specialization, hospital } = req.query;
+
+    const query: Record<string, unknown> = {
       available: true,
-      verificationStatus: "verified",
-    }).populate("user", "name email role");
+      active: { $ne: false },
+      verificationStatus: { $in: ["verified", "pending"] },
+    };
+
+    if (specialization && typeof specialization === "string" && specialization.trim()) {
+      query.specialization = { $regex: new RegExp(`^${specialization.trim()}$`, "i") };
+    }
+
+    if (hospital && typeof hospital === "string" && hospital.trim()) {
+      query.hospital = hospital.trim();
+    }
+
+    let doctors = await DoctorModel.find(query)
+      .populate("user", "name email role")
+      .populate("hospital", "name isActive")
+      .sort({ createdAt: -1 });
+
+    if (search && typeof search === "string" && search.trim()) {
+      const term = search.trim().toLowerCase();
+      doctors = doctors.filter((doc: any) => {
+        const docName = doc.user?.name?.toLowerCase() || "";
+        const spec = doc.specialization?.toLowerCase() || "";
+        const hospName = doc.hospital?.name?.toLowerCase() || "";
+        return docName.includes(term) || spec.includes(term) || hospName.includes(term);
+      });
+    }
 
     return res.status(200).json({
       success: true,

@@ -46,7 +46,10 @@ function HomePage({ isLoggedIn }: HomePageProps) {
   const navigate = useNavigate()
 
   const goToLogin = () => navigate('/login')
-  const goToDashboard = () => navigate('/profile')
+  const goToDashboard = () => {
+    const role = JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role
+    navigate(role === 'admin' ? '/admin' : '/patient/home')
+  }
 
   return (
     <div className="hp-root">

@@ -1,0 +1,1302 @@
+/* ========================================================
+   HEALTHGATE — Patient Home Page Styles
+   ======================================================== */
+
+.php-root {
+  min-height: 100vh;
+  background: #f4fbfb;
+  color: #1b2430;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========================================================
+   NAVBAR
+   ======================================================== */
+.php-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(13, 92, 99, 0.08);
+  box-shadow: 0 4px 20px rgba(13, 92, 99, 0.04);
+}
+
+.php-navbar-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.php-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.php-brand-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 12px rgba(13, 92, 99, 0.25);
+}
+
+.php-brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.php-brand-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0d5c63;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.php-brand-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #0ea5a4;
+}
+
+.php-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.php-nav-link {
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #4b5e71;
+  transition: color 0.18s ease;
+  position: relative;
+  padding: 6px 0;
+}
+
+.php-nav-link:hover,
+.php-nav-link.active {
+  color: #0d5c63;
+}
+
+.php-nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: #0ea5a4;
+  border-radius: 2px;
+}
+
+.php-nav-user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.php-user-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 6px 6px;
+  background: #eef8f8;
+  border-radius: 999px;
+  border: 1px solid rgba(13, 92, 99, 0.12);
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.14s ease;
+}
+
+.php-user-badge-wrap:hover {
+  background: #e3f3f3;
+  transform: translateY(-1px);
+}
+
+.php-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.php-user-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.php-user-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1b2430;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.php-user-role {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #0d5c63;
+  text-transform: capitalize;
+}
+
+.php-btn-profile {
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #d6e1eb;
+  background: #ffffff;
+  color: #1b2430;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.php-btn-profile:hover {
+  border-color: #0ea5a4;
+  color: #0d5c63;
+  background: #f4fbfb;
+}
+
+.php-btn-logout {
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #fee2e2;
+  background: #fff5f5;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.php-btn-logout:hover {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+/* ========================================================
+   WELCOME HERO BANNER
+   ======================================================== */
+.php-hero {
+  background: linear-gradient(135deg, #041e20 0%, #0d5c63 55%, #1a8c86 100%);
+  color: #ffffff;
+  padding: 56px 24px 64px;
+  position: relative;
+  overflow: hidden;
+}
+
+.php-hero::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  top: -240px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(26, 169, 160, 0.3) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.php-hero-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.php-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.php-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #9cf0d7;
+  backdrop-filter: blur(8px);
+}
+
+.php-hero-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #9cf0d7;
+  box-shadow: 0 0 8px #9cf0d7;
+}
+
+.php-hero-greeting {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 10px;
+}
+
+.php-hero-title {
+  font-size: clamp(2.2rem, 4vw, 3.4rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 8px 0;
+  color: #ffffff;
+}
+
+.php-hero-title span {
+  background: linear-gradient(90deg, #9cf0d7, #5eead4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.php-hero-sub {
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 620px;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.php-hero-metrics {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.php-metric-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 170px;
+}
+
+.php-metric-icon {
+  font-size: 1.6rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(156, 240, 215, 0.18);
+  display: grid;
+  place-items: center;
+}
+
+.php-metric-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.php-metric-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.php-metric-label {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.68);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ========================================================
+   SEARCH SECTION
+   ======================================================== */
+.php-search-box {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 16px 40px rgba(13, 92, 99, 0.12);
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.2fr auto auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid rgba(13, 92, 99, 0.08);
+}
+
+.php-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f7fafb;
+  border: 1.5px solid #dce6ee;
+  border-radius: 14px;
+  padding: 12px 16px;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.php-input-wrap:focus-within {
+  border-color: #0ea5a4;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(14, 165, 164, 0.12);
+}
+
+.php-input-icon {
+  font-size: 1.1rem;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.php-search-input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-size: 0.92rem;
+  color: #1b2430;
+  font-family: inherit;
+  outline: none;
+}
+
+.php-search-input::placeholder {
+  color: #8a9ba8;
+}
+
+.php-select-wrap {
+  background: #f7fafb;
+  border: 1.5px solid #dce6ee;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+}
+
+.php-select-wrap select {
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-size: 0.9rem;
+  color: #1b2430;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.php-btn-search {
+  padding: 14px 26px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(13, 92, 99, 0.25);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.php-btn-search:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(13, 92, 99, 0.32);
+}
+
+.php-btn-reset {
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1.5px solid #dce6ee;
+  background: #f7fafb;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.16s ease;
+}
+
+.php-btn-reset:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+/* Active filter pills */
+.php-filter-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 0 0;
+}
+
+.php-filter-pill-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.php-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.php-filter-pill button {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+}
+
+/* ========================================================
+   MAIN CONTENT WRAPPER
+   ======================================================== */
+.php-main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+}
+
+/* Section headers */
+.php-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.php-section-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.php-section-tag {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #0ea5a4;
+}
+
+.php-section-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1b2430;
+  margin: 0;
+}
+
+.php-section-desc {
+  font-size: 0.92rem;
+  color: #53657a;
+  margin: 0;
+}
+
+.php-section-count {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #0d5c63;
+  background: #eef8f8;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(13, 92, 99, 0.12);
+}
+
+/* ========================================================
+   UPCOMING APPOINTMENTS SECTION (Conditional)
+   ======================================================== */
+.php-appointments-section {
+  background: linear-gradient(135deg, #eef9f8 0%, #e6f5f4 100%);
+  border: 1.5px solid rgba(13, 92, 99, 0.15);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 12px 32px rgba(13, 92, 99, 0.05);
+}
+
+.php-appointments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.php-appointment-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(13, 92, 99, 0.06);
+  border: 1px solid rgba(13, 92, 99, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.php-appointment-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px rgba(13, 92, 99, 0.1);
+}
+
+.php-appointment-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: linear-gradient(180deg, #0d5c63, #1ba9a0);
+}
+
+.php-appt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.php-appt-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.php-appt-time-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5e71;
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.php-appt-doctor {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.php-appt-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.php-appt-doc-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.php-appt-doc-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1b2430;
+  margin: 0;
+}
+
+.php-appt-doc-spec {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0ea5a4;
+}
+
+.php-appt-details {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: #f7fafb;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+.php-appt-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.php-appt-reason {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-style: italic;
+  margin: 0;
+}
+
+/* ========================================================
+   SPECIALIZATIONS SECTION
+   ======================================================== */
+.php-specs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.php-spec-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 20px;
+  border: 1.5px solid rgba(13, 92, 99, 0.08);
+  box-shadow: 0 4px 16px rgba(13, 92, 99, 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.php-spec-card:hover {
+  transform: translateY(-3px);
+  border-color: #0ea5a4;
+  box-shadow: 0 12px 28px rgba(13, 92, 99, 0.08);
+  background: #fcfefe;
+}
+
+.php-spec-card.active {
+  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 8px 24px rgba(13, 92, 99, 0.25);
+}
+
+.php-spec-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #eef8f8;
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+  transition: background 0.18s ease;
+}
+
+.php-spec-card.active .php-spec-icon-box {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.php-spec-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.php-spec-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.php-spec-card.active .php-spec-name {
+  color: #ffffff;
+}
+
+.php-spec-sub {
+  font-size: 0.76rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.php-spec-card.active .php-spec-sub {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ========================================================
+   DOCTORS SECTION
+   ======================================================== */
+.php-doctors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.php-doctor-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(13, 92, 99, 0.09);
+  box-shadow: 0 8px 24px rgba(13, 92, 99, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  position: relative;
+}
+
+.php-doctor-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 48px rgba(13, 92, 99, 0.1);
+  border-color: rgba(14, 165, 164, 0.3);
+}
+
+.php-doc-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.php-doc-avatar-wrap {
+  position: relative;
+}
+
+.php-doc-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
+  color: #ffffff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 16px rgba(13, 92, 99, 0.15);
+}
+
+.php-doc-status-indicator {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2.5px solid #ffffff;
+}
+
+.php-doc-main-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.php-doc-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1b2430;
+  margin: 0;
+}
+
+.php-doc-spec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: #eef8f8;
+  color: #0d5c63;
+  font-size: 0.78rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.php-doc-hospital-tag {
+  font-size: 0.82rem;
+  color: #53657a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.php-doc-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 14px;
+  background: #f7fafb;
+  border-radius: 14px;
+}
+
+.php-doc-meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.php-doc-meta-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.php-doc-meta-val {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1b2430;
+}
+
+.php-doc-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.php-btn-book {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  box-shadow: 0 4px 12px rgba(13, 92, 99, 0.2);
+}
+
+.php-btn-book:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(13, 92, 99, 0.28);
+}
+
+/* ========================================================
+   HOSPITALS SECTION
+   ======================================================== */
+.php-hospitals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.php-hospital-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(13, 92, 99, 0.08);
+  box-shadow: 0 6px 20px rgba(13, 92, 99, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.php-hospital-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px rgba(13, 92, 99, 0.08);
+  border-color: #0ea5a4;
+}
+
+.php-hospital-card.active {
+  background: #eef8f8;
+  border-color: #0ea5a4;
+  box-shadow: 0 8px 24px rgba(14, 165, 164, 0.15);
+}
+
+.php-hosp-icon-wrap {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+}
+
+.php-hosp-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #1b2430;
+  margin: 0;
+}
+
+.php-hosp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.php-hosp-badge.active {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.php-hosp-badge.inactive {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* ========================================================
+   EMPTY, LOADING & ERROR STATES
+   ======================================================== */
+.php-empty-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 48px 24px;
+  text-align: center;
+  border: 1.5px dashed #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.php-empty-icon {
+  font-size: 2.8rem;
+  opacity: 0.85;
+}
+
+.php-empty-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1b2430;
+  margin: 0;
+}
+
+.php-empty-desc {
+  font-size: 0.9rem;
+  color: #64748b;
+  max-width: 440px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.php-error-banner {
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #991b1b;
+  margin-bottom: 24px;
+}
+
+.php-btn-retry {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: none;
+  background: #dc2626;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Shimmer Loading Skeleton */
+.php-skeleton-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(13, 92, 99, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.php-skeleton {
+  background: linear-gradient(90deg, #edf2f7 25%, #e2e8f0 50%, #edf2f7 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ========================================================
+   BOOKING MODAL
+   ======================================================== */
+.php-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 30, 32, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.php-modal-card {
+  background: #ffffff;
+  border-radius: 24px;
+  width: min(520px, 100%);
+  padding: 32px;
+  box-shadow: 0 24px 60px rgba(4, 30, 32, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.php-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.php-modal-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #1b2430;
+  margin: 0;
+}
+
+.php-btn-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 1.1rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.php-btn-close:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.php-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.php-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.php-form-label {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.php-form-input,
+.php-form-select,
+.php-form-textarea {
+  border: 1.5px solid #dce6ee;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  color: #1b2430;
+  outline: none;
+  background: #f8fafc;
+}
+
+.php-form-input:focus,
+.php-form-select:focus,
+.php-form-textarea:focus {
+  border-color: #0ea5a4;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(14, 165, 164, 0.12);
+}
+
+.php-time-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.php-time-btn {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.php-time-btn:hover {
+  border-color: #0ea5a4;
+}
+
+.php-time-btn.active {
+  background: #0d5c63;
+  color: #ffffff;
+  border-color: #0d5c63;
+}
+
+.php-btn-submit {
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(13, 92, 99, 0.25);
+  margin-top: 8px;
+}
+
+.php-btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ========================================================
+   FOOTER
+   ======================================================== */
+.php-footer {
+  margin-top: auto;
+  background: #041e20;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 40px 24px;
+}
+
+.php-footer-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-size: 0.85rem;
+}
+
+.php-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ========================================================
+   RESPONSIVE
+   ======================================================== */
+@media (max-width: 1024px) {
+  .php-search-box {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .php-btn-search,
+  .php-btn-reset {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .php-nav-links {
+    display: none;
+  }
+
+  .php-search-box {
+    grid-template-columns: 1fr;
+  }
+
+  .php-hero {
+    padding: 40px 20px 48px;
+  }
+
+  .php-hero-top {
+    flex-direction: column;
+  }
+
+  .php-metric-card {
+    flex: 1;
+    min-width: 140px;
+  }
+}
