@@ -4,6 +4,11 @@ import {
   getAvailableDoctors,
   getMyDoctorProfile,
   updateMyDoctorProfile,
+  getDoctorDashboard,
+  updateDoctorAvailability,
+  updateAppointmentStatusForDoctor,
+  getDoctorPatientDetails,
+  markNotificationRead,
 } from "../controllers/doctor.controller.js";
 import { authorize, protect } from "../middleware/auth.middleware.js";
 import { uploadProfileImage } from "../middleware/upload.middleware.js";
@@ -11,6 +16,12 @@ import { uploadProfileImage } from "../middleware/upload.middleware.js";
 const router = Router();
 
 router.get("/", protect, getAvailableDoctors);
+router.get("/dashboard", protect, authorize("doctor"), getDoctorDashboard);
+router.put("/availability", protect, authorize("doctor"), updateDoctorAvailability);
+router.patch("/appointments/:appointmentId/status", protect, authorize("doctor"), updateAppointmentStatusForDoctor);
+router.get("/patients/:patientId", protect, authorize("doctor"), getDoctorPatientDetails);
+router.patch("/notifications/:notificationId/read", protect, authorize("doctor"), markNotificationRead);
+
 router.get("/me", protect, authorize("doctor"), getMyDoctorProfile);
 router.put(
   "/me",

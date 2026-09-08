@@ -267,9 +267,9 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
             type="button"
             className="secondary-button"
             style={{ background: '#0d5c63', color: '#ffffff', borderColor: '#0d5c63' }}
-            onClick={() => window.location.assign(role === 'admin' ? '/admin' : '/patient/home')}
+            onClick={() => window.location.assign(role === 'admin' ? '/admin' : role === 'doctor' ? '/doctor/dashboard' : '/patient/home')}
           >
-            ← Back to Home
+            ← Back to Dashboard
           </button>
 
           <button type="button" className="secondary-button" onClick={onLogout}>

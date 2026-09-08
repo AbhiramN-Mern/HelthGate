@@ -6,6 +6,7 @@ import {
   getAvailableDoctors,
   getHospitals,
   getMyAppointments,
+  getDoctorBookedSlotsApi,
   type AuthUser,
   type PatientProfile,
   type DoctorProfile,
@@ -77,6 +78,35 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   const [bookingReason, setBookingReason] = useState('')
   const [bookingSubmitting, setBookingSubmitting] = useState(false)
   const [bookingFeedback, setBookingFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [calMonth, setCalMonth] = useState<Date>(new Date())
+  const [bookedSlotsByDate, setBookedSlotsByDate] = useState<Record<string, string[]>>({})
+
+  // Fetch doctor's booked slots whenever bookingDoctor or calMonth changes
+  useEffect(() => {
+    if (!bookingDoctor?._id || !token) {
+      setBookedSlotsByDate({})
+      return
+    }
+
+    const year = calMonth.getFullYear()
+    const month = String(calMonth.getMonth() + 1).padStart(2, '0')
+    const monthStr = `${year}-${month}`
+
+    let isMounted = true
+    getDoctorBookedSlotsApi(bookingDoctor._id, { month: monthStr }, token)
+      .then((data) => {
+        if (isMounted && data.bookedSlotsByDate) {
+          setBookedSlotsByDate(data.bookedSlotsByDate)
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to fetch doctor booked slots:', err)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [bookingDoctor, calMonth, token])
 
   // 1. Initial Load: Check Auth & Fetch Data
   useEffect(() => {
@@ -183,14 +213,64 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
     fetchDoctors('')
   }
 
-  // Handle Book Appointment
+  // Calendar & Availability Helpers
+  const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+  const isSlotPast = (slotTime: string, selectedDateStr: string): boolean => {
+    if (!selectedDateStr) return false
+    const now = new Date()
+    const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+    if (selectedDateStr < todayDateStr) return true
+    if (selectedDateStr > todayDateStr) return false
+
+    const match = slotTime.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i)
+    if (!match) return false
+    let hours = parseInt(match[1], 10)
+    const minutes = parseInt(match[2], 10)
+    const meridian = match[3]?.toUpperCase()
+    if (meridian === 'PM' && hours < 12) hours += 12
+    else if (meridian === 'AM' && hours === 12) hours = 0
+
+    const slotDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0, 0)
+    return slotDate.getTime() <= now.getTime()
+  }
+
   const handleOpenBooking = (doc: DoctorProfile) => {
     setBookingDoctor(doc)
-    // Default to tomorrow's date
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    setBookingDate(tomorrow.toISOString().split('T')[0])
-    setBookingTime('10:00 AM')
+    setCalMonth(new Date())
+
+    const blockedList = doc.availability?.blockedDates || []
+    const workDays = doc.availability?.workingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    const slots = doc.availability?.availableSlots || ['09:00 AM', '10:00 AM', '11:30 AM', '02:00 PM', '03:30 PM', '05:00 PM']
+
+    // Find first available date (today or future) with at least one active future slot
+    const candidate = new Date()
+    let selectedDate = ''
+    let selectedSlot = slots[0] || '10:00 AM'
+
+    for (let i = 0; i < 30; i++) {
+      const dStr = `${candidate.getFullYear()}-${String(candidate.getMonth() + 1).padStart(2, '0')}-${String(candidate.getDate()).padStart(2, '0')}`
+      const dayName = WEEKDAYS[candidate.getDay()]
+      if (!blockedList.includes(dStr) && workDays.includes(dayName)) {
+        const freeSlot = slots.find((s) => !isSlotPast(s, dStr))
+        if (freeSlot) {
+          selectedDate = dStr
+          selectedSlot = freeSlot
+          break
+        }
+      }
+      candidate.setDate(candidate.getDate() + 1)
+    }
+
+    if (!selectedDate) {
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      selectedDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`
+    }
+
+    setBookingDate(selectedDate)
+    setBookingTime(selectedSlot)
     setBookingReason('')
     setBookingFeedback(null)
   }
@@ -198,6 +278,14 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   const handleCloseBooking = () => {
     setBookingDoctor(null)
     setBookingFeedback(null)
+  }
+
+  const handlePrevMonth = () => {
+    setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1))
+  }
+
+  const handleNextMonth = () => {
+    setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1))
   }
 
   const handleConfirmBooking = async (e: React.FormEvent) => {
@@ -232,6 +320,15 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
       // Re-fetch patient's appointments immediately so upcoming appointments section appears!
       await fetchAppointments()
 
+      // Also refresh doctor's booked slots immediately
+      if (bookingDoctor?._id && token) {
+        const year = calMonth.getFullYear()
+        const month = String(calMonth.getMonth() + 1).padStart(2, '0')
+        getDoctorBookedSlotsApi(bookingDoctor._id, { month: `${year}-${month}` }, token).then((res) => {
+          if (res.bookedSlotsByDate) setBookedSlotsByDate(res.bookedSlotsByDate)
+        }).catch(() => {})
+      }
+
       setTimeout(() => {
         handleCloseBooking()
       }, 1500)
@@ -240,6 +337,15 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
         type: 'error',
         text: err instanceof Error ? err.message : 'Booking failed. Please try again.',
       })
+
+      // In case of conflict, refresh booked slots so patient sees latest blocked slots
+      if (bookingDoctor?._id && token) {
+        const year = calMonth.getFullYear()
+        const month = String(calMonth.getMonth() + 1).padStart(2, '0')
+        getDoctorBookedSlotsApi(bookingDoctor._id, { month: `${year}-${month}` }, token).then((res) => {
+          if (res.bookedSlotsByDate) setBookedSlotsByDate(res.bookedSlotsByDate)
+        }).catch(() => {})
+      }
     } finally {
       setBookingSubmitting(false)
     }
@@ -893,54 +999,373 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               </div>
             )}
 
-            <form className="php-modal-form" onSubmit={handleConfirmBooking}>
-              <div className="php-form-group">
-                <label className="php-form-label">Appointment Date</label>
-                <input
-                  type="date"
-                  required
-                  min={new Date().toISOString().split('T')[0]}
-                  value={bookingDate}
-                  onChange={(e) => setBookingDate(e.target.value)}
-                  className="php-form-input"
-                />
-              </div>
+            {/* Modal Body / Form */}
+            {(() => {
+              const year = calMonth.getFullYear()
+              const month = calMonth.getMonth()
+              const monthName = calMonth.toLocaleString('default', { month: 'long' })
+              const firstDayIndex = new Date(year, month, 1).getDay()
+              const totalDays = new Date(year, month + 1, 0).getDate()
 
-              <div className="php-form-group">
-                <label className="php-form-label">Preferred Time Slot</label>
-                <div className="php-time-grid">
-                  {['09:00 AM', '10:00 AM', '11:30 AM', '02:00 PM', '03:30 PM', '05:00 PM'].map((time) => (
-                    <button
-                      key={time}
-                      type="button"
-                      className={`php-time-btn ${bookingTime === time ? 'active' : ''}`}
-                      onClick={() => setBookingTime(time)}
+              const now = new Date()
+              const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+              const blockedDates = bookingDoctor.availability?.blockedDates || []
+              const workDays = bookingDoctor.availability?.workingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+              const availableSlots = bookingDoctor.availability?.availableSlots?.length
+                ? bookingDoctor.availability.availableSlots
+                : ['09:00 AM', '10:00 AM', '11:30 AM', '02:00 PM', '03:30 PM', '05:00 PM']
+
+              const currentDayBookedSlots = (bookingDate && bookedSlotsByDate[bookingDate]) || []
+              const isSelectedSlotBooked = Boolean(bookingTime && currentDayBookedSlots.includes(bookingTime))
+              const isSelectedSlotPast = Boolean(bookingTime && isSlotPast(bookingTime, bookingDate))
+
+              const availableSlotsCount = availableSlots.filter(
+                (s) => !currentDayBookedSlots.includes(s) && !isSlotPast(s, bookingDate)
+              ).length
+              const allSlotsUnavailableOnDate = availableSlotsCount === 0
+
+              const isDateBlocked = (dateStr: string) => blockedDates.includes(dateStr)
+              const isDateOffDuty = (dayIdx: number) => !workDays.includes(WEEKDAYS[dayIdx])
+
+              const isSelectedDateBlocked = Boolean(bookingDate && isDateBlocked(bookingDate))
+              const isSelectedDateOffDuty = Boolean(
+                bookingDate && isDateOffDuty(new Date(bookingDate).getDay())
+              )
+              const isSelectedDatePast = Boolean(bookingDate && bookingDate < todayStr)
+              const isBookingDisabled =
+                bookingSubmitting ||
+                !bookingDate ||
+                !bookingTime ||
+                isSelectedDateBlocked ||
+                isSelectedDateOffDuty ||
+                isSelectedDatePast ||
+                allSlotsUnavailableOnDate ||
+                isSelectedSlotBooked ||
+                isSelectedSlotPast
+
+              return (
+                <form className="php-modal-form" onSubmit={handleConfirmBooking}>
+                  {/* Visual Calendar */}
+                  <div className="php-form-group">
+                    <label className="php-form-label">
+                      Select Date (Doctor's Schedule)
+                    </label>
+
+                    <div className="php-calendar-box">
+                      {/* Month & Navigation Header */}
+                      <div className="php-cal-header">
+                        <button
+                          type="button"
+                          className="php-cal-nav-btn"
+                          onClick={handlePrevMonth}
+                          title="Previous Month"
+                        >
+                          ‹
+                        </button>
+                        <span className="php-cal-month-title">
+                          {monthName} {year}
+                        </span>
+                        <button
+                          type="button"
+                          className="php-cal-nav-btn"
+                          onClick={handleNextMonth}
+                          title="Next Month"
+                        >
+                          ›
+                        </button>
+                      </div>
+
+                      {/* Day-of-week Headers */}
+                      <div className="php-cal-weekdays">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((w) => (
+                          <span key={w}>{w}</span>
+                        ))}
+                      </div>
+
+                      {/* Calendar Days Grid */}
+                      <div className="php-cal-grid">
+                        {/* Leading Empty Cells */}
+                        {Array.from({ length: firstDayIndex }).map((_, i) => (
+                          <div key={`empty-${i}`} className="php-cal-cell empty" />
+                        ))}
+
+                        {/* Month Days */}
+                        {Array.from({ length: totalDays }).map((_, i) => {
+                          const d = i + 1
+                          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+                          const dayDate = new Date(year, month, d)
+                          const isPast = dateStr < todayStr
+                          const isBlocked = isDateBlocked(dateStr)
+                          const isOff = isDateOffDuty(dayDate.getDay())
+                          const dayBookedSlots = bookedSlotsByDate[dateStr] || []
+                          const dayOpenCount = availableSlots.filter(
+                            (s) => !dayBookedSlots.includes(s) && !isSlotPast(s, dateStr)
+                          ).length
+                          const isDayNoSlots = dayOpenCount === 0
+                          const isDayFull = isDayNoSlots && !isPast && !isBlocked && !isOff
+                          const isSelected = bookingDate === dateStr
+                          const isAvailable = !isPast && !isBlocked && !isOff && !isDayNoSlots
+
+                          return (
+                            <button
+                              key={dateStr}
+                              type="button"
+                              className={`php-cal-cell ${
+                                isBlocked
+                                  ? 'blocked'
+                                  : isOff
+                                  ? 'off-duty'
+                                  : isPast
+                                  ? 'past'
+                                  : isDayFull
+                                  ? 'full'
+                                  : isSelected
+                                  ? 'selected'
+                                  : 'available'
+                              }`}
+                              disabled={!isAvailable}
+                              onClick={() => {
+                                setBookingDate(dateStr)
+                                const dayTaken = bookedSlotsByDate[dateStr] || []
+                                if (dayTaken.includes(bookingTime) || isSlotPast(bookingTime, dateStr)) {
+                                  const nextFree = availableSlots.find(
+                                    (s) => !dayTaken.includes(s) && !isSlotPast(s, dateStr)
+                                  )
+                                  if (nextFree) setBookingTime(nextFree)
+                                }
+                              }}
+                              title={
+                                isBlocked
+                                  ? 'Blocked: Doctor is unavailable / on leave'
+                                  : isOff
+                                  ? 'Off-duty day for doctor'
+                                  : isPast
+                                  ? 'Past date'
+                                  : isDayFull
+                                  ? 'No Available Slots: All slots on this date are taken or have passed'
+                                  : `Available: ${dateStr}`
+                              }
+                            >
+                              <span>{d}</span>
+                              {isBlocked && (
+                                <span className="php-cal-blocked-tag">Blocked</span>
+                              )}
+                              {isOff && !isPast && !isBlocked && (
+                                <span style={{ fontSize: '0.55rem', color: '#94a3b8' }}>Off</span>
+                              )}
+                              {isDayFull && !isPast && !isBlocked && !isOff && (
+                                <span className="php-cal-full-tag">Full</span>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      {/* Calendar Legend */}
+                      <div className="php-cal-legend">
+                        <span className="php-legend-item">
+                          <span className="php-legend-dot avail" /> Available
+                        </span>
+                        <span className="php-legend-item">
+                          <span className="php-legend-dot block" /> Blocked / Leave
+                        </span>
+                        <span className="php-legend-item">
+                          <span className="php-legend-dot off" /> Off-duty
+                        </span>
+                        <span className="php-legend-item">
+                          <span className="php-legend-dot full" /> Fully Booked
+                        </span>
+                        <span className="php-legend-item">
+                          <span className="php-legend-dot sel" /> Selected
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Doctor Blocked Dates List Banner (if any) */}
+                  {blockedDates.length > 0 && (
+                    <div
+                      style={{
+                        padding: '8px 12px',
+                        background: '#fef2f2',
+                        border: '1px solid #fecaca',
+                        borderRadius: '10px',
+                        fontSize: '0.78rem',
+                        color: '#991b1b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '6px',
+                      }}
                     >
-                      {time}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                      <strong>🚫 Blocked Dates by Doctor:</strong>
+                      {blockedDates.map((bDate) => (
+                        <span
+                          key={bDate}
+                          style={{
+                            background: '#fee2e2',
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                          }}
+                        >
+                          {bDate}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
-              <div className="php-form-group">
-                <label className="php-form-label">Reason for Visit (Optional)</label>
-                <textarea
-                  rows={3}
-                  placeholder="E.g., Routine checkup, follow-up, consultation..."
-                  value={bookingReason}
-                  onChange={(e) => setBookingReason(e.target.value)}
-                  className="php-form-textarea"
-                />
-              </div>
+                  {/* Selected Date Status Banner */}
+                  {isSelectedDateBlocked ? (
+                    <div className="php-date-status-alert blocked">
+                      <span>🚫</span>
+                      <span>
+                        Dr. {bookingDoctor.user?.name} is on leave / blocked on this date.
+                        Appointment booking is disabled on this day. Please select an available green date.
+                      </span>
+                    </div>
+                  ) : isSelectedDateOffDuty ? (
+                    <div className="php-date-status-alert off">
+                      <span>⚠️</span>
+                      <span>
+                        Doctor is off-duty on {WEEKDAYS[new Date(bookingDate).getDay()]}s.
+                        Please select an available green day.
+                      </span>
+                    </div>
+                  ) : bookingDate ? (
+                    <div className="php-date-status-alert available">
+                      <span>✅</span>
+                      <span>
+                        Selected Date:{' '}
+                        <strong>
+                          {new Date(bookingDate).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </strong>{' '}
+                        (Available)
+                      </span>
+                    </div>
+                  ) : null}
 
-              <button
-                type="submit"
-                className="php-btn-submit"
-                disabled={bookingSubmitting || !bookingDate}
-              >
-                {bookingSubmitting ? 'Confirming...' : 'Confirm Appointment'}
-              </button>
-            </form>
+                  {/* Preferred Time Slot */}
+                  <div className="php-form-group">
+                    <div className="php-slots-header-row">
+                      <label className="php-form-label" style={{ margin: 0 }}>
+                        Available Time Slots ({availableSlotsCount} open)
+                      </label>
+                      <div className="php-slots-legend">
+                        <span className="php-slots-legend-item">
+                          <span className="php-legend-dot avail" style={{ width: '7px', height: '7px' }} /> Open
+                        </span>
+                        <span className="php-slots-legend-item">
+                          <span className="php-legend-dot block" style={{ width: '7px', height: '7px' }} /> Booked
+                        </span>
+                        <span className="php-slots-legend-item">
+                          <span className="php-legend-dot off" style={{ width: '7px', height: '7px' }} /> Past
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="php-time-grid">
+                      {availableSlots.map((time) => {
+                        const isSlotBooked = currentDayBookedSlots.includes(time)
+                        const isPast = isSlotPast(time, bookingDate)
+                        const isUnavailable = isSlotBooked || isPast
+
+                        return (
+                          <button
+                            key={time}
+                            type="button"
+                            className={`php-time-btn ${bookingTime === time && !isUnavailable ? 'active' : ''} ${
+                              isSlotBooked ? 'booked' : isPast ? 'past' : ''
+                            }`}
+                            onClick={() => {
+                              if (!isUnavailable) setBookingTime(time)
+                            }}
+                            disabled={isBookingDisabled || isUnavailable}
+                            title={
+                              isPast
+                                ? `Time slot ${time} has already passed`
+                                : isSlotBooked
+                                ? `Time slot ${time} is already booked by another patient`
+                                : `Select ${time}`
+                            }
+                          >
+                            <span>{time}</span>
+                            {isSlotBooked && <span className="php-slot-booked-badge">Booked</span>}
+                            {isPast && !isSlotBooked && <span className="php-slot-past-badge">Past</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {allSlotsUnavailableOnDate && (
+                      <div className="php-date-status-alert blocked" style={{ marginTop: '10px' }}>
+                        <span>⛔</span>
+                        <span>
+                          {bookingDate === todayStr
+                            ? 'All consultation slots for today have already passed or been booked. Please select an upcoming date.'
+                            : 'All consultation slots on this date are fully booked. Please select another date from the calendar.'}
+                        </span>
+                      </div>
+                    )}
+
+                    {isSelectedSlotPast && !allSlotsUnavailableOnDate && (
+                      <div className="php-date-status-alert off" style={{ marginTop: '10px' }}>
+                        <span>⏰</span>
+                        <span>The slot "{bookingTime}" has already passed today. Please choose an upcoming open slot above.</span>
+                      </div>
+                    )}
+
+                    {isSelectedSlotBooked && !allSlotsUnavailableOnDate && !isSelectedSlotPast && (
+                      <div className="php-date-status-alert blocked" style={{ marginTop: '10px' }}>
+                        <span>⚠️</span>
+                        <span>The slot "{bookingTime}" has already been booked. Please pick an open slot above.</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Reason for Visit */}
+                  <div className="php-form-group">
+                    <label className="php-form-label">Reason for Visit (Optional)</label>
+                    <textarea
+                      rows={2}
+                      placeholder="E.g., Routine checkup, consultation, symptoms..."
+                      value={bookingReason}
+                      onChange={(e) => setBookingReason(e.target.value)}
+                      className="php-form-textarea"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    className="php-btn-submit"
+                    disabled={isBookingDisabled}
+                  >
+                    {bookingSubmitting
+                      ? 'Confirming...'
+                      : isSelectedDateBlocked
+                      ? 'Doctor Blocked on this Date'
+                      : isSelectedDateOffDuty
+                      ? 'Doctor Off-Duty'
+                      : isSelectedDatePast
+                      ? 'Date has passed'
+                      : allSlotsUnavailableOnDate
+                      ? 'No Available Slots'
+                      : isSelectedSlotPast
+                      ? 'Slot Has Passed'
+                      : isSelectedSlotBooked
+                      ? 'Selected Slot Already Booked'
+                      : 'Confirm Appointment'}
+                  </button>
+                </form>
+              )
+            })()}
           </div>
         </div>
       )}

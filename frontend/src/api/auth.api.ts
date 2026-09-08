@@ -27,6 +27,13 @@ export type PatientProfile = {
   medicalHistory?: string[]
 }
 
+export type DoctorAvailability = {
+  workingDays?: string[]
+  workingHours?: { start?: string; end?: string }
+  availableSlots?: string[]
+  blockedDates?: string[]
+}
+
 export type DoctorProfile = {
   _id?: string
   user?: { name?: string; email?: string; role?: string }
@@ -38,6 +45,7 @@ export type DoctorProfile = {
   licenseNumber?: string
   consultationFee?: number
   available?: boolean
+  availability?: DoctorAvailability
   verificationStatus?: 'pending' | 'verified' | 'rejected'
 }
 
@@ -360,4 +368,134 @@ export const getHospitals = async (token?: string): Promise<{ success: boolean; 
 export const getMyAppointments = async (token: string): Promise<{ success: boolean; appointments?: AppointmentItem[] }> => {
   return request<{ success: boolean; appointments?: AppointmentItem[] }>('/api/appointments/my', { method: 'GET' }, token)
 }
+
+export type NotificationItem = {
+  _id: string
+  type: 'new_appointment' | 'cancellation' | 'rescheduled' | 'system' | 'general'
+  title: string
+  message: string
+  isRead?: boolean
+  createdAt?: string
+}
+
+export type DoctorDashboardData = {
+  success: boolean
+  message?: string
+  doctor?: DoctorProfile
+  stats?: {
+    todayAppointments: number
+    upcomingAppointments: number
+    completedAppointments: number
+    totalPatients: number
+  }
+  todayAppointments?: AppointmentItem[]
+  upcomingAppointments?: AppointmentItem[]
+  recentPatients?: {
+    patientId: string
+    name: string
+    email: string
+    lastAppointmentDate: string
+    lastAppointmentStatus: string
+    appointmentType: string
+    totalVisits: number
+  }[]
+  notifications?: NotificationItem[]
+  availability?: DoctorAvailability
+}
+
+export const getDoctorDashboard = async (token: string): Promise<DoctorDashboardData> => {
+  return request<DoctorDashboardData>('/api/doctors/dashboard', { method: 'GET' }, token)
+}
+
+export const updateDoctorAvailabilityApi = async (
+  payload: {
+    workingDays?: string[]
+    workingHours?: { start?: string; end?: string }
+    availableSlots?: string[]
+    blockedDates?: string[]
+    available?: boolean
+  },
+  token: string,
+): Promise<{ success: boolean; availability?: DoctorAvailability; available?: boolean; message?: string }> => {
+  return request<{ success: boolean; availability?: DoctorAvailability; available?: boolean; message?: string }>('/api/doctors/availability', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }, token)
+}
+
+export const updateAppointmentStatusApi = async (
+  appointmentId: string,
+  status: string,
+  token: string,
+): Promise<{ success: boolean; appointment?: AppointmentItem; message?: string }> => {
+  return request<{ success: boolean; appointment?: AppointmentItem; message?: string }>(`/api/doctors/appointments/${appointmentId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  }, token)
+}
+
+export const getDoctorPatientDetailsApi = async (
+  patientId: string,
+  token: string,
+): Promise<{
+  success: boolean
+  patient?: {
+    id: string
+    name: string
+    email: string
+    gender?: string
+    phone?: string
+    bloodGroup?: string
+    dateOfBirth?: string
+    address?: string
+  }
+  appointments?: AppointmentItem[]
+}> => {
+  return request<{
+    success: boolean
+    patient?: {
+      id: string
+      name: string
+      email: string
+      gender?: string
+      phone?: string
+      bloodGroup?: string
+      dateOfBirth?: string
+      address?: string
+    }
+    appointments?: AppointmentItem[]
+  }>(`/api/doctors/patients/${patientId}`, { method: 'GET' }, token)
+}
+
+export const markNotificationReadApi = async (notificationId: string, token: string): Promise<{ success: boolean }> => {
+  return request<{ success: boolean }>(`/api/doctors/notifications/${notificationId}/read`, { method: 'PATCH' }, token)
+}
+
+export const getDoctorBookedSlotsApi = async (
+  doctorId: string,
+  params?: { date?: string; month?: string },
+  token?: string | null,
+): Promise<{
+  success: boolean
+  doctor?: string
+  date?: string
+  month?: string
+  bookedSlots?: string[]
+  bookedSlotsByDate?: Record<string, string[]>
+}> => {
+  const query = new URLSearchParams({ doctor: doctorId })
+  if (params?.date) query.set('date', params.date)
+  if (params?.month) query.set('month', params.month)
+
+  return request<{
+    success: boolean
+    doctor?: string
+    date?: string
+    month?: string
+    bookedSlots?: string[]
+    bookedSlotsByDate?: Record<string, string[]>
+  }>(`/api/appointments/booked-slots?${query.toString()}`, { method: 'GET' }, token || undefined)
+}
+
+
 

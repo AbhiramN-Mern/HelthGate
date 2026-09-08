@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
 import HomePage from './pages/HomePage'
 import PatientHomePage from './pages/pationt/PatientHomePage'
+import DoctorDashboardPage from './pages/doctor/DoctorDashboardPage'
 import ErrorPage from './pages/error page/ErrorPage'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -14,6 +15,12 @@ type AuthUser = {
   name?: string
   email?: string
   role?: string
+}
+
+const getRoleHomeRoute = (role?: string) => {
+  if (role === 'admin') return '/admin'
+  if (role === 'doctor') return '/doctor/dashboard'
+  return '/patient/home'
 }
 
 function AppShell() {
@@ -34,8 +41,7 @@ function AppShell() {
     localStorage.setItem('helthgate_token', activeToken)
     localStorage.setItem('helthgate_user', JSON.stringify(userData))
     setUser(userData)
-    const nextRoute = userData.role === 'admin' ? '/admin' : '/patient/home'
-    navigate(nextRoute)
+    navigate(getRoleHomeRoute(userData.role))
   }
 
   const handleLogout = () => {
@@ -53,6 +59,7 @@ function AppShell() {
   }
 
   const isLoggedIn = !!localStorage.getItem('helthgate_token')
+  const currentRole = JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role
 
   return (
     <ErrorBoundary>
@@ -62,11 +69,9 @@ function AppShell() {
           element={
             <Navigate
               to={
-                localStorage.getItem('helthgate_token') && JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role === 'admin'
-                  ? '/admin'
-                  : localStorage.getItem('helthgate_token')
-                    ? '/patient/home'
-                    : '/home'
+                localStorage.getItem('helthgate_token')
+                  ? getRoleHomeRoute(currentRole)
+                  : '/home'
               }
               replace
             />
@@ -91,10 +96,24 @@ function AppShell() {
           element={<Navigate to="/patient/home" replace />}
         />
         <Route
+          path="/doctor/dashboard"
+          element={
+            localStorage.getItem('helthgate_token') ? (
+              <DoctorDashboardPage user={user} onLogout={handleLogout} onRequireAuth={requireAuth} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/doctor"
+          element={<Navigate to="/doctor/dashboard" replace />}
+        />
+        <Route
           path="/login"
           element={
             localStorage.getItem('helthgate_token') ? (
-              <Navigate to={JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role === 'admin' ? '/admin' : '/patient/home'} replace />
+              <Navigate to={getRoleHomeRoute(currentRole)} replace />
             ) : (
               <LoginPage onSuccess={handleAuthSuccess} onSwitchToRegister={() => navigate('/register')} />
             )
@@ -104,7 +123,7 @@ function AppShell() {
           path="/register"
           element={
             localStorage.getItem('helthgate_token') ? (
-              <Navigate to={JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role === 'admin' ? '/admin' : '/patient/home'} replace />
+              <Navigate to={getRoleHomeRoute(currentRole)} replace />
             ) : (
               <RegisterPage onSuccess={handleAuthSuccess} onSwitchToLogin={() => navigate('/login')} />
             )
