@@ -193,7 +193,10 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
         },
         token,
       )
-      setDoctors(res.doctors || [])
+      const verifiedOnly = (res.doctors || []).filter(
+        (doc) => doc.verificationStatus === 'verified'
+      )
+      setDoctors(verifiedOnly)
     } catch (err) {
       setDoctorsError(err instanceof Error ? err.message : 'Unable to load doctors from server.')
     } finally {
@@ -849,9 +852,26 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
 
                       <div className="php-doc-main-info">
                         <h3 className="php-doc-name">{docName}</h3>
-                        <span className="php-doc-spec-badge">
-                          {getSpecIcon(spec)} {spec}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span className="php-doc-spec-badge">
+                            {getSpecIcon(spec)} {spec}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              color: '#065f46',
+                              background: '#d1fae5',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                            }}
+                          >
+                            ✓ Verified
+                          </span>
+                        </div>
                         <div className="php-doc-hospital-tag">
                           <span>🏥</span>
                           <span>{hospName}</span>

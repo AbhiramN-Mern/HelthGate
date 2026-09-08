@@ -106,7 +106,7 @@ export const getAvailableDoctors = async (
     const query: Record<string, unknown> = {
       available: true,
       active: { $ne: false },
-      verificationStatus: { $in: ["verified", "pending"] },
+      verificationStatus: "verified",
     };
 
     if (specialization && typeof specialization === "string" && specialization.trim()) {

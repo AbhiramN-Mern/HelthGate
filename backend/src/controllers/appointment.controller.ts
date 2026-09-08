@@ -69,6 +69,13 @@ export const createAppointment = async (
       });
     }
 
+    if (doctorDoc.verificationStatus !== "verified") {
+      return res.status(400).json({
+        success: false,
+        message: "This doctor is not verified and cannot accept appointments.",
+      });
+    }
+
     if (doctorDoc.available === false) {
       return res.status(400).json({
         success: false,

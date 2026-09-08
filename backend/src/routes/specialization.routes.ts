@@ -8,6 +8,7 @@ router.get("/", async (req: Request, res: Response) => {
     const rawSpecializations = await DoctorModel.distinct("specialization", {
       specialization: { $exists: true, $ne: "" },
       active: { $ne: false },
+      verificationStatus: "verified",
     });
 
     const filtered = rawSpecializations
