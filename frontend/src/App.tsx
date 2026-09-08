@@ -1,10 +1,11 @@
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import './App.css'
-import AdminDashboardPage from './pages/AdminDashboardPage'
+import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
+import HomePage from './pages/HomePage'
 import ErrorPage from './pages/error page/ErrorPage'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -50,6 +51,8 @@ function AppShell() {
     }
   }
 
+  const isLoggedIn = !!localStorage.getItem('helthgate_token')
+
   return (
     <ErrorBoundary>
       <Routes>
@@ -62,11 +65,15 @@ function AppShell() {
                   ? '/admin'
                   : localStorage.getItem('helthgate_token')
                     ? '/profile'
-                    : '/login'
+                    : '/home'
               }
               replace
             />
           }
+        />
+        <Route
+          path="/home"
+          element={<HomePage isLoggedIn={isLoggedIn} />}
         />
         <Route
           path="/login"
