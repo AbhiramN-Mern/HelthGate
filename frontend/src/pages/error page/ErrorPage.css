@@ -1,0 +1,177 @@
+.error-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background: linear-gradient(135deg, #eef7f6 0%, #e3f2f5 50%, #eaf4fb 100%);
+  color: #1b2430;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.error-card {
+  width: min(640px, 100%);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(13, 92, 99, 0.12), 0 4px 16px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(14, 165, 164, 0.15);
+  padding: 48px 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: errorFadeIn 0.4s ease-out;
+}
+
+@keyframes errorFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-badge-wrapper {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.error-icon-badge {
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 28px rgba(13, 92, 99, 0.25);
+  font-size: 2.5rem;
+}
+
+.error-code-chip {
+  position: absolute;
+  bottom: -8px;
+  right: -12px;
+  background: #e63946;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 10px rgba(230, 57, 70, 0.3);
+}
+
+.error-title {
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-weight: 700;
+  color: #112a36;
+  margin-bottom: 12px;
+  line-height: 1.25;
+}
+
+.error-message {
+  font-size: 1.05rem;
+  color: #465768;
+  max-width: 480px;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+.error-details-toggle {
+  background: transparent;
+  border: none;
+  color: #0d5c63;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  transition: color 0.2s;
+}
+
+.error-details-toggle:hover {
+  color: #1a8c86;
+  text-decoration: underline;
+}
+
+.error-details-box {
+  width: 100%;
+  text-align: left;
+  background: #1e293b;
+  color: #f1f5f9;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.85rem;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 28px;
+  overflow-x: auto;
+  max-height: 200px;
+  border: 1px solid #334155;
+}
+
+.error-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.error-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 0.98rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  text-decoration: none;
+}
+
+.error-btn-primary {
+  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(13, 92, 99, 0.25);
+}
+
+.error-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(13, 92, 99, 0.35);
+}
+
+.error-btn-secondary {
+  background: #ffffff;
+  color: #274157;
+  border: 1px solid #d0dfeb;
+}
+
+.error-btn-secondary:hover {
+  background: #f4f8fb;
+  border-color: #b8cfdf;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 580px) {
+  .error-card {
+    padding: 36px 24px;
+  }
+  .error-actions {
+    flex-direction: column;
+  }
+  .error-btn {
+    width: 100%;
+  }
+}

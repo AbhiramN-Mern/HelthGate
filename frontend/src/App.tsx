@@ -5,6 +5,8 @@ import AdminDashboardPage from './pages/AdminDashboardPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
+import ErrorPage from './pages/error page/ErrorPage'
+import ErrorBoundary from './components/ErrorBoundary'
 
 type AuthUser = {
   name?: string
@@ -49,123 +51,130 @@ function AppShell() {
   }
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <Navigate
-            to={
-              localStorage.getItem('helthgate_token') && JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role === 'admin'
-                ? '/admin'
-                : localStorage.getItem('helthgate_token')
-                  ? '/profile'
-                  : '/login'
-            }
-            replace
-          />
-        }
-      />
-      <Route
-        path="/login"
-        element={
-          localStorage.getItem('helthgate_token') ? (
-            <Navigate to={JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role === 'admin' ? '/admin' : '/profile'} replace />
-          ) : (
-            <LoginPage onSuccess={handleAuthSuccess} onSwitchToRegister={() => navigate('/register')} />
-          )
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          localStorage.getItem('helthgate_token') ? (
-            <Navigate to={JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role === 'admin' ? '/admin' : '/profile'} replace />
-          ) : (
-            <RegisterPage onSuccess={handleAuthSuccess} onSwitchToLogin={() => navigate('/login')} />
-          )
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          localStorage.getItem('helthgate_token') ? (
-            <ProfilePage user={user} onLogout={handleLogout} onRequireAuth={requireAuth} />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
-            <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="patients" />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin/patients"
-        element={
-          localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
-            <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="patients" />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin/patients/:id"
-        element={
-          localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
-            <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="patients" />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin/doctors"
-        element={
-          localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
-            <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="doctors" />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin/doctors/:id"
-        element={
-          localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
-            <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="doctors" />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin/hospitals"
-        element={
-          localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
-            <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="hospitals" />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin/hospitals/:id"
-        element={
-          localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
-            <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="hospitals" />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Navigate
+              to={
+                localStorage.getItem('helthgate_token') && JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role === 'admin'
+                  ? '/admin'
+                  : localStorage.getItem('helthgate_token')
+                    ? '/profile'
+                    : '/login'
+              }
+              replace
+            />
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            localStorage.getItem('helthgate_token') ? (
+              <Navigate to={JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role === 'admin' ? '/admin' : '/profile'} replace />
+            ) : (
+              <LoginPage onSuccess={handleAuthSuccess} onSwitchToRegister={() => navigate('/register')} />
+            )
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            localStorage.getItem('helthgate_token') ? (
+              <Navigate to={JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role === 'admin' ? '/admin' : '/profile'} replace />
+            ) : (
+              <RegisterPage onSuccess={handleAuthSuccess} onSwitchToLogin={() => navigate('/login')} />
+            )
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            localStorage.getItem('helthgate_token') ? (
+              <ProfilePage user={user} onLogout={handleLogout} onRequireAuth={requireAuth} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="patients" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/patients"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="patients" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/patients/:id"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="patients" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/doctors"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="doctors" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/doctors/:id"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="doctors" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/hospitals"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="hospitals" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/hospitals/:id"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="hospitals" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route path="/error" element={<ErrorPage />} />
+        <Route
+          path="*"
+          element={<ErrorPage code={404} title="Page Not Found" message="The page or path you requested could not be found." />}
+        />
+      </Routes>
+    </ErrorBoundary>
   )
 }
 
