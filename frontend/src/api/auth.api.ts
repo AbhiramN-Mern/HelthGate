@@ -171,6 +171,8 @@ export type AdminPatient = {
   allergies?: string[]
   medicalHistory?: string[]
   dateOfBirth?: string
+  createdAt?: string
+  updatedAt?: string
   user?: {
     _id?: string
     name?: string
@@ -190,6 +192,13 @@ export type AdminDoctor = {
   experienceYears?: number
   available?: boolean
   verificationStatus?: 'pending' | 'verified' | 'rejected'
+  hospital?: {
+    _id?: string
+    name?: string
+    isActive?: boolean
+  } | null
+  createdAt?: string
+  updatedAt?: string
   user?: {
     _id?: string
     name?: string
@@ -495,6 +504,41 @@ export const getDoctorBookedSlotsApi = async (
     bookedSlots?: string[]
     bookedSlotsByDate?: Record<string, string[]>
   }>(`/api/appointments/booked-slots?${query.toString()}`, { method: 'GET' }, token || undefined)
+}
+
+export type AdminDashboardStats = {
+  totalPatients: number
+  totalDoctors: number
+  totalHospitals: number
+  totalAppointments: number
+  pendingDoctorApprovals: number
+  todayAppointments: number
+}
+
+export type AdminDashboardData = {
+  success: boolean
+  message?: string
+  stats?: AdminDashboardStats
+  appointmentsOverview?: {
+    daily: { label: string; date: string; count: number }[]
+    weekly: { label: string; count: number }[]
+    monthly: { label: string; count: number }[]
+  }
+  userGrowth?: {
+    month: string
+    patients: number
+    doctors: number
+  }[]
+  recentAppointments?: AppointmentItem[]
+  pendingDoctors?: AdminDoctor[]
+}
+
+export const getAdminDashboardApi = async (token: string): Promise<AdminDashboardData> => {
+  return request<AdminDashboardData>('/api/admin/dashboard', { method: 'GET' }, token)
+}
+
+export const getAllAppointmentsForAdminApi = async (token: string): Promise<{ success: boolean; appointments?: AppointmentItem[] }> => {
+  return request<{ success: boolean; appointments?: AppointmentItem[] }>('/api/admin/appointments', { method: 'GET' }, token)
 }
 
 

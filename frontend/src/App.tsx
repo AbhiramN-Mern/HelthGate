@@ -143,7 +143,17 @@ function AppShell() {
           path="/admin"
           element={
             localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
-              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="patients" />
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="dashboard" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/dashboard"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="dashboard" />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -204,6 +214,76 @@ function AppShell() {
           element={
             localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
               <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="hospitals" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/appointments"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="appointments" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/specializations"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="specializations" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/payments"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="payments" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/complaints"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="complaints" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="reports" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/notifications"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="notifications" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
+              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="settings" />
             ) : (
               <Navigate to="/login" replace />
             )

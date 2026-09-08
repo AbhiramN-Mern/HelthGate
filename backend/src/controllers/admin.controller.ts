@@ -4,6 +4,8 @@ import AdminModel from "../models/admin.model.js";
 import DoctorModel from "../models/doctor.model.js";
 import PatientModel from "../models/patient.model.js";
 import UserModel from "../models/user.model.js";
+import AppointmentModel from "../models/appointment.model.js";
+import HospitalModel from "../models/hospital.model.js";
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
@@ -464,6 +466,156 @@ export const getAllAdmins = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: "Failed to fetch admins",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const getAdminDashboard = async (req: Request, res: Response) => {
+  try {
+    const totalPatients = await PatientModel.countDocuments();
+    const totalDoctors = await DoctorModel.countDocuments();
+    const totalHospitals = await HospitalModel.countDocuments();
+    const totalAppointments = await AppointmentModel.countDocuments();
+    const pendingDoctorApprovals = await DoctorModel.countDocuments({
+      verificationStatus: "pending",
+    });
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    const todayAppointments = await AppointmentModel.countDocuments({
+      appointmentDate: { $gte: startOfToday, $lte: endOfToday },
+    });
+
+    // Recent Appointments (latest 6)
+    const recentAppointments = await AppointmentModel.find()
+      .populate("patient", "name email")
+      .populate({
+        path: "doctor",
+        populate: [{ path: "user", select: "name email" }, { path: "hospital", select: "name" }],
+      })
+      .populate("hospital", "name")
+      .sort({ createdAt: -1 })
+      .limit(6);
+
+    // Pending Doctor Approvals (top 6)
+    const pendingDoctors = await DoctorModel.find({ verificationStatus: "pending" })
+      .populate("user", "name email")
+      .populate("hospital", "name")
+      .sort({ createdAt: -1 })
+      .limit(6);
+
+    // Daily breakdown: last 7 days
+    const dailyAppointments = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+      const count = await AppointmentModel.countDocuments({
+        appointmentDate: { $gte: start, $lte: end },
+      });
+      dailyAppointments.push({
+        label: d.toLocaleDateString("en-US", { weekday: "short" }),
+        date: d.toISOString().split("T")[0],
+        count,
+      });
+    }
+
+    // Weekly breakdown: last 4 weeks
+    const weeklyAppointments = [];
+    for (let w = 3; w >= 0; w--) {
+      const start = new Date(now);
+      start.setDate(start.getDate() - (w * 7 + 6));
+      const end = new Date(now);
+      end.setDate(end.getDate() - w * 7);
+      const count = await AppointmentModel.countDocuments({
+        appointmentDate: { $gte: start, $lte: end },
+      });
+      weeklyAppointments.push({
+        label: `W${4 - w}`,
+        count,
+      });
+    }
+
+    // Monthly breakdown: last 6 months
+    const monthlyAppointments = [];
+    for (let m = 5; m >= 0; m--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+      const start = new Date(d.getFullYear(), d.getMonth(), 1);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+      const count = await AppointmentModel.countDocuments({
+        appointmentDate: { $gte: start, $lte: end },
+      });
+      monthlyAppointments.push({
+        label: d.toLocaleDateString("en-US", { month: "short" }),
+        count,
+      });
+    }
+
+    // User growth (patients + doctors over last 6 months)
+    const userGrowth = [];
+    for (let m = 5; m >= 0; m--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+      const patientsCount = await PatientModel.countDocuments({ createdAt: { $lte: end } });
+      const doctorsCount = await DoctorModel.countDocuments({ createdAt: { $lte: end } });
+      userGrowth.push({
+        month: d.toLocaleDateString("en-US", { month: "short" }),
+        patients: patientsCount,
+        doctors: doctorsCount,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      stats: {
+        totalPatients,
+        totalDoctors,
+        totalHospitals,
+        totalAppointments,
+        pendingDoctorApprovals,
+        todayAppointments,
+      },
+      appointmentsOverview: {
+        daily: dailyAppointments,
+        weekly: weeklyAppointments,
+        monthly: monthlyAppointments,
+      },
+      userGrowth,
+      recentAppointments,
+      pendingDoctors,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch admin dashboard data",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const getAllAppointmentsForAdmin = async (req: Request, res: Response) => {
+  try {
+    const appointments = await AppointmentModel.find()
+      .populate("patient", "name email")
+      .populate({
+        path: "doctor",
+        populate: [{ path: "user", select: "name email" }, { path: "hospital", select: "name" }],
+      })
+      .populate("hospital", "name")
+      .sort({ appointmentDate: -1 });
+
+    return res.status(200).json({
+      success: true,
+      appointments,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch appointments",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }

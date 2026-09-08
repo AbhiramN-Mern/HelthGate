@@ -15,11 +15,15 @@ import {
   updateDoctorById,
   updatePatientById,
   verifyDoctor,
+  getAdminDashboard,
+  getAllAppointmentsForAdmin,
 } from "../controllers/admin.controller.js";
 import { adminOnly, protect } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
+router.get("/dashboard", protect, adminOnly, getAdminDashboard);
+router.get("/appointments", protect, adminOnly, getAllAppointmentsForAdmin);
 router.get("/users", protect, adminOnly, getAllUsers);
 router.get("/patients", protect, adminOnly, getAllPatients);
 router.get("/patients/:id", protect, adminOnly, getPatientById);

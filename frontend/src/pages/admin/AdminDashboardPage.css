@@ -1,0 +1,946 @@
+/* ==========================================================================
+   HEALTHGATE ADMIN PORTAL — V1 DESIGN SYSTEM
+   ========================================================================== */
+
+:root {
+  --admin-bg: #f8fafc;
+  --admin-card-bg: #ffffff;
+  --admin-sidebar-bg: #0f172a;
+  --admin-sidebar-hover: #1e293b;
+  --admin-sidebar-active: #0d5c63;
+  --admin-primary: #0d5c63;
+  --admin-primary-light: #e6f4f5;
+  --admin-primary-hover: #09474d;
+  --admin-accent: #0284c7;
+  --admin-success: #10b981;
+  --admin-warning: #f59e0b;
+  --admin-danger: #ef4444;
+  --admin-text-main: #0f172a;
+  --admin-text-muted: #64748b;
+  --admin-border: #e2e8f0;
+  --admin-border-subtle: #f1f5f9;
+  --admin-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --admin-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --admin-shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+}
+
+/* Base Layout Shell */
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--admin-bg);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--admin-text-main);
+}
+
+/* ==========================================================================
+   1. SIDEBAR
+   ========================================================================== */
+.admin-sidebar {
+  width: 260px;
+  background: var(--admin-sidebar-bg);
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 50;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-sidebar-brand {
+  padding: 24px 20px 20px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-logo-mark {
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, #0d5c63, #14b8a6);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(13, 92, 99, 0.35);
+}
+
+.admin-brand-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-brand-title {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.admin-portal-tag {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* Navigation Groups */
+.admin-sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-nav-group-title {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #64748b;
+  padding: 4px 12px 6px;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: all 0.18s ease;
+}
+
+.admin-nav-item:hover {
+  background: var(--admin-sidebar-hover);
+  color: #f1f5f9;
+}
+
+.admin-nav-item.active {
+  background: linear-gradient(90deg, #0d5c63, #0a4d53);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(13, 92, 99, 0.4);
+}
+
+.admin-nav-item-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-nav-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+/* Sidebar Footer Profile */
+.admin-sidebar-footer {
+  padding: 16px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #9cf0d7;
+}
+
+.admin-user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-user-name {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  line-height: 1.2;
+}
+
+.admin-user-role {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: capitalize;
+}
+
+.admin-logout-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.admin-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ==========================================================================
+   2. MAIN CONTENT AREA & HEADER
+   ========================================================================== */
+.admin-main-viewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.admin-top-header {
+  height: 70px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--admin-border);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.admin-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-header-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--admin-text-main);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.admin-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border: 1px solid #a7f3d0;
+}
+
+.admin-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.admin-header-date {
+  font-size: 0.8rem;
+  color: var(--admin-text-muted);
+  font-weight: 500;
+}
+
+.admin-content-body {
+  padding: 28px;
+  flex: 1;
+}
+
+/* ==========================================================================
+   3. TOP: 6 METRIC CARDS
+   ========================================================================== */
+.admin-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1400px) {
+  .admin-metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.admin-metric-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 18px 16px;
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--admin-shadow-md);
+  border-color: #cbd5e1;
+}
+
+.admin-metric-card.alert-card {
+  border-color: #fde68a;
+  background: linear-gradient(180deg, #fffbeb, #ffffff);
+}
+
+.admin-metric-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.admin-metric-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-metric-icon.patients { background: #e0f2fe; color: #0284c7; }
+.admin-metric-icon.doctors { background: #e6f4f5; color: #0d5c63; }
+.admin-metric-icon.hospitals { background: #f3e8ff; color: #7c3aed; }
+.admin-metric-icon.appointments { background: #e0e7ff; color: #4338ca; }
+.admin-metric-icon.pending { background: #fef3c7; color: #d97706; }
+.admin-metric-icon.today { background: #ecfdf5; color: #059669; }
+
+.admin-metric-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.admin-metric-tag.blue { background: #eff6ff; color: #1d4ed8; }
+.admin-metric-tag.teal { background: #e6f4f5; color: #0d5c63; }
+.admin-metric-tag.amber { background: #fffbeb; color: #b45309; }
+.admin-metric-tag.green { background: #ecfdf5; color: #047857; }
+
+.admin-metric-val {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--admin-text-main);
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.admin-metric-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+}
+
+/* ==========================================================================
+   4. MIDDLE: 2 COLUMNS (Appointments Overview & User Growth)
+   ========================================================================== */
+.admin-middle-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+  .admin-middle-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-panel {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 22px;
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.admin-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-panel-title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-panel-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--admin-text-main);
+  letter-spacing: -0.01em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-panel-sub {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+  margin-top: 2px;
+}
+
+/* Timeframe Filter Buttons */
+.admin-timeframe-tabs {
+  display: inline-flex;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  gap: 2px;
+}
+
+.admin-tf-tab {
+  border: none;
+  background: transparent;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-tf-tab.active {
+  background: #ffffff;
+  color: var(--admin-primary);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Appointments Chart Bar Display */
+.admin-chart-bars-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  height: 190px;
+  padding: 10px 10px 0 10px;
+  border-bottom: 1px dashed var(--admin-border);
+}
+
+.admin-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.admin-bar-track {
+  width: 100%;
+  max-width: 36px;
+  background: #f1f5f9;
+  border-radius: 6px 6px 0 0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  height: 150px;
+}
+
+.admin-bar-fill {
+  width: 100%;
+  background: linear-gradient(180deg, #14b8a6, #0d5c63);
+  border-radius: 6px 6px 0 0;
+  transition: height 0.4s ease;
+  min-height: 4px;
+}
+
+.admin-bar-fill:hover {
+  background: linear-gradient(180deg, #2dd4bf, #09474d);
+}
+
+.admin-bar-label {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.admin-bar-val {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--admin-primary);
+  margin-bottom: 4px;
+}
+
+/* User Growth Display */
+.admin-growth-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-growth-ratio-box {
+  display: flex;
+  gap: 14px;
+}
+
+.admin-growth-card {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--admin-border);
+}
+
+.admin-growth-card-val {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--admin-text-main);
+  line-height: 1.2;
+}
+
+.admin-growth-card-lbl {
+  font-size: 0.74rem;
+  color: var(--admin-text-muted);
+  font-weight: 600;
+}
+
+.admin-growth-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-growth-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.admin-growth-row-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.admin-growth-meter-track {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  overflow: hidden;
+  display: flex;
+}
+
+.admin-growth-meter-fill.patients {
+  background: #0284c7;
+}
+
+.admin-growth-meter-fill.doctors {
+  background: #0d5c63;
+}
+
+/* ==========================================================================
+   5. BOTTOM: 3 PANELS GRID (Appointments, Approvals, Complaints)
+   ========================================================================== */
+.admin-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 1280px) {
+  .admin-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Recent Appointments List */
+.admin-table-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-appt-item {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid var(--admin-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-appt-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-appt-patient {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+}
+
+.admin-appt-meta {
+  font-size: 0.72rem;
+  color: var(--admin-text-muted);
+  margin-top: 1px;
+}
+
+.admin-status-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: capitalize;
+}
+
+.admin-status-pill.scheduled { background: #e0f2fe; color: #0369a1; }
+.admin-status-pill.confirmed { background: #e6f4f5; color: #0d5c63; }
+.admin-status-pill.completed { background: #d1fae5; color: #065f46; }
+.admin-status-pill.cancelled { background: #fee2e2; color: #991b1b; }
+
+/* Pending Approvals List */
+.admin-pending-item {
+  padding: 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid var(--admin-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.admin-pending-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.admin-doc-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+}
+
+.admin-doc-spec {
+  font-size: 0.74rem;
+  color: #0d5c63;
+  font-weight: 600;
+}
+
+.admin-doc-exp {
+  font-size: 0.7rem;
+  color: var(--admin-text-muted);
+  margin-top: 2px;
+}
+
+.admin-approval-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-btn-approve {
+  flex: 1;
+  background: #0d5c63;
+  color: #ffffff;
+  border: none;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.admin-btn-approve:hover {
+  background: #09474d;
+}
+
+.admin-btn-reject {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-btn-reject:hover {
+  background: #fee2e2;
+}
+
+/* Complaints Card */
+.admin-complaint-item {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid var(--admin-border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-complaint-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-complaint-cat {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+}
+
+.admin-severity-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.admin-severity-pill.high { background: #fee2e2; color: #b91c1c; }
+.admin-severity-pill.medium { background: #fef3c7; color: #b45309; }
+.admin-severity-pill.low { background: #f1f5f9; color: #475569; }
+
+.admin-complaint-desc {
+  font-size: 0.74rem;
+  color: #475569;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.admin-complaint-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--admin-text-muted);
+}
+
+/* ==========================================================================
+   6. MANAGEMENT MODULE STYLES (PATIENTS, DOCTORS, HOSPITALS, APPOINTMENTS)
+   ========================================================================== */
+.admin-module-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.admin-module-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 8px 14px;
+  border-radius: 8px;
+  width: 280px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.admin-search-bar:focus-within {
+  background: #ffffff;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(13, 92, 99, 0.12);
+}
+
+.admin-search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.82rem;
+  width: 100%;
+}
+
+.admin-btn-primary {
+  background: var(--admin-primary);
+  color: #ffffff;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+
+.admin-btn-primary:hover {
+  background: var(--admin-primary-hover);
+}
+
+/* Tables */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 12px 14px;
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  border-bottom: 1px solid var(--admin-border);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-table td {
+  padding: 14px;
+  border-bottom: 1px solid var(--admin-border-subtle);
+  vertical-align: middle;
+}
+
+.admin-table tr:hover td {
+  background: #fafafa;
+}
+
+/* Module Shell Placeholder (For Payments, Reports, etc.) */
+.admin-placeholder-shell {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 48px 24px;
+  border: 1px dashed var(--admin-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 420px;
+}
+
+.admin-placeholder-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: #f0fdfa;
+  color: var(--admin-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.admin-placeholder-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--admin-text-main);
+  margin-bottom: 6px;
+}
+
+.admin-placeholder-desc {
+  font-size: 0.85rem;
+  color: var(--admin-text-muted);
+  max-width: 480px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.admin-placeholder-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
