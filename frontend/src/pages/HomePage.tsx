@@ -1,42 +1,70 @@
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  HospitalIcon,
+  StethoscopeIcon,
+  CalendarIcon,
+  HeartPulseIcon,
+  CheckCircleIcon,
+  SearchIcon,
+  UserIcon,
+  MedicalCrossIcon,
+} from '../components/common/Icons'
 import './HomePage.css'
 
 type HomePageProps = {
   isLoggedIn: boolean
 }
 
-const specializations = [
-  { icon: '❤️', name: 'Cardiology', tagline: 'Heart & cardiovascular care' },
-  { icon: '🧠', name: 'Neurology', tagline: 'Brain & nervous system care' },
-  { icon: '👶', name: 'Pediatrics', tagline: 'Healthcare for children' },
-  { icon: '🦴', name: 'Orthopedics', tagline: 'Bones, joints & muscles' },
+type SpecItem = {
+  name: string
+  tagline: string
+  icon: ReactNode
+}
+
+const specializations: SpecItem[] = [
+  { name: 'Cardiology', tagline: 'Heart & cardiovascular care', icon: <HeartPulseIcon size={24} /> },
+  { name: 'Neurology', tagline: 'Brain & nervous system care', icon: <StethoscopeIcon size={24} /> },
+  { name: 'Pediatrics', tagline: 'Healthcare for children', icon: <UserIcon size={24} /> },
+  { name: 'Orthopedics', tagline: 'Bones, joints & muscles', icon: <MedicalCrossIcon size={24} /> },
 ]
 
-const hospitalTiles = [
-  { icon: '🏥', name: 'City Medical' },
-  { icon: '🏨', name: 'Apollo Plus' },
-  { icon: '🏦', name: 'MedCare Hub' },
-  { icon: '⚕️', name: 'LifeLine Clinic' },
+type HospTile = {
+  name: string
+  icon: ReactNode
+}
+
+const hospitalTiles: HospTile[] = [
+  { name: 'City Medical', icon: <HospitalIcon size={22} /> },
+  { name: 'Apollo Plus', icon: <HospitalIcon size={22} /> },
+  { name: 'MedCare Hub', icon: <HospitalIcon size={22} /> },
+  { name: 'LifeLine Clinic', icon: <MedicalCrossIcon size={22} /> },
 ]
 
-const whyItems = [
+type WhyItem = {
+  title: string
+  desc: string
+  icon: ReactNode
+}
+
+const whyItems: WhyItem[] = [
   {
-    icon: '🔗',
+    icon: <HospitalIcon size={22} />,
     title: 'Everything Connected',
     desc: 'Hospitals, doctors, specializations, and appointments in one seamless platform.',
   },
   {
-    icon: '🔍',
+    icon: <SearchIcon size={22} />,
     title: 'Discover with Confidence',
     desc: 'Find doctors through their hospital and specialization with transparent profiles.',
   },
   {
-    icon: '✅',
+    icon: <CheckCircleIcon size={22} />,
     title: 'Make Your Choice',
     desc: 'Explore your options and compare before choosing the right doctor for you.',
   },
   {
-    icon: '📅',
+    icon: <CalendarIcon size={22} />,
     title: 'Book with Ease',
     desc: 'A simple, guided way to schedule your appointment in just a few clicks.',
   },
@@ -124,7 +152,7 @@ function HomePage({ isLoggedIn }: HomePageProps) {
             <div className="hp-hero-trust">
               {['Trusted Healthcare', 'Qualified Doctors', 'Easy Appointment Booking'].map((item) => (
                 <div className="hp-trust-item" key={item}>
-                  <span className="hp-trust-check">✓</span>
+                  <span className="hp-trust-check" style={{ display: 'inline-flex', alignItems: 'center' }}><CheckCircleIcon size={14} /></span>
                   {item}
                 </div>
               ))}
@@ -134,21 +162,21 @@ function HomePage({ isLoggedIn }: HomePageProps) {
           {/* Right: stat cards */}
           <div className="hp-hero-visual" aria-hidden="true">
             <div className="hp-stat-card float1">
-              <div className="hp-stat-icon">🏥</div>
+              <div className="hp-stat-icon"><HospitalIcon size={24} /></div>
               <div className="hp-stat-info">
                 <span className="hp-stat-value">200+</span>
                 <span className="hp-stat-label">Partner Hospitals</span>
               </div>
             </div>
             <div className="hp-stat-card float2">
-              <div className="hp-stat-icon">🩺</div>
+              <div className="hp-stat-icon"><StethoscopeIcon size={24} /></div>
               <div className="hp-stat-info">
                 <span className="hp-stat-value">1,500+</span>
                 <span className="hp-stat-label">Verified Doctors</span>
               </div>
             </div>
             <div className="hp-stat-card float3">
-              <div className="hp-stat-icon">📅</div>
+              <div className="hp-stat-icon"><CalendarIcon size={24} /></div>
               <div className="hp-stat-info">
                 <span className="hp-stat-value">10K+</span>
                 <span className="hp-stat-label">Appointments Booked</span>
@@ -172,14 +200,14 @@ function HomePage({ isLoggedIn }: HomePageProps) {
 
           <div className="hp-steps-grid">
             {[
-              { num: '01', emoji: '🏥', title: 'Discover Hospitals', desc: 'Explore hospitals and discover the doctors and specializations available there.' },
-              { num: '02', emoji: '🩺', title: 'Find Specialists', desc: 'Browse doctors by their medical specialization and area of expertise.' },
-              { num: '03', emoji: '👨‍⚕️', title: 'Choose Your Doctor', desc: 'Compare your options and choose the doctor that fits your healthcare needs.' },
-              { num: '04', emoji: '📅', title: 'Book an Appointment', desc: 'Book an appointment with your chosen doctor quickly and easily.' },
+              { num: '01', icon: <HospitalIcon size={26} />, title: 'Discover Hospitals', desc: 'Explore hospitals and discover the doctors and specializations available there.' },
+              { num: '02', icon: <StethoscopeIcon size={26} />, title: 'Find Specialists', desc: 'Browse doctors by their medical specialization and area of expertise.' },
+              { num: '03', icon: <UserIcon size={26} />, title: 'Choose Your Doctor', desc: 'Compare your options and choose the doctor that fits your healthcare needs.' },
+              { num: '04', icon: <CalendarIcon size={26} />, title: 'Book an Appointment', desc: 'Book an appointment with your chosen doctor quickly and easily.' },
             ].map((step) => (
               <div className="hp-step-card" key={step.num}>
                 <span className="hp-step-num">{step.num}</span>
-                <span className="hp-step-emoji">{step.emoji}</span>
+                <span className="hp-step-emoji" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{step.icon}</span>
                 <h3 className="hp-step-title">{step.title}</h3>
                 <p className="hp-step-desc">{step.desc}</p>
               </div>

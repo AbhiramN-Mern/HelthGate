@@ -13,6 +13,22 @@ import {
   type NotificationItem,
 } from '../../api/auth.api'
 import './DoctorDashboardPage.css'
+import {
+  CalendarIcon,
+  ClockIcon,
+  StethoscopeIcon,
+  UserIcon,
+  UsersIcon,
+  CheckCircleIcon,
+  AlertCircleIcon,
+  AlertTriangleIcon,
+  BlockedIcon,
+  CloseIcon,
+  SettingsIcon,
+  BellIcon,
+  ClipboardIcon,
+  RefreshIcon,
+} from '../../components/common/Icons'
 
 type DoctorDashboardPageProps = {
   user?: AuthUser | null
@@ -415,7 +431,9 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               alignItems: 'center',
             }}
           >
-            <span>⚠️ {error}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <AlertTriangleIcon size={16} /> {error}
+            </span>
             <button
               type="button"
               className="dd-btn-profile"
@@ -440,7 +458,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
 
           <div className="dd-stats-grid">
             <div className="dd-stat-card" onClick={() => scrollToSection('today-appointments')}>
-              <div className="dd-stat-icon-wrap today">📅</div>
+              <div className="dd-stat-icon-wrap today"><CalendarIcon size={20} /></div>
               <div className="dd-stat-info">
                 <span className="dd-stat-val">{loading ? '-' : stats.todayAppointments}</span>
                 <span className="dd-stat-label">Today's Appointments</span>
@@ -448,7 +466,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
             </div>
 
             <div className="dd-stat-card" onClick={() => scrollToSection('upcoming-appointments')}>
-              <div className="dd-stat-icon-wrap upcoming">⏳</div>
+              <div className="dd-stat-icon-wrap upcoming"><ClockIcon size={20} /></div>
               <div className="dd-stat-info">
                 <span className="dd-stat-val">{loading ? '-' : stats.upcomingAppointments}</span>
                 <span className="dd-stat-label">Upcoming</span>
@@ -456,7 +474,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
             </div>
 
             <div className="dd-stat-card" onClick={() => scrollToSection('recent-patients')}>
-              <div className="dd-stat-icon-wrap completed">✅</div>
+              <div className="dd-stat-icon-wrap completed"><CheckCircleIcon size={20} /></div>
               <div className="dd-stat-info">
                 <span className="dd-stat-val">{loading ? '-' : stats.completedAppointments}</span>
                 <span className="dd-stat-label">Completed</span>
@@ -464,7 +482,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
             </div>
 
             <div className="dd-stat-card" onClick={() => scrollToSection('recent-patients')}>
-              <div className="dd-stat-icon-wrap patients">👥</div>
+              <div className="dd-stat-icon-wrap patients"><UsersIcon size={20} /></div>
               <div className="dd-stat-info">
                 <span className="dd-stat-val">{loading ? '-' : stats.totalPatients}</span>
                 <span className="dd-stat-label">Total Patients</span>
@@ -491,7 +509,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               className="dd-quick-btn"
               onClick={handleOpenAvailModal}
             >
-              <span className="dd-quick-icon">⏰</span>
+              <span className="dd-quick-icon"><ClockIcon size={18} /></span>
               <span>Manage Availability</span>
             </button>
 
@@ -501,7 +519,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               className="dd-quick-btn"
               onClick={() => scrollToSection('today-appointments')}
             >
-              <span className="dd-quick-icon">📋</span>
+              <span className="dd-quick-icon"><ClipboardIcon size={18} /></span>
               <span>View Appointments</span>
             </button>
 
@@ -511,7 +529,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               className="dd-quick-btn"
               onClick={() => navigate('/profile')}
             >
-              <span className="dd-quick-icon">🩺</span>
+              <span className="dd-quick-icon"><StethoscopeIcon size={18} /></span>
               <span>Edit Profile</span>
             </button>
 
@@ -521,7 +539,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               className="dd-quick-btn"
               onClick={() => scrollToSection('recent-patients')}
             >
-              <span className="dd-quick-icon">👤</span>
+              <span className="dd-quick-icon"><UserIcon size={18} /></span>
               <span>View Patients</span>
             </button>
           </div>
@@ -541,7 +559,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
 
           {todayAppointments.length === 0 ? (
             <div className="dd-empty-state">
-              <span className="dd-empty-icon">☕</span>
+              <span className="dd-empty-icon"><CalendarIcon size={32} /></span>
               <h3 className="dd-empty-title">No appointments scheduled for today</h3>
               <p className="dd-empty-desc">
                 Patients who book slots for today will automatically appear here.
@@ -575,11 +593,15 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                     <div className="dd-appt-details-row">
                       <div className="dd-detail-cell">
                         <span className="dd-detail-label">Appointment Time</span>
-                        <span className="dd-detail-val">⏰ {appt.timeSlot || '10:00 AM'}</span>
+                        <span className="dd-detail-val" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                          <ClockIcon size={14} /> {appt.timeSlot || '10:00 AM'}
+                        </span>
                       </div>
                       <div className="dd-detail-cell">
                         <span className="dd-detail-label">Visit Format</span>
-                        <span className="dd-detail-val">🩺 {appt.type || 'In-Person'}</span>
+                        <span className="dd-detail-val" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                          <StethoscopeIcon size={14} /> {appt.type || 'In-Person'}
+                        </span>
                       </div>
                     </div>
 
@@ -623,7 +645,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
 
           {upcomingAppointments.length === 0 ? (
             <div className="dd-empty-state">
-              <span className="dd-empty-icon">📅</span>
+              <span className="dd-empty-icon"><CalendarIcon size={32} /></span>
               <h3 className="dd-empty-title">No upcoming appointments booked</h3>
               <p className="dd-empty-desc">
                 Future reservations scheduled by patients will be displayed in this section.
@@ -663,13 +685,15 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                     <div className="dd-appt-details-row">
                       <div className="dd-detail-cell">
                         <span className="dd-detail-label">Date & Time</span>
-                        <span className="dd-detail-val">
-                          📅 {formattedDate} • {appt.timeSlot || '10:00 AM'}
+                        <span className="dd-detail-val" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                          <CalendarIcon size={14} /> {formattedDate} • {appt.timeSlot || '10:00 AM'}
                         </span>
                       </div>
                       <div className="dd-detail-cell">
                         <span className="dd-detail-label">Type</span>
-                        <span className="dd-detail-val">🩺 {appt.type || 'In-Person'}</span>
+                        <span className="dd-detail-val" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                          <StethoscopeIcon size={14} /> {appt.type || 'In-Person'}
+                        </span>
                       </div>
                     </div>
 
@@ -704,14 +728,17 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               type="button"
               className="dd-btn-manage-avail"
               onClick={handleOpenAvailModal}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              ⚙ Manage Availability
+              <SettingsIcon size={15} /> Manage Availability
             </button>
           </div>
 
           <div className="dd-avail-card">
             <div className="dd-avail-block">
-              <span className="dd-avail-label">🗓 Working Days</span>
+              <span className="dd-avail-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <CalendarIcon size={15} /> Working Days
+              </span>
               <div className="dd-days-pills">
                 {availability.workingDays && availability.workingDays.length > 0 ? (
                   availability.workingDays.map((d) => (
@@ -726,7 +753,9 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
             </div>
 
             <div className="dd-avail-block">
-              <span className="dd-avail-label">⏰ Working Hours</span>
+              <span className="dd-avail-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <ClockIcon size={15} /> Working Hours
+              </span>
               <span className="dd-avail-hours-val">
                 {availability.workingHours?.start || '09:00 AM'} -{' '}
                 {availability.workingHours?.end || '05:00 PM'}
@@ -734,7 +763,9 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
             </div>
 
             <div className="dd-avail-block">
-              <span className="dd-avail-label">⏱ Consultation Slots</span>
+              <span className="dd-avail-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <ClockIcon size={15} /> Consultation Slots
+              </span>
               <div className="dd-slots-pills">
                 {availability.availableSlots && availability.availableSlots.length > 0 ? (
                   availability.availableSlots.map((s) => (
@@ -749,7 +780,9 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
             </div>
 
             <div className="dd-avail-block">
-              <span className="dd-avail-label">🚫 Blocked Dates</span>
+              <span className="dd-avail-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <BlockedIcon size={15} /> Blocked Dates
+              </span>
               <div className="dd-slots-pills">
                 {availability.blockedDates && availability.blockedDates.length > 0 ? (
                   availability.blockedDates.map((d) => (
@@ -762,8 +795,8 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                     </span>
                   ))
                 ) : (
-                  <span style={{ fontSize: '0.82rem', color: '#10b981', fontWeight: 600 }}>
-                    ✓ No blocked dates
+                  <span style={{ fontSize: '0.82rem', color: '#10b981', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <CheckCircleIcon size={14} /> No blocked dates
                   </span>
                 )}
               </div>
@@ -788,7 +821,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
             <div className="dd-patients-card">
               {recentPatients.length === 0 ? (
                 <div className="dd-empty-state">
-                  <span className="dd-empty-icon">👥</span>
+                  <span className="dd-empty-icon"><UsersIcon size={32} /></span>
                   <h4 className="dd-empty-title">No patient visits recorded yet</h4>
                   <p className="dd-empty-desc">
                     Patients who book consultations with you will be listed here.
@@ -842,20 +875,18 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
             <div className="dd-notifications-card">
               {notifications.length === 0 ? (
                 <div className="dd-empty-state">
-                  <span className="dd-empty-icon">🔔</span>
+                  <span className="dd-empty-icon"><BellIcon size={32} /></span>
                   <h4 className="dd-empty-title">No new notifications</h4>
                   <p className="dd-empty-desc">Appointment updates will appear here.</p>
                 </div>
               ) : (
                 notifications.map((n) => {
-                  const icon =
-                    n.type === 'cancellation'
-                      ? '❌'
-                      : n.type === 'rescheduled'
-                      ? '🔄'
-                      : n.type === 'system'
-                      ? '⚙️'
-                      : '📅'
+                  const renderNotifIcon = () => {
+                    if (n.type === 'cancellation') return <AlertCircleIcon size={16} />
+                    if (n.type === 'rescheduled') return <RefreshIcon size={16} />
+                    if (n.type === 'system') return <SettingsIcon size={16} />
+                    return <CalendarIcon size={16} />
+                  }
 
                   return (
                     <div
@@ -865,7 +896,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                       title={!n.isRead ? 'Click to mark as read' : ''}
                       style={{ cursor: !n.isRead ? 'pointer' : 'default' }}
                     >
-                      <span className="dd-notif-icon">{icon}</span>
+                      <span className="dd-notif-icon">{renderNotifIcon()}</span>
                       <div className="dd-notif-content">
                         <h4 className="dd-notif-title">{n.title}</h4>
                         <p className="dd-notif-msg">{n.message}</p>
@@ -899,8 +930,9 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                 type="button"
                 className="dd-btn-close"
                 onClick={() => setShowAvailModal(false)}
+                aria-label="Close"
               >
-                ✕
+                <CloseIcon size={16} />
               </button>
             </div>
 
@@ -999,7 +1031,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                       onClick={() => handleRemoveSlot(slot)}
                       title="Click to remove"
                     >
-                      {slot} ✕
+                      {slot} <CloseIcon size={11} />
                     </span>
                   ))}
                 </div>
@@ -1033,11 +1065,11 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                       <span
                         key={date}
                         className="dd-slot-pill"
-                        style={{ background: '#fee2e2', color: '#991b1b', cursor: 'pointer' }}
+                        style={{ background: '#fee2e2', color: '#991b1b', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                         onClick={() => handleRemoveBlockedDate(date)}
                         title="Click to remove"
                       >
-                        {date} ✕
+                        {date} <CloseIcon size={11} />
                       </span>
                     ))}
                   </div>
@@ -1087,8 +1119,9 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                 type="button"
                 className="dd-btn-close"
                 onClick={() => setConsultingAppt(null)}
+                aria-label="Close"
               >
-                ✕
+                <CloseIcon size={16} />
               </button>
             </div>
 
@@ -1144,7 +1177,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                   disabled={consultSubmitting}
                   onClick={handleCompleteConsultation}
                 >
-                  {consultSubmitting ? 'Finalizing...' : '✓ Complete Consultation'}
+                  {consultSubmitting ? 'Finalizing...' : 'Complete Consultation'}
                 </button>
               </div>
             </div>
@@ -1165,8 +1198,9 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                 type="button"
                 className="dd-btn-close"
                 onClick={() => setViewingAppt(null)}
+                aria-label="Close"
               >
-                ✕
+                <CloseIcon size={16} />
               </button>
             </div>
 
@@ -1250,8 +1284,9 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                   setSelectedPatient(null)
                   setPatientModalLoading(false)
                 }}
+                aria-label="Close"
               >
-                ✕
+                <CloseIcon size={16} />
               </button>
             </div>
 

@@ -13,6 +13,21 @@ import {
   type Hospital,
   type AppointmentItem,
 } from '../../api/auth.api'
+import {
+  SearchIcon,
+  CalendarIcon,
+  ClockIcon,
+  HospitalIcon,
+  StethoscopeIcon,
+  HeartPulseIcon,
+  UserIcon,
+  AlertTriangleIcon,
+  CheckCircleIcon,
+  BlockedIcon,
+  CloseIcon,
+  MedicalCrossIcon,
+  ShieldCheckIcon,
+} from '../../components/common/Icons'
 import './PatientHomePage.css'
 
 type PatientHomePageProps = {
@@ -21,28 +36,12 @@ type PatientHomePageProps = {
   onRequireAuth: () => void
 }
 
-const SPEC_ICON_MAP: Record<string, string> = {
-  cardiology: '❤️',
-  neurology: '🧠',
-  pediatrics: '👶',
-  orthopedics: '🦴',
-  dermatology: '🧴',
-  general: '🩺',
-  oncology: '🎗️',
-  psychiatry: '🧘',
-  radiology: '🩻',
-  dentistry: '🦷',
-  ophthalmology: '👁️',
-  ent: '👂',
-  gynecology: '🌸',
-}
-
-const getSpecIcon = (specName: string): string => {
+const getSpecIcon = (specName: string) => {
   const key = specName.toLowerCase().trim()
-  for (const [k, icon] of Object.entries(SPEC_ICON_MAP)) {
-    if (key.includes(k)) return icon
-  }
-  return '🩺'
+  if (key.includes('cardio')) return <HeartPulseIcon size={18} />
+  if (key.includes('pediat') || key.includes('gynec')) return <HeartPulseIcon size={18} />
+  if (key.includes('neuro') || key.includes('psych') || key.includes('ortho')) return <StethoscopeIcon size={18} />
+  return <MedicalCrossIcon size={18} />
 }
 
 function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps) {
@@ -463,7 +462,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               </div>
 
               <p className="php-hero-greeting">
-                Welcome back, <strong>{patientDisplayName}</strong> 👋
+                Welcome back, <strong>{patientDisplayName}</strong>
               </p>
 
               <h1 className="php-hero-title">
@@ -480,21 +479,21 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             {/* Quick Metrics */}
             <div className="php-hero-metrics">
               <div className="php-metric-card">
-                <div className="php-metric-icon">🩺</div>
+                <div className="php-metric-icon"><StethoscopeIcon size={22} /></div>
                 <div className="php-metric-info">
                   <span className="php-metric-value">{doctors.length}</span>
                   <span className="php-metric-label">Doctors Ready</span>
                 </div>
               </div>
               <div className="php-metric-card">
-                <div className="php-metric-icon">🏥</div>
+                <div className="php-metric-icon"><HospitalIcon size={22} /></div>
                 <div className="php-metric-info">
                   <span className="php-metric-value">{hospitals.length}</span>
                   <span className="php-metric-label">Hospitals</span>
                 </div>
               </div>
               <div className="php-metric-card">
-                <div className="php-metric-icon">❤️</div>
+                <div className="php-metric-icon"><HeartPulseIcon size={22} /></div>
                 <div className="php-metric-info">
                   <span className="php-metric-value">{specializations.length}</span>
                   <span className="php-metric-label">Specialties</span>
@@ -506,7 +505,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
           {/* 3. SEARCH BAR (Doctors / Specializations / Hospitals) */}
           <form className="php-search-box" onSubmit={handleSearchSubmit}>
             <div className="php-input-wrap">
-              <span className="php-input-icon">🔍</span>
+              <span className="php-input-icon"><SearchIcon size={16} /></span>
               <input
                 id="patient-search-input"
                 type="text"
@@ -574,19 +573,25 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               {searchInput.trim() && (
                 <span className="php-filter-pill">
                   "{searchInput}"
-                  <button type="button" onClick={() => { setSearchInput(''); fetchDoctors(''); }}>✕</button>
+                  <button type="button" onClick={() => { setSearchInput(''); fetchDoctors(''); }} aria-label="Clear search">
+                    <CloseIcon size={12} />
+                  </button>
                 </span>
               )}
               {selectedSpec && (
                 <span className="php-filter-pill">
                   Specialty: {selectedSpec}
-                  <button type="button" onClick={() => setSelectedSpec('')}>✕</button>
+                  <button type="button" onClick={() => setSelectedSpec('')} aria-label="Clear specialty filter">
+                    <CloseIcon size={12} />
+                  </button>
                 </span>
               )}
               {selectedHospital && (
                 <span className="php-filter-pill">
                   Hospital: {hospitals.find((h) => h._id === selectedHospital)?.name || 'Filtered'}
-                  <button type="button" onClick={() => setSelectedHospital('')}>✕</button>
+                  <button type="button" onClick={() => setSelectedHospital('')} aria-label="Clear hospital filter">
+                    <CloseIcon size={12} />
+                  </button>
                 </span>
               )}
             </div>
@@ -652,16 +657,16 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
 
                     <div className="php-appt-details">
                       <div className="php-appt-detail-row">
-                        <span>📅</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center' }}><CalendarIcon size={14} /></span>
                         <span>{formattedDate}</span>
                       </div>
                       <div className="php-appt-detail-row">
-                        <span>🏥</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center' }}><HospitalIcon size={14} /></span>
                         <span>{hospName}</span>
                       </div>
                       {appt.type && (
                         <div className="php-appt-detail-row">
-                          <span>🩺</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center' }}><StethoscopeIcon size={14} /></span>
                           <span>{appt.type} Visit</span>
                         </div>
                       )}
@@ -708,7 +713,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             </div>
           ) : specializations.length === 0 ? (
             <div className="php-empty-card">
-              <span className="php-empty-icon">🩺</span>
+              <span className="php-empty-icon"><MedicalCrossIcon size={36} /></span>
               <h3 className="php-empty-title">No specializations available</h3>
               <p className="php-empty-desc">
                 No active doctor specializations found in the database. Registered specialties will appear here automatically.
@@ -736,7 +741,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                     <div className="php-spec-info">
                       <h3 className="php-spec-name">{spec}</h3>
                       <span className="php-spec-sub">
-                        {isActive ? '✓ Active Filter' : 'Click to filter'}
+                        {isActive ? 'Active Filter' : 'Click to filter'}
                       </span>
                     </div>
                   </div>
@@ -766,7 +771,9 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
           {/* Error Banner */}
           {doctorsError && (
             <div className="php-error-banner">
-              <span>⚠️ {doctorsError}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangleIcon size={16} /> {doctorsError}
+              </span>
               <button
                 type="button"
                 className="php-btn-retry"
@@ -796,7 +803,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             </div>
           ) : doctors.length === 0 ? (
             <div className="php-empty-card">
-              <span className="php-empty-icon">👨‍⚕️</span>
+              <span className="php-empty-icon"><UserIcon size={36} /></span>
               <h3 className="php-empty-title">No doctors available</h3>
               <p className="php-empty-desc">
                 {hasActiveFilters
@@ -869,11 +876,11 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                               gap: '3px',
                             }}
                           >
-                            ✓ Verified
+                            <ShieldCheckIcon size={12} /> Verified
                           </span>
                         </div>
                         <div className="php-doc-hospital-tag">
-                          <span>🏥</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center' }}><HospitalIcon size={14} /></span>
                           <span>{hospName}</span>
                         </div>
                       </div>
@@ -935,7 +942,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             </div>
           ) : hospitals.length === 0 ? (
             <div className="php-empty-card">
-              <span className="php-empty-icon">🏥</span>
+              <span className="php-empty-icon"><HospitalIcon size={36} /></span>
               <h3 className="php-empty-title">No hospitals available</h3>
               <p className="php-empty-desc">
                 No hospitals have been registered in the system yet. Hospital partners created by administrators will be displayed here.
@@ -964,7 +971,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                       }
                     }}
                   >
-                    <div className="php-hosp-icon-wrap">🏥</div>
+                    <div className="php-hosp-icon-wrap"><HospitalIcon size={22} /></div>
                     <div>
                       <h3 className="php-hosp-name">{hosp.name}</h3>
                       <span className={`php-hosp-badge ${hosp.isActive !== false ? 'active' : 'inactive'}`}>
@@ -999,7 +1006,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 onClick={handleCloseBooking}
                 aria-label="Close modal"
               >
-                ✕
+                <CloseIcon size={16} />
               </button>
             </div>
 
@@ -1219,7 +1226,9 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                         gap: '6px',
                       }}
                     >
-                      <strong>🚫 Blocked Dates by Doctor:</strong>
+                      <strong style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <BlockedIcon size={14} /> Blocked Dates by Doctor:
+                      </strong>
                       {blockedDates.map((bDate) => (
                         <span
                           key={bDate}
@@ -1239,7 +1248,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   {/* Selected Date Status Banner */}
                   {isSelectedDateBlocked ? (
                     <div className="php-date-status-alert blocked">
-                      <span>🚫</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center' }}><BlockedIcon size={16} /></span>
                       <span>
                         Dr. {bookingDoctor.user?.name} is on leave / blocked on this date.
                         Appointment booking is disabled on this day. Please select an available green date.
@@ -1247,7 +1256,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                     </div>
                   ) : isSelectedDateOffDuty ? (
                     <div className="php-date-status-alert off">
-                      <span>⚠️</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center' }}><AlertTriangleIcon size={16} /></span>
                       <span>
                         Doctor is off-duty on {WEEKDAYS[new Date(bookingDate).getDay()]}s.
                         Please select an available green day.
@@ -1255,7 +1264,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                     </div>
                   ) : bookingDate ? (
                     <div className="php-date-status-alert available">
-                      <span>✅</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center' }}><CheckCircleIcon size={16} /></span>
                       <span>
                         Selected Date:{' '}
                         <strong>
@@ -1325,7 +1334,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
 
                     {allSlotsUnavailableOnDate && (
                       <div className="php-date-status-alert blocked" style={{ marginTop: '10px' }}>
-                        <span>⛔</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center' }}><BlockedIcon size={16} /></span>
                         <span>
                           {bookingDate === todayStr
                             ? 'All consultation slots for today have already passed or been booked. Please select an upcoming date.'
@@ -1336,14 +1345,14 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
 
                     {isSelectedSlotPast && !allSlotsUnavailableOnDate && (
                       <div className="php-date-status-alert off" style={{ marginTop: '10px' }}>
-                        <span>⏰</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center' }}><ClockIcon size={16} /></span>
                         <span>The slot "{bookingTime}" has already passed today. Please choose an upcoming open slot above.</span>
                       </div>
                     )}
 
                     {isSelectedSlotBooked && !allSlotsUnavailableOnDate && !isSelectedSlotPast && (
                       <div className="php-date-status-alert blocked" style={{ marginTop: '10px' }}>
-                        <span>⚠️</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center' }}><AlertTriangleIcon size={16} /></span>
                         <span>The slot "{bookingTime}" has already been booked. Please pick an open slot above.</span>
                       </div>
                     )}

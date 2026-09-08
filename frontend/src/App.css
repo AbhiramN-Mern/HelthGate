@@ -77,12 +77,15 @@
 }
 
 .feature-list li::before {
-  content: '✓';
+  content: '';
   position: absolute;
-  left: 0;
-  top: 0;
-  color: #9cf0d7;
-  font-weight: 700;
+  left: 4px;
+  top: 6px;
+  width: 5px;
+  height: 10px;
+  border: solid #9cf0d7;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .form-panel {
