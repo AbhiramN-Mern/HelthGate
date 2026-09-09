@@ -18,6 +18,7 @@ const doctorSchema = new Schema(
       required: true,
       trim: true,
     },
+    // Deprecated: hospital associations are tracked in HospitalDoctor collection
     hospital: {
       type: Schema.Types.ObjectId,
       ref: "Hospital",

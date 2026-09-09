@@ -6,6 +6,9 @@ import PatientModel from "../models/patient.model.js";
 import UserModel from "../models/user.model.js";
 import AppointmentModel from "../models/appointment.model.js";
 import HospitalModel from "../models/hospital.model.js";
+import HospitalDoctorModel from "../models/hospitalDoctor.model.js";
+import NotificationModel from "../models/notification.model.js";
+import type { AuthenticatedRequest } from "../types/auth.js";
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
@@ -480,6 +483,9 @@ export const getAdminDashboard = async (req: Request, res: Response) => {
     const pendingDoctorApprovals = await DoctorModel.countDocuments({
       verificationStatus: "pending",
     });
+    const pendingDoctorJoinRequests = await HospitalDoctorModel.countDocuments({
+      status: "PENDING",
+    });
 
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -577,6 +583,7 @@ export const getAdminDashboard = async (req: Request, res: Response) => {
         totalHospitals,
         totalAppointments,
         pendingDoctorApprovals,
+        pendingDoctorJoinRequests,
         todayAppointments,
       },
       appointmentsOverview: {
@@ -620,3 +627,275 @@ export const getAllAppointmentsForAdmin = async (req: Request, res: Response) =>
     });
   }
 };
+
+// ==========================================
+// MAIN ADMIN: DOCTOR-HOSPITAL GOVERNANCE
+// ==========================================
+
+export const getAllHospitalDoctorsForAdmin = async (req: Request, res: Response) => {
+  try {
+    const { status, hospitalId, doctorId } = req.query;
+    const filter: Record<string, unknown> = {};
+
+    if (status && typeof status === "string" && status.trim()) {
+      filter.status = status.trim().toUpperCase();
+    }
+    if (hospitalId && typeof hospitalId === "string" && hospitalId.trim()) {
+      filter.hospital = hospitalId.trim();
+    }
+    if (doctorId && typeof doctorId === "string" && doctorId.trim()) {
+      filter.doctor = doctorId.trim();
+    }
+
+    const relationships = await HospitalDoctorModel.find(filter)
+      .populate("hospital")
+      .populate({
+        path: "doctor",
+        populate: { path: "user", select: "name email role" },
+      })
+      .populate("approvedBy", "name email")
+      .sort({ updatedAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      relationships,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch Doctor-Hospital relationships",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const approveDoctorHospitalRequest = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const adminUserId = req.user?.id;
+
+    const relationship = await HospitalDoctorModel.findById(id);
+    if (!relationship) {
+      return res.status(404).json({ success: false, message: "Request not found" });
+    }
+
+    relationship.status = "ACTIVE";
+    relationship.approvedBy = adminUserId as any;
+    relationship.joinedAt = new Date();
+    await relationship.save();
+
+    const populated = await HospitalDoctorModel.findById(relationship._id)
+      .populate("hospital")
+      .populate({
+        path: "doctor",
+        populate: { path: "user", select: "name email" },
+      });
+
+    // Notify doctor
+    try {
+      const doc = populated?.doctor as any;
+      const hosp = populated?.hospital as any;
+      if (doc?.user?._id) {
+        await NotificationModel.create({
+          recipient: doc.user._id,
+          type: "system",
+          title: "Hospital Join Request Approved",
+          message: `Your request to join ${hosp?.name || "the hospital"} has been approved by the Main Admin. You are now actively affiliated.`,
+        });
+      }
+    } catch (notifErr) {
+      console.warn("Failed to create notification:", notifErr);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor-Hospital relationship approved and activated",
+      relationship: populated,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to approve relationship",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const rejectDoctorHospitalRequest = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { reason = "" } = req.body;
+    const adminUserId = req.user?.id;
+
+    const relationship = await HospitalDoctorModel.findById(id);
+    if (!relationship) {
+      return res.status(404).json({ success: false, message: "Request not found" });
+    }
+
+    relationship.status = "REJECTED";
+    relationship.rejectionReason = String(reason).trim();
+    relationship.approvedBy = adminUserId as any;
+    await relationship.save();
+
+    const populated = await HospitalDoctorModel.findById(relationship._id)
+      .populate("hospital")
+      .populate({
+        path: "doctor",
+        populate: { path: "user", select: "name email" },
+      });
+
+    // Notify doctor
+    try {
+      const doc = populated?.doctor as any;
+      const hosp = populated?.hospital as any;
+      if (doc?.user?._id) {
+        await NotificationModel.create({
+          recipient: doc.user._id,
+          type: "system",
+          title: "Hospital Join Request Declined",
+          message: `Your request to join ${hosp?.name || "the hospital"} was reviewed by the Main Admin and declined.${reason ? ` Reason: ${reason}` : ""}`,
+        });
+      }
+    } catch (notifErr) {
+      console.warn("Failed to create notification:", notifErr);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor-Hospital request rejected",
+      relationship: populated,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to reject relationship",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const associateDoctorWithHospital = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { doctorId, hospitalId, department = "" } = req.body;
+    const adminUserId = req.user?.id;
+
+    if (!doctorId || !hospitalId) {
+      return res.status(400).json({
+        success: false,
+        message: "doctorId and hospitalId are required",
+      });
+    }
+
+    const doctor = await DoctorModel.findById(doctorId);
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: "Doctor not found" });
+    }
+
+    const hospital = await HospitalModel.findById(hospitalId);
+    if (!hospital) {
+      return res.status(404).json({ success: false, message: "Hospital not found" });
+    }
+
+    // Check if an existing relationship exists
+    let relationship = await HospitalDoctorModel.findOne({
+      doctor: doctorId,
+      hospital: hospitalId,
+    });
+
+    if (relationship) {
+      relationship.status = "ACTIVE";
+      relationship.requestedBy = "ADMIN";
+      relationship.approvedBy = adminUserId as any;
+      relationship.joinedAt = relationship.joinedAt || new Date();
+      if (department) relationship.department = String(department).trim();
+      await relationship.save();
+    } else {
+      relationship = await HospitalDoctorModel.create({
+        doctor: doctorId,
+        hospital: hospitalId,
+        department: String(department).trim(),
+        status: "ACTIVE",
+        requestedBy: "ADMIN",
+        approvedBy: adminUserId as any,
+        joinedAt: new Date(),
+      });
+    }
+
+    const populated = await HospitalDoctorModel.findById(relationship._id)
+      .populate("hospital")
+      .populate({
+        path: "doctor",
+        populate: { path: "user", select: "name email" },
+      });
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor successfully associated with hospital",
+      relationship: populated,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to associate doctor with hospital",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const removeDoctorFromHospital = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const relationship = await HospitalDoctorModel.findById(id);
+    if (!relationship) {
+      return res.status(404).json({ success: false, message: "Relationship not found" });
+    }
+
+    relationship.status = "REMOVED";
+    await relationship.save();
+
+    const populated = await HospitalDoctorModel.findById(relationship._id)
+      .populate("hospital")
+      .populate({
+        path: "doctor",
+        populate: { path: "user", select: "name email" },
+      });
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor association removed from hospital",
+      relationship: populated,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to remove association",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const getHospitalDoctorHistory = async (req: Request, res: Response) => {
+  try {
+    const history = await HospitalDoctorModel.find()
+      .populate("hospital", "name licenseNumber")
+      .populate({
+        path: "doctor",
+        populate: { path: "user", select: "name email" },
+      })
+      .populate("approvedBy", "name email")
+      .sort({ updatedAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      history,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch relationship history",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+

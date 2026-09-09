@@ -17,6 +17,20 @@ const appointmentSchema = new Schema(
       ref: "Hospital",
       default: null,
     },
+    hospitalDoctor: {
+      type: Schema.Types.ObjectId,
+      ref: "HospitalDoctor",
+      default: null,
+    },
+    department: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    isHospitalAppointment: {
+      type: Boolean,
+      default: false,
+    },
     appointmentDate: {
       type: Date,
       required: true,
@@ -106,7 +120,10 @@ const appointmentSchema = new Schema(
 export type Appointment = InferSchemaType<typeof appointmentSchema> & {
   patient: Types.ObjectId;
   doctor: Types.ObjectId;
-  hospital?: Types.ObjectId;
+  hospital?: Types.ObjectId | null;
+  hospitalDoctor?: Types.ObjectId | null;
+  department?: string;
+  isHospitalAppointment?: boolean;
 };
 
 const AppointmentModel = model<Appointment>("Appointment", appointmentSchema);

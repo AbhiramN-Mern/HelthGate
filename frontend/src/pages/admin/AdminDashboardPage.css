@@ -941,3 +941,124 @@
   font-size: 0.74rem;
   font-weight: 600;
 }
+
+/* ==========================================================================
+   HOSPITAL SUBNAV & WORKFLOW STYLES
+   ========================================================================== */
+.admin-subnav-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1.5px solid var(--admin-border);
+  margin-bottom: 22px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+}
+
+.admin-subnav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.admin-subnav-tab:hover {
+  color: var(--admin-primary);
+}
+
+.admin-subnav-tab.active {
+  color: var(--admin-primary);
+  border-bottom-color: var(--admin-primary);
+  font-weight: 700;
+}
+
+.admin-badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background-color: var(--admin-border);
+  color: var(--admin-text-main);
+}
+
+.admin-badge-count.alert {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-badge-count.active {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+/* Status Badges */
+.admin-badge-pending {
+  background-color: #fef3c7;
+  color: #b45309;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-badge-active {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-badge-rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-badge-removed {
+  background-color: #f1f5f9;
+  color: #64748b;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-dept-tag {
+  display: inline-block;
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #334155;
+  margin: 2px;
+}
+

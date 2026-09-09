@@ -1278,4 +1278,112 @@
   }
 }
 
+/* ========================================================
+   DOCTOR HOSPITAL AFFILIATION STYLES
+   ======================================================== */
+.dd-hosp-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1.5px solid var(--hg-border);
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+
+.dd-hosp-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--hg-text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dd-hosp-tab:hover {
+  color: var(--hg-primary);
+}
+
+.dd-hosp-tab.active {
+  color: var(--hg-primary);
+  border-bottom-color: var(--hg-primary);
+  font-weight: 700;
+}
+
+.dd-hosp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.dd-hosp-card {
+  background: var(--hg-surface);
+  border: 1px solid var(--hg-border);
+  border-radius: var(--hg-radius-lg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dd-hosp-card:hover {
+  box-shadow: var(--hg-shadow-md);
+  transform: translateY(-2px);
+}
+
+.dd-status-badge-pending {
+  background-color: #fef3c7;
+  color: #b45309;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dd-status-badge-active {
+  background-color: #d1fae5;
+  color: #065f46;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dd-status-badge-rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dd-status-badge-removed {
+  background-color: #f1f5f9;
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+
 

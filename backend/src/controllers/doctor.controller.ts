@@ -5,8 +5,12 @@ import AppointmentModel from "../models/appointment.model.js";
 import NotificationModel from "../models/notification.model.js";
 import PatientModel from "../models/patient.model.js";
 import UserModel from "../models/user.model.js";
+import HospitalModel from "../models/hospital.model.js";
+import HospitalDoctorModel from "../models/hospitalDoctor.model.js";
 import type { AuthenticatedRequest } from "../types/auth.js";
 
+// Note: "hospital" is intentionally excluded from direct doctor profile update
+// Doctors cannot self-associate with a hospital; they must request join, approved by Main Admin.
 const doctorUpdateFields = [
   "specialization",
   "qualification",
@@ -15,7 +19,6 @@ const doctorUpdateFields = [
   "licenseNumber",
   "consultationFee",
   "available",
-  "hospital",
   "availability",
 ] as const;
 
@@ -43,9 +46,25 @@ export const getMyDoctorProfile = async (
       });
     }
 
+    // Fetch active affiliated hospitals from HospitalDoctor collection
+    const activeAssociations = await HospitalDoctorModel.find({
+      doctor: doctor._id,
+      status: "ACTIVE",
+    }).populate("hospital");
+
+    const docObj = doctor.toObject();
     return res.status(200).json({
       success: true,
-      doctor,
+      doctor: {
+        ...docObj,
+        affiliatedHospitals: activeAssociations.map((assoc: any) => ({
+          _id: assoc.hospital?._id,
+          name: assoc.hospital?.name,
+          department: assoc.department,
+          relationshipId: assoc._id,
+          joinedAt: assoc.joinedAt,
+        })),
+      },
     });
   } catch (error) {
     return res.status(500).json({
@@ -113,8 +132,18 @@ export const getAvailableDoctors = async (
       query.specialization = { $regex: new RegExp(`^${specialization.trim()}$`, "i") };
     }
 
+    // If filtering by hospital, query active doctors from HospitalDoctor relationship
     if (hospital && typeof hospital === "string" && hospital.trim()) {
-      query.hospital = hospital.trim();
+      const activeDocIds = await HospitalDoctorModel.find({
+        hospital: hospital.trim(),
+        status: "ACTIVE",
+      }).distinct("doctor");
+
+      // Also include doctors who have legacy doctor.hospital match
+      query.$or = [
+        { _id: { $in: activeDocIds } },
+        { hospital: hospital.trim() },
+      ];
     }
 
     let doctors = await DoctorModel.find(query)
@@ -122,19 +151,61 @@ export const getAvailableDoctors = async (
       .populate("hospital", "name isActive")
       .sort({ createdAt: -1 });
 
+    // Fetch all active associations for these doctors
+    const doctorIds = doctors.map((d: any) => d._id);
+    const activeAssociations = await HospitalDoctorModel.find({
+      doctor: { $in: doctorIds },
+      status: "ACTIVE",
+    }).populate("hospital", "name isActive departments");
+
+    const doctorHospitalsMap: Record<string, any[]> = {};
+    activeAssociations.forEach((assoc: any) => {
+      const docId = String(assoc.doctor);
+      if (!doctorHospitalsMap[docId]) doctorHospitalsMap[docId] = [];
+      if (assoc.hospital) {
+        doctorHospitalsMap[docId].push({
+          _id: assoc.hospital._id,
+          name: assoc.hospital.name,
+          department: assoc.department,
+          relationshipId: assoc._id,
+        });
+      }
+    });
+
+    let enrichedDoctors = doctors.map((d: any) => {
+      const activeHospitals = doctorHospitalsMap[String(d._id)] || [];
+      // Fallback: if legacy doctor.hospital exists and active, and not in activeHospitals list
+      if (d.hospital && !activeHospitals.some((h) => String(h._id) === String(d.hospital._id))) {
+        activeHospitals.push({
+          _id: d.hospital._id,
+          name: d.hospital.name,
+          department: "",
+        });
+      }
+
+      const docObj = d.toObject ? d.toObject() : { ...d };
+      return {
+        ...docObj,
+        affiliatedHospitals: activeHospitals,
+        isFreelance: activeHospitals.length === 0,
+      };
+    });
+
     if (search && typeof search === "string" && search.trim()) {
       const term = search.trim().toLowerCase();
-      doctors = doctors.filter((doc: any) => {
+      enrichedDoctors = enrichedDoctors.filter((doc: any) => {
         const docName = doc.user?.name?.toLowerCase() || "";
         const spec = doc.specialization?.toLowerCase() || "";
-        const hospName = doc.hospital?.name?.toLowerCase() || "";
-        return docName.includes(term) || spec.includes(term) || hospName.includes(term);
+        const hospMatches = (doc.affiliatedHospitals || []).some((h: any) =>
+          h.name?.toLowerCase().includes(term),
+        );
+        return docName.includes(term) || spec.includes(term) || hospMatches;
       });
     }
 
     return res.status(200).json({
       success: true,
-      doctors,
+      doctors: enrichedDoctors,
     });
   } catch (error) {
     return res.status(500).json({
@@ -161,6 +232,12 @@ export const getDoctorDashboard = async (
       });
     }
 
+    // Active hospitals for this doctor
+    const activeHospitalDocs = await HospitalDoctorModel.find({
+      doctor: doctor._id,
+      status: "ACTIVE",
+    }).populate("hospital", "name isActive departments");
+
     const allAppointments = await AppointmentModel.find({ doctor: doctor._id })
       .populate("patient", "name email")
       .populate("hospital", "name isActive")
@@ -180,99 +257,59 @@ export const getDoctorDashboard = async (
       return d > endOfToday && appt.status !== "cancelled";
     });
 
-    const completedAppointments = allAppointments.filter(
-      (appt) => appt.status === "completed",
-    );
+    const completedAppointments = allAppointments.filter((appt) => appt.status === "completed");
 
-    // Total Unique Patients
-    const patientMap = new Map<
-      string,
-      {
-        patientId: string;
-        name: string;
-        email: string;
-        lastAppointmentDate: string;
-        lastAppointmentStatus: string;
-        appointmentType: string;
-        totalVisits: number;
-      }
-    >();
-
+    // Extract unique recent patients
+    const patientMap = new Map<string, any>();
     for (const appt of allAppointments) {
       const p = appt.patient as any;
-      if (!p?._id) continue;
-      const pid = p._id.toString();
-
-      if (!patientMap.has(pid)) {
-        patientMap.set(pid, {
-          patientId: pid,
+      if (p?._id && !patientMap.has(p._id.toString())) {
+        const patientAppointments = allAppointments.filter(
+          (a) => (a.patient as any)?._id?.toString() === p._id.toString(),
+        );
+        patientMap.set(p._id.toString(), {
+          patientId: p._id,
           name: p.name || "Patient",
           email: p.email || "",
-          lastAppointmentDate: appt.appointmentDate.toISOString(),
-          lastAppointmentStatus: appt.status || "scheduled",
-          appointmentType: appt.type || "In-Person",
-          totalVisits: 1,
+          lastAppointmentDate: appt.appointmentDate,
+          lastAppointmentStatus: appt.status,
+          appointmentType: appt.type,
+          totalVisits: patientAppointments.length,
         });
-      } else {
-        const item = patientMap.get(pid)!;
-        item.totalVisits += 1;
-        if (new Date(appt.appointmentDate) > new Date(item.lastAppointmentDate)) {
-          item.lastAppointmentDate = appt.appointmentDate.toISOString();
-          item.lastAppointmentStatus = appt.status || "scheduled";
-          item.appointmentType = appt.type || "In-Person";
-        }
       }
     }
 
-    const recentPatients = Array.from(patientMap.values())
-      .sort((a, b) => new Date(b.lastAppointmentDate).getTime() - new Date(a.lastAppointmentDate).getTime())
-      .slice(0, 10);
+    const recentPatients = Array.from(patientMap.values()).slice(0, 5);
 
-    // Fetch Notifications for Doctor
-    let notifications = await NotificationModel.find({ recipient: req.user?.id })
+    // Fetch doctor notifications
+    const notifications = await NotificationModel.find({
+      recipient: req.user?.id,
+    })
       .sort({ createdAt: -1 })
       .limit(10);
 
-    // If notifications collection is empty for this doctor, create notifications from recent appointments
-    if (notifications.length === 0 && allAppointments.length > 0) {
-      const generated = allAppointments.slice(0, 5).map((appt) => {
-        const p = appt.patient as any;
-        return {
-          _id: `gen-${appt._id}`,
-          recipient: req.user?.id,
-          type: appt.status === "cancelled" ? "cancellation" : "new_appointment",
-          title: appt.status === "cancelled" ? "Appointment Cancelled" : "New Appointment",
-          message: `${p?.name || "A patient"} has ${appt.status === "cancelled" ? "cancelled" : "scheduled"} a ${appt.type || "consultation"} on ${new Date(appt.appointmentDate).toLocaleDateString()} at ${appt.timeSlot || "10:00 AM"}.`,
-          isRead: false,
-          createdAt: (appt as any).createdAt || new Date(),
-        };
-      });
-      notifications = generated as any;
-    }
-
-    const stats = {
-      todayAppointments: todayAppointments.length,
-      upcomingAppointments: upcomingAppointments.length,
-      completedAppointments: completedAppointments.length,
-      totalPatients: patientMap.size,
-    };
-
-    const availability = doctor.availability || {
-      workingDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      workingHours: { start: "09:00 AM", end: "05:00 PM" },
-      availableSlots: ["09:00 AM", "10:00 AM", "11:30 AM", "02:00 PM", "03:30 PM", "05:00 PM"],
-      blockedDates: [],
-    };
-
+    const docObj = doctor.toObject();
     return res.status(200).json({
       success: true,
-      doctor,
-      stats,
+      doctor: {
+        ...docObj,
+        affiliatedHospitals: activeHospitalDocs.map((hd: any) => ({
+          _id: hd.hospital?._id,
+          name: hd.hospital?.name,
+          department: hd.department,
+          relationshipId: hd._id,
+        })),
+      },
+      stats: {
+        todayAppointments: todayAppointments.length,
+        upcomingAppointments: upcomingAppointments.length,
+        completedAppointments: completedAppointments.length,
+        totalPatients: patientMap.size,
+      },
       todayAppointments,
       upcomingAppointments,
       recentPatients,
       notifications,
-      availability,
     });
   } catch (error) {
     return res.status(500).json({
@@ -292,30 +329,27 @@ export const updateDoctorAvailability = async (
 
     const doctor = await DoctorModel.findOne({ user: req.user?.id });
     if (!doctor) {
-      return res.status(404).json({ success: false, message: "Doctor not found" });
+      return res.status(404).json({ success: false, message: "Doctor profile not found" });
     }
 
-    if (available !== undefined) {
-      doctor.available = Boolean(available);
-    }
+    const availabilityUpdate: Record<string, unknown> = {};
+    if (workingDays !== undefined) availabilityUpdate["availability.workingDays"] = workingDays;
+    if (workingHours !== undefined) availabilityUpdate["availability.workingHours"] = workingHours;
+    if (availableSlots !== undefined) availabilityUpdate["availability.availableSlots"] = availableSlots;
+    if (blockedDates !== undefined) availabilityUpdate["availability.blockedDates"] = blockedDates;
+    if (available !== undefined) availabilityUpdate["available"] = available;
 
-    doctor.availability = {
-      workingDays: Array.isArray(workingDays) ? workingDays : doctor.availability?.workingDays || [],
-      workingHours: {
-        start: workingHours?.start || doctor.availability?.workingHours?.start || "09:00 AM",
-        end: workingHours?.end || doctor.availability?.workingHours?.end || "05:00 PM",
-      },
-      availableSlots: Array.isArray(availableSlots) ? availableSlots : doctor.availability?.availableSlots || [],
-      blockedDates: Array.isArray(blockedDates) ? blockedDates : doctor.availability?.blockedDates || [],
-    };
-
-    await doctor.save();
+    const updatedDoctor = await DoctorModel.findOneAndUpdate(
+      { user: req.user?.id },
+      { $set: availabilityUpdate },
+      { new: true },
+    );
 
     return res.status(200).json({
       success: true,
       message: "Availability updated successfully",
-      availability: doctor.availability,
-      available: doctor.available,
+      availability: updatedDoctor?.availability,
+      available: updatedDoctor?.available,
     });
   } catch (error) {
     return res.status(500).json({
@@ -334,6 +368,10 @@ export const updateAppointmentStatusForDoctor = async (
     const { appointmentId } = req.params;
     const { status } = req.body;
 
+    if (!["completed", "cancelled", "confirmed"].includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid appointment status" });
+    }
+
     const doctor = await DoctorModel.findOne({ user: req.user?.id });
     if (!doctor) {
       return res.status(404).json({ success: false, message: "Doctor profile not found" });
@@ -342,7 +380,7 @@ export const updateAppointmentStatusForDoctor = async (
     const appointment = await AppointmentModel.findOne({
       _id: appointmentId,
       doctor: doctor._id,
-    }).populate("patient", "name email");
+    });
 
     if (!appointment) {
       return res.status(404).json({ success: false, message: "Appointment not found" });
@@ -351,21 +389,22 @@ export const updateAppointmentStatusForDoctor = async (
     appointment.status = status;
     await appointment.save();
 
+    // Create notification for patient
     try {
       await NotificationModel.create({
-        recipient: req.user?.id,
-        type: status === "cancelled" ? "cancellation" : "general",
+        recipient: appointment.patient,
+        type: status === "completed" ? "system" : "cancellation",
         title: `Appointment ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-        message: `Appointment with ${(appointment.patient as any)?.name || "Patient"} updated to ${status}.`,
+        message: `Your appointment on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.timeSlot} was marked as ${status}.`,
         appointment: appointment._id,
       });
-    } catch (nErr) {
-      console.warn("Failed to create status notification:", nErr);
+    } catch (notifErr) {
+      console.warn("Failed to create patient notification:", notifErr);
     }
 
     return res.status(200).json({
       success: true,
-      message: `Appointment updated to ${status}`,
+      message: `Appointment ${status} successfully`,
       appointment,
     });
   } catch (error) {
@@ -385,7 +424,7 @@ export const getDoctorPatientDetails = async (
     const { patientId } = req.params;
     const doctor = await DoctorModel.findOne({ user: req.user?.id });
     if (!doctor) {
-      return res.status(404).json({ success: false, message: "Doctor not found" });
+      return res.status(404).json({ success: false, message: "Doctor profile not found" });
     }
 
     const userObj = await UserModel.findById(patientId).select("name email");
@@ -432,5 +471,174 @@ export const markNotificationRead = async (
     return res.status(200).json({ success: true, message: "Notification marked as read" });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to update notification" });
+  }
+};
+
+// ==========================================
+// DOCTOR - HOSPITAL RELATIONSHIPS
+// ==========================================
+
+/**
+ * Get all hospital associations for the currently logged-in doctor
+ * Includes pending requests, active hospitals, rejected requests, and removal history.
+ */
+export const getMyDoctorHospitals = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const doctor = await DoctorModel.findOne({ user: req.user?.id });
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: "Doctor profile not found" });
+    }
+
+    const hospitalDoctors = await HospitalDoctorModel.find({ doctor: doctor._id })
+      .populate("hospital")
+      .sort({ updatedAt: -1 });
+
+    const pending = hospitalDoctors.filter((hd) => hd.status === "PENDING");
+    const active = hospitalDoctors.filter((hd) => hd.status === "ACTIVE");
+    const rejected = hospitalDoctors.filter((hd) => hd.status === "REJECTED");
+    const removed = hospitalDoctors.filter((hd) => hd.status === "REMOVED");
+
+    return res.status(200).json({
+      success: true,
+      all: hospitalDoctors,
+      pending,
+      active,
+      rejected,
+      removed,
+      history: hospitalDoctors,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch doctor hospitals",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+/**
+ * Search active hospitals and annotate with doctor's current relationship status
+ */
+export const searchHospitalsForDoctor = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const { query = "" } = req.query;
+    const doctor = await DoctorModel.findOne({ user: req.user?.id });
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: "Doctor profile not found" });
+    }
+
+    const filter: Record<string, unknown> = { isActive: true };
+    if (typeof query === "string" && query.trim()) {
+      filter.name = { $regex: new RegExp(query.trim(), "i") };
+    }
+
+    const hospitals = await HospitalModel.find(filter).sort({ name: 1 }).lean();
+
+    // Get doctor's current relationships with all these hospitals
+    const relationships = await HospitalDoctorModel.find({
+      doctor: doctor._id,
+      hospital: { $in: hospitals.map((h) => h._id) },
+    }).lean();
+
+    const relMap: Record<string, any> = {};
+    relationships.forEach((r) => {
+      // If multiple, prioritize PENDING/ACTIVE over REJECTED/REMOVED
+      const prev = relMap[String(r.hospital)];
+      if (!prev || r.status === "ACTIVE" || r.status === "PENDING") {
+        relMap[String(r.hospital)] = r;
+      }
+    });
+
+    const enriched = hospitals.map((h) => ({
+      ...h,
+      myRelationship: relMap[String(h._id)] || null,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      hospitals: enriched,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to search hospitals",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+/**
+ * Doctor submits a request to join a hospital.
+ * Flow: Doctor requests -> Main Admin reviews -> Main Admin Approves/Rejects.
+ * Doctors cannot self-approve.
+ */
+export const requestJoinHospital = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const { hospitalId, department = "" } = req.body;
+    if (!hospitalId) {
+      return res.status(400).json({ success: false, message: "Hospital ID is required" });
+    }
+
+    const doctor = await DoctorModel.findOne({ user: req.user?.id });
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: "Doctor profile not found" });
+    }
+
+    const hospital = await HospitalModel.findById(hospitalId);
+    if (!hospital || !hospital.isActive) {
+      return res.status(400).json({ success: false, message: "Hospital not found or is inactive" });
+    }
+
+    // Check if doctor already has an ACTIVE or PENDING relationship
+    const existing = await HospitalDoctorModel.findOne({
+      doctor: doctor._id,
+      hospital: hospitalId,
+      status: { $in: ["PENDING", "ACTIVE"] },
+    });
+
+    if (existing) {
+      if (existing.status === "ACTIVE") {
+        return res.status(400).json({
+          success: false,
+          message: "You are already actively associated with this hospital.",
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: "You already have a pending join request for this hospital awaiting Main Admin review.",
+      });
+    }
+
+    // Create a new PENDING request. Only Main Admin can approve.
+    const newRequest: any = await HospitalDoctorModel.create({
+      doctor: doctor._id,
+      hospital: hospitalId,
+      department: String(department).trim(),
+      status: "PENDING",
+      requestedBy: "DOCTOR",
+    });
+
+    const populated = await HospitalDoctorModel.findById(newRequest._id).populate("hospital");
+
+    return res.status(201).json({
+      success: true,
+      message: "Join request submitted successfully. Awaiting Main Admin approval.",
+      request: populated,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to submit hospital join request",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };

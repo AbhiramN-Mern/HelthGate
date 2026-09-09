@@ -4,6 +4,8 @@ import AppointmentModel from "../models/appointment.model.js";
 import DoctorModel from "../models/doctor.model.js";
 import UserModel from "../models/user.model.js";
 import NotificationModel from "../models/notification.model.js";
+import HospitalModel from "../models/hospital.model.js";
+import HospitalDoctorModel from "../models/hospitalDoctor.model.js";
 import type { AuthenticatedRequest } from "../types/auth.js";
 
 export const MAX_BOOKING_DAYS_AHEAD = Number(process.env.MAX_BOOKING_DAYS_AHEAD) || 90;
@@ -232,7 +234,8 @@ export const getMyAppointments = async (
           { path: "hospital", select: "name isActive" },
         ],
       })
-      .populate("hospital", "name isActive")
+      .populate("hospital", "name isActive licenseNumber address contactInfo departments")
+      .populate("hospitalDoctor")
       .sort({ appointmentDate: 1 });
 
     return res.status(200).json({
@@ -254,7 +257,7 @@ export const createAppointment = async (
 ) => {
   try {
     const patientUserId = req.user?.id;
-    const { doctor, hospital, appointmentDate, timeSlot, reason, type } = req.body;
+    const { doctor, hospital, department, appointmentDate, timeSlot, reason, type } = req.body;
 
     if (!doctor || !appointmentDate) {
       return res.status(400).json({
@@ -281,10 +284,55 @@ export const createAppointment = async (
 
     const doctorDoc = validation.doctorDoc;
 
+    let hospitalId: any = null;
+    let hospitalDoctorId: any = null;
+    let selectedDepartment = "";
+    let isHospitalAppointment = false;
+
+    // Determine practice setting automatically from HospitalDoctor:
+    // If a doctor has an active hospital affiliation, they work through that hospital.
+    // If a doctor has no active hospital affiliation, treat them as freelance automatically.
+    const activeAssocs = await HospitalDoctorModel.find({
+      doctor,
+      status: "ACTIVE",
+    }).populate("hospital");
+
+    if (activeAssocs && activeAssocs.length > 0) {
+      // If a hospital was passed in query/filter, match it; otherwise use the doctor's active affiliation
+      let chosenAffiliation = activeAssocs[0];
+      if (hospital && typeof hospital === "string" && hospital.trim() && hospital.trim() !== "freelance") {
+        const matched = activeAssocs.find(
+          (a) => String((a.hospital as any)?._id || a.hospital) === hospital.trim(),
+        );
+        if (matched) {
+          chosenAffiliation = matched;
+        }
+      }
+
+      hospitalId = (chosenAffiliation.hospital as any)?._id || chosenAffiliation.hospital;
+      hospitalDoctorId = chosenAffiliation._id;
+      selectedDepartment = (department ? String(department).trim() : "") || chosenAffiliation.department || "";
+      isHospitalAppointment = true;
+    } else if (doctorDoc.hospital) {
+      // Legacy doctor.hospital fallback
+      hospitalId = doctorDoc.hospital;
+      isHospitalAppointment = true;
+      selectedDepartment = department ? String(department).trim() : "";
+    } else {
+      // No active hospital affiliation -> Automatically Freelance
+      hospitalId = null;
+      hospitalDoctorId = null;
+      selectedDepartment = "";
+      isHospitalAppointment = false;
+    }
+
     const appointment = await AppointmentModel.create({
       patient: patientUserId,
       doctor,
-      hospital: hospital || doctorDoc.hospital || null,
+      hospital: hospitalId,
+      hospitalDoctor: hospitalDoctorId,
+      department: selectedDepartment,
+      isHospitalAppointment,
       appointmentDate: new Date(appointmentDate),
       timeSlot: cleanTimeSlot,
       reason: reason || "General Consultation",
@@ -300,7 +348,8 @@ export const createAppointment = async (
           { path: "hospital", select: "name isActive" },
         ],
       })
-      .populate("hospital", "name isActive");
+      .populate("hospital", "name isActive licenseNumber address contactInfo")
+      .populate("hospitalDoctor");
 
     // Create notification for doctor
     try {

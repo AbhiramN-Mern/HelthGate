@@ -17,6 +17,12 @@ import {
   verifyDoctor,
   getAdminDashboard,
   getAllAppointmentsForAdmin,
+  getAllHospitalDoctorsForAdmin,
+  approveDoctorHospitalRequest,
+  rejectDoctorHospitalRequest,
+  associateDoctorWithHospital,
+  removeDoctorFromHospital,
+  getHospitalDoctorHistory,
 } from "../controllers/admin.controller.js";
 import { adminOnly, protect } from "../middleware/auth.middleware.js";
 
@@ -38,5 +44,13 @@ router.patch("/doctors/:id/verify", protect, adminOnly, verifyDoctor);
 router.patch("/doctors/:id/reject", protect, adminOnly, rejectDoctor);
 router.delete("/doctors/:id", protect, adminOnly, deleteDoctor);
 router.get("/admins", protect, adminOnly, getAllAdmins);
+
+// Doctor-Hospital Relationship Governance (Main Admin only)
+router.get("/hospital-doctors", protect, adminOnly, getAllHospitalDoctorsForAdmin);
+router.get("/hospital-doctors/history", protect, adminOnly, getHospitalDoctorHistory);
+router.post("/hospital-doctors/associate", protect, adminOnly, associateDoctorWithHospital);
+router.patch("/hospital-doctors/:id/approve", protect, adminOnly, approveDoctorHospitalRequest);
+router.patch("/hospital-doctors/:id/reject", protect, adminOnly, rejectDoctorHospitalRequest);
+router.patch("/hospital-doctors/:id/remove", protect, adminOnly, removeDoctorFromHospital);
 
 export default router;

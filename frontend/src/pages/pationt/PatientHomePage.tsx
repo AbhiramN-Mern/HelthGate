@@ -418,7 +418,6 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
         },
         body: JSON.stringify({
           doctor: bookingDoctor._id,
-          hospital: bookingDoctor.hospital?._id || undefined,
           appointmentDate: bookingDate,
           timeSlot: bookingTime,
           reason: bookingReason.trim() || 'General Consultation',
@@ -826,7 +825,6 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               {appointments.map((appt) => {
                 const docName = appt.doctor?.user?.name || 'Doctor'
                 const docSpec = appt.doctor?.specialization || 'Specialist'
-                const hospName = appt.hospital?.name || appt.doctor?.hospital?.name || 'Hospital Clinic'
                 const formattedDate = appt.appointmentDate
                   ? new Date(appt.appointmentDate).toLocaleDateString('en-US', {
                       weekday: 'short',
@@ -863,8 +861,22 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                         <span>{formattedDate}</span>
                       </div>
                       <div className="php-appt-detail-row">
-                        <span style={{ display: 'inline-flex', alignItems: 'center' }}><HospitalIcon size={14} /></span>
-                        <span>{hospName}</span>
+                        {appt.hospital ? (
+                          <>
+                            <span style={{ display: 'inline-flex', alignItems: 'center' }}><HospitalIcon size={14} /></span>
+                            <span>
+                              {(appt.hospital as any)?.name || 'Hospital'}
+                              {appt.department ? ` (${appt.department})` : ''}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0d5c63' }}>
+                              <StethoscopeIcon size={14} />
+                            </span>
+                            <span style={{ color: '#0d5c63', fontWeight: 600 }}>Freelance / Independent</span>
+                          </>
+                        )}
                       </div>
                       {appt.type && (
                         <div className="php-appt-detail-row">
@@ -1096,7 +1108,6 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   .toUpperCase()
                   .slice(0, 2)
                 const spec = doc.specialization || 'General Practitioner'
-                const hospName = doc.hospital?.name || 'Independent Practice'
                 const fee = doc.consultationFee ? `₹${doc.consultationFee}` : 'Free / Inquire'
                 const exp = doc.experienceYears ? `${doc.experienceYears} Years` : 'Experienced'
 
@@ -1143,8 +1154,23 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           </span>
                         </div>
                         <div className="php-doc-hospital-tag">
-                          <span style={{ display: 'inline-flex', alignItems: 'center' }}><HospitalIcon size={14} /></span>
-                          <span>{hospName}</span>
+                          {doc.affiliatedHospitals && doc.affiliatedHospitals.length > 0 ? (
+                            <>
+                              <span style={{ display: 'inline-flex', alignItems: 'center' }}><HospitalIcon size={14} /></span>
+                              <span>
+                                {doc.affiliatedHospitals[0].name || 'Hospital'}
+                                {doc.affiliatedHospitals[0].department ? ` (${doc.affiliatedHospitals[0].department})` : ''}
+                                {doc.affiliatedHospitals.length > 1 ? ` +${doc.affiliatedHospitals.length - 1} more` : ''}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0d5c63' }}>
+                                <StethoscopeIcon size={14} />
+                              </span>
+                              <span style={{ color: '#0d5c63', fontWeight: 600 }}>Freelance / Independent Practice</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1343,6 +1369,50 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
 
               return (
                 <form className="php-modal-form" onSubmit={handleConfirmBooking}>
+                  {/* Practice Setting Info */}
+                  {bookingDoctor.affiliatedHospitals && bookingDoctor.affiliatedHospitals.length > 0 ? (
+                    <div
+                      style={{
+                        padding: '10px 14px',
+                        background: '#f0f9ff',
+                        border: '1px solid #bae6fd',
+                        borderRadius: '10px',
+                        fontSize: '0.85rem',
+                        color: '#0369a1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <HospitalIcon size={16} />
+                      <span>
+                        Practicing at <strong>{bookingDoctor.affiliatedHospitals[0].name}</strong>
+                        {bookingDoctor.affiliatedHospitals[0].department ? ` (${bookingDoctor.affiliatedHospitals[0].department})` : ''}
+                      </span>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        padding: '10px 14px',
+                        background: '#f0fdfa',
+                        border: '1px solid #99f6e4',
+                        borderRadius: '10px',
+                        fontSize: '0.85rem',
+                        color: '#0d5c63',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <StethoscopeIcon size={16} />
+                      <span>
+                        Practicing as an <strong>Independent / Freelance Doctor</strong>
+                      </span>
+                    </div>
+                  )}
+
                   {/* Visual Calendar */}
                   <div className="php-form-group">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>

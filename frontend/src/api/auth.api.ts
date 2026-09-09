@@ -40,6 +40,14 @@ export type DoctorProfile = {
   specialization?: string
   qualification?: string
   hospital?: { _id?: string; name?: string; isActive?: boolean }
+  affiliatedHospitals?: {
+    _id?: string
+    name?: string
+    department?: string
+    relationshipId?: string
+    joinedAt?: string
+  }[]
+  isFreelance?: boolean
   profileImage?: string
   experienceYears?: number
   licenseNumber?: string
@@ -317,10 +325,49 @@ export const deleteDoctorForAdmin = async (
   }, token)
 }
 
+export type HospitalAddress = {
+  street?: string
+  city?: string
+  state?: string
+  zipCode?: string
+  country?: string
+}
+
+export type HospitalContact = {
+  phone?: string
+  email?: string
+  website?: string
+}
+
 export type Hospital = {
   _id?: string
-  name?: string
+  name: string
+  licenseNumber?: string
+  address?: HospitalAddress
+  contactInfo?: HospitalContact
+  departments?: string[]
   isActive?: boolean
+  verificationStatus?: 'verified' | 'pending' | 'unverified'
+  activeDoctorsCount?: number
+  doctors?: any[]
+  myRelationship?: HospitalDoctorItem | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type HospitalDoctorStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'REMOVED'
+export type RequestedBy = 'DOCTOR' | 'ADMIN'
+
+export type HospitalDoctorItem = {
+  _id: string
+  hospital: Hospital
+  doctor: DoctorProfile | AdminDoctor | any
+  department?: string
+  status: HospitalDoctorStatus
+  requestedBy: RequestedBy
+  approvedBy?: { _id?: string; name?: string; email?: string } | null
+  rejectionReason?: string
+  joinedAt?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -333,12 +380,152 @@ export const getAllHospitalsForAdmin = async (token: string): Promise<{ success:
   return request<{ success: boolean; hospitals?: Hospital[] }>('/api/hospitals', { method: 'GET' }, token)
 }
 
-export const createHospitalForAdmin = async (payload: { name: string; isActive?: boolean }, token: string): Promise<{ success: boolean; hospital?: Hospital }> => {
-  return request<{ success: boolean; hospital?: Hospital }>('/api/hospitals', { method: 'POST', body: JSON.stringify(payload) }, token)
+export const createHospitalForAdmin = async (
+  payload: {
+    name: string
+    licenseNumber?: string
+    address?: HospitalAddress
+    contactInfo?: HospitalContact
+    departments?: string[]
+    isActive?: boolean
+    verificationStatus?: string
+  },
+  token: string,
+): Promise<{ success: boolean; hospital?: Hospital }> => {
+  return request<{ success: boolean; hospital?: Hospital }>('/api/hospitals', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token)
 }
 
-export const updateHospitalByIdForAdmin = async (id: string, payload: Record<string, unknown>, token: string): Promise<{ success: boolean; hospital?: Hospital }> => {
-  return request<{ success: boolean; hospital?: Hospital }>(`/api/hospitals/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, token)
+export const updateHospitalByIdForAdmin = async (
+  id: string,
+  payload: Record<string, unknown>,
+  token: string,
+): Promise<{ success: boolean; hospital?: Hospital }> => {
+  return request<{ success: boolean; hospital?: Hospital }>(`/api/hospitals/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }, token)
+}
+
+export const toggleHospitalStatusApi = async (
+  id: string,
+  token: string,
+): Promise<{ success: boolean; message?: string; hospital?: Hospital }> => {
+  return request<{ success: boolean; message?: string; hospital?: Hospital }>(`/api/hospitals/${id}/status`, {
+    method: 'PATCH',
+  }, token)
+}
+
+export const verifyHospitalApi = async (
+  id: string,
+  status: string,
+  token: string,
+): Promise<{ success: boolean; message?: string; hospital?: Hospital }> => {
+  return request<{ success: boolean; message?: string; hospital?: Hospital }>(`/api/hospitals/${id}/verify`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  }, token)
+}
+
+// Doctor-Hospital Affiliation APIs (Doctor Dashboard)
+export const getMyDoctorHospitalsApi = async (
+  token: string,
+): Promise<{
+  success: boolean
+  all?: HospitalDoctorItem[]
+  pending?: HospitalDoctorItem[]
+  active?: HospitalDoctorItem[]
+  rejected?: HospitalDoctorItem[]
+  removed?: HospitalDoctorItem[]
+  history?: HospitalDoctorItem[]
+}> => {
+  return request<{
+    success: boolean
+    all?: HospitalDoctorItem[]
+    pending?: HospitalDoctorItem[]
+    active?: HospitalDoctorItem[]
+    rejected?: HospitalDoctorItem[]
+    removed?: HospitalDoctorItem[]
+    history?: HospitalDoctorItem[]
+  }>('/api/doctors/me/hospitals', { method: 'GET' }, token)
+}
+
+export const searchHospitalsForDoctorApi = async (
+  token: string,
+  query?: string,
+): Promise<{ success: boolean; hospitals?: Hospital[] }> => {
+  const qs = query ? `?query=${encodeURIComponent(query)}` : ''
+  return request<{ success: boolean; hospitals?: Hospital[] }>(`/api/doctors/hospitals/search${qs}`, { method: 'GET' }, token)
+}
+
+export const requestJoinHospitalApi = async (
+  payload: { hospitalId: string; department?: string },
+  token: string,
+): Promise<{ success: boolean; message?: string; request?: HospitalDoctorItem }> => {
+  return request<{ success: boolean; message?: string; request?: HospitalDoctorItem }>('/api/doctors/hospitals/request', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token)
+}
+
+// Doctor-Hospital Governance APIs (Main Admin)
+export const getAllHospitalDoctorsForAdminApi = async (
+  token: string,
+  params?: { status?: string; hospitalId?: string; doctorId?: string },
+): Promise<{ success: boolean; relationships?: HospitalDoctorItem[] }> => {
+  const query = new URLSearchParams()
+  if (params?.status) query.set('status', params.status)
+  if (params?.hospitalId) query.set('hospitalId', params.hospitalId)
+  if (params?.doctorId) query.set('doctorId', params.doctorId)
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request<{ success: boolean; relationships?: HospitalDoctorItem[] }>(`/api/admin/hospital-doctors${qs}`, { method: 'GET' }, token)
+}
+
+export const approveDoctorHospitalRequestApi = async (
+  id: string,
+  token: string,
+): Promise<{ success: boolean; message?: string; relationship?: HospitalDoctorItem }> => {
+  return request<{ success: boolean; message?: string; relationship?: HospitalDoctorItem }>(`/api/admin/hospital-doctors/${id}/approve`, {
+    method: 'PATCH',
+  }, token)
+}
+
+export const rejectDoctorHospitalRequestApi = async (
+  id: string,
+  reason: string,
+  token: string,
+): Promise<{ success: boolean; message?: string; relationship?: HospitalDoctorItem }> => {
+  return request<{ success: boolean; message?: string; relationship?: HospitalDoctorItem }>(`/api/admin/hospital-doctors/${id}/reject`, {
+    method: 'PATCH',
+    body: JSON.stringify({ reason }),
+  }, token)
+}
+
+export const associateDoctorWithHospitalApi = async (
+  payload: { doctorId: string; hospitalId: string; department?: string },
+  token: string,
+): Promise<{ success: boolean; message?: string; relationship?: HospitalDoctorItem }> => {
+  return request<{ success: boolean; message?: string; relationship?: HospitalDoctorItem }>('/api/admin/hospital-doctors/associate', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token)
+}
+
+export const removeDoctorFromHospitalApi = async (
+  id: string,
+  token: string,
+): Promise<{ success: boolean; message?: string; relationship?: HospitalDoctorItem }> => {
+  return request<{ success: boolean; message?: string; relationship?: HospitalDoctorItem }>(`/api/admin/hospital-doctors/${id}/remove`, {
+    method: 'PATCH',
+  }, token)
+}
+
+export const getHospitalDoctorHistoryApi = async (
+  token: string,
+): Promise<{ success: boolean; history?: HospitalDoctorItem[] }> => {
+  return request<{ success: boolean; history?: HospitalDoctorItem[] }>('/api/admin/hospital-doctors/history', { method: 'GET' }, token)
 }
 
 export type RescheduleRequest = {
@@ -356,6 +543,9 @@ export type AppointmentItem = {
   patient?: { _id?: string; name?: string; email?: string }
   doctor?: DoctorProfile
   hospital?: Hospital
+  hospitalDoctor?: HospitalDoctorItem
+  department?: string
+  isHospitalAppointment?: boolean
   appointmentDate?: string
   timeSlot?: string
   status?: string
@@ -582,6 +772,7 @@ export type AdminDashboardStats = {
   totalHospitals: number
   totalAppointments: number
   pendingDoctorApprovals: number
+  pendingDoctorJoinRequests?: number
   todayAppointments: number
 }
 
