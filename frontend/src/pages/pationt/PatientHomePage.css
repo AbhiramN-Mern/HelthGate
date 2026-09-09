@@ -1411,6 +1411,21 @@
   cursor: not-allowed;
 }
 
+/* Dates Beyond Advance Booking Limit (> 90 days) */
+.php-cal-cell.beyond-limit {
+  color: #94a3b8;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+.php-cal-cell.beyond-limit:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  transform: none;
+}
+
 .php-cal-cell.available {
   border-color: #a7f3d0;
   color: #065f46;
@@ -1476,6 +1491,18 @@
   margin-top: 1px;
 }
 
+/* Limit Badge */
+.php-limit-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0d5c63;
+  background: #e6f7f6;
+  border: 1px solid #b2e3df;
+  border-radius: 999px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+
 /* CALENDAR LEGEND */
 .php-cal-legend {
   display: flex;
@@ -1507,6 +1534,7 @@
 .php-legend-dot.off { background: #94a3b8; }
 .php-legend-dot.full { background: #f97316; }
 .php-legend-dot.sel { background: #0d5c63; }
+.php-legend-dot.beyond { background: #cbd5e1; }
 
 /* Blocked Date Alert Box */
 .php-date-status-alert {

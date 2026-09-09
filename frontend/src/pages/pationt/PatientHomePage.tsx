@@ -44,6 +44,17 @@ const getSpecIcon = (specName: string) => {
   return <MedicalCrossIcon size={18} />
 }
 
+export const MAX_BOOKING_DAYS_AHEAD = Number(import.meta.env.VITE_MAX_BOOKING_DAYS_AHEAD) || 90
+
+export const getTodayAndMaxDates = (maxDays: number = MAX_BOOKING_DAYS_AHEAD) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const maxDate = new Date(today.getTime() + maxDays * 24 * 60 * 60 * 1000)
+  const maxDateStr = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}`
+  return { today, todayStr, maxDate, maxDateStr }
+}
+
 function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps) {
   const navigate = useNavigate()
   const token = localStorage.getItem('helthgate_token') || ''
@@ -246,13 +257,17 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
     const workDays = doc.availability?.workingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     const slots = doc.availability?.availableSlots || ['09:00 AM', '10:00 AM', '11:30 AM', '02:00 PM', '03:30 PM', '05:00 PM']
 
-    // Find first available date (today or future) with at least one active future slot
+    const { todayStr, maxDateStr } = getTodayAndMaxDates()
+
+    // Find first available date (today or future within MAX_BOOKING_DAYS_AHEAD) with at least one active future slot
     const candidate = new Date()
     let selectedDate = ''
     let selectedSlot = slots[0] || '10:00 AM'
 
-    for (let i = 0; i < 30; i++) {
+    const searchDays = Math.min(30, MAX_BOOKING_DAYS_AHEAD)
+    for (let i = 0; i < searchDays; i++) {
       const dStr = `${candidate.getFullYear()}-${String(candidate.getMonth() + 1).padStart(2, '0')}-${String(candidate.getDate()).padStart(2, '0')}`
+      if (dStr > maxDateStr) break
       const dayName = WEEKDAYS[candidate.getDay()]
       if (!blockedList.includes(dStr) && workDays.includes(dayName)) {
         const freeSlot = slots.find((s) => !isSlotPast(s, dStr))
@@ -268,7 +283,8 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
     if (!selectedDate) {
       const tomorrow = new Date()
       tomorrow.setDate(tomorrow.getDate() + 1)
-      selectedDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`
+      const tomStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`
+      selectedDate = tomStr <= maxDateStr ? tomStr : todayStr
     }
 
     setBookingDate(selectedDate)
@@ -283,16 +299,45 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   }
 
   const handlePrevMonth = () => {
-    setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1))
+    const { today } = getTodayAndMaxDates()
+    const isPrevDisabled =
+      calMonth.getFullYear() < today.getFullYear() ||
+      (calMonth.getFullYear() === today.getFullYear() && calMonth.getMonth() <= today.getMonth())
+    if (!isPrevDisabled) {
+      setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1))
+    }
   }
 
   const handleNextMonth = () => {
-    setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1))
+    const { maxDate } = getTodayAndMaxDates()
+    const isNextDisabled =
+      calMonth.getFullYear() > maxDate.getFullYear() ||
+      (calMonth.getFullYear() === maxDate.getFullYear() && calMonth.getMonth() >= maxDate.getMonth())
+    if (!isNextDisabled) {
+      setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1))
+    }
   }
 
   const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!bookingDoctor?._id || !bookingDate) return
+
+    const { todayStr, maxDateStr } = getTodayAndMaxDates()
+    if (bookingDate < todayStr) {
+      setBookingFeedback({
+        type: 'error',
+        text: 'Cannot book an appointment on a past date.',
+      })
+      return
+    }
+
+    if (bookingDate > maxDateStr) {
+      setBookingFeedback({
+        type: 'error',
+        text: `Appointments can only be booked up to ${MAX_BOOKING_DAYS_AHEAD} days in advance.`,
+      })
+      return
+    }
 
     setBookingSubmitting(true)
     setBookingFeedback(null)
@@ -1034,8 +1079,13 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               const firstDayIndex = new Date(year, month, 1).getDay()
               const totalDays = new Date(year, month + 1, 0).getDate()
 
-              const now = new Date()
-              const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+              const { today, todayStr, maxDate, maxDateStr } = getTodayAndMaxDates()
+              const isPrevMonthDisabled =
+                calMonth.getFullYear() < today.getFullYear() ||
+                (calMonth.getFullYear() === today.getFullYear() && calMonth.getMonth() <= today.getMonth())
+              const isNextMonthDisabled =
+                calMonth.getFullYear() > maxDate.getFullYear() ||
+                (calMonth.getFullYear() === maxDate.getFullYear() && calMonth.getMonth() >= maxDate.getMonth())
 
               const blockedDates = bookingDoctor.availability?.blockedDates || []
               const workDays = bookingDoctor.availability?.workingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -1060,6 +1110,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 bookingDate && isDateOffDuty(new Date(bookingDate).getDay())
               )
               const isSelectedDatePast = Boolean(bookingDate && bookingDate < todayStr)
+              const isSelectedDateBeyondLimit = Boolean(bookingDate && bookingDate > maxDateStr)
               const isBookingDisabled =
                 bookingSubmitting ||
                 !bookingDate ||
@@ -1067,6 +1118,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 isSelectedDateBlocked ||
                 isSelectedDateOffDuty ||
                 isSelectedDatePast ||
+                isSelectedDateBeyondLimit ||
                 allSlotsUnavailableOnDate ||
                 isSelectedSlotBooked ||
                 isSelectedSlotPast
@@ -1075,9 +1127,14 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 <form className="php-modal-form" onSubmit={handleConfirmBooking}>
                   {/* Visual Calendar */}
                   <div className="php-form-group">
-                    <label className="php-form-label">
-                      Select Date (Doctor's Schedule)
-                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <label className="php-form-label" style={{ margin: 0 }}>
+                        Select Date (Doctor's Schedule)
+                      </label>
+                      <span className="php-limit-badge">
+                        Max {MAX_BOOKING_DAYS_AHEAD} days advance
+                      </span>
+                    </div>
 
                     <div className="php-calendar-box">
                       {/* Month & Navigation Header */}
@@ -1086,7 +1143,8 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           type="button"
                           className="php-cal-nav-btn"
                           onClick={handlePrevMonth}
-                          title="Previous Month"
+                          disabled={isPrevMonthDisabled}
+                          title={isPrevMonthDisabled ? 'Cannot navigate to past months' : 'Previous Month'}
                         >
                           ‹
                         </button>
@@ -1097,7 +1155,8 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           type="button"
                           className="php-cal-nav-btn"
                           onClick={handleNextMonth}
-                          title="Next Month"
+                          disabled={isNextMonthDisabled}
+                          title={isNextMonthDisabled ? `Cannot book beyond ${MAX_BOOKING_DAYS_AHEAD} days` : 'Next Month'}
                         >
                           ›
                         </button>
@@ -1123,6 +1182,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
                           const dayDate = new Date(year, month, d)
                           const isPast = dateStr < todayStr
+                          const isBeyondLimit = dateStr > maxDateStr
                           const isBlocked = isDateBlocked(dateStr)
                           const isOff = isDateOffDuty(dayDate.getDay())
                           const dayBookedSlots = bookedSlotsByDate[dateStr] || []
@@ -1130,16 +1190,18 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                             (s) => !dayBookedSlots.includes(s) && !isSlotPast(s, dateStr)
                           ).length
                           const isDayNoSlots = dayOpenCount === 0
-                          const isDayFull = isDayNoSlots && !isPast && !isBlocked && !isOff
+                          const isDayFull = isDayNoSlots && !isPast && !isBeyondLimit && !isBlocked && !isOff
                           const isSelected = bookingDate === dateStr
-                          const isAvailable = !isPast && !isBlocked && !isOff && !isDayNoSlots
+                          const isAvailable = !isPast && !isBeyondLimit && !isBlocked && !isOff && !isDayNoSlots
 
                           return (
                             <button
                               key={dateStr}
                               type="button"
                               className={`php-cal-cell ${
-                                isBlocked
+                                isBeyondLimit
+                                  ? 'beyond-limit'
+                                  : isBlocked
                                   ? 'blocked'
                                   : isOff
                                   ? 'off-duty'
@@ -1163,7 +1225,9 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                                 }
                               }}
                               title={
-                                isBlocked
+                                isBeyondLimit
+                                  ? `Booking limit: Cannot book more than ${MAX_BOOKING_DAYS_AHEAD} days in advance`
+                                  : isBlocked
                                   ? 'Blocked: Doctor is unavailable / on leave'
                                   : isOff
                                   ? 'Off-duty day for doctor'
@@ -1175,13 +1239,16 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                               }
                             >
                               <span>{d}</span>
+                              {isBeyondLimit && !isPast && (
+                                <span style={{ fontSize: '0.55rem', color: '#94a3b8' }}>&gt;{MAX_BOOKING_DAYS_AHEAD}d</span>
+                              )}
                               {isBlocked && (
                                 <span className="php-cal-blocked-tag">Blocked</span>
                               )}
-                              {isOff && !isPast && !isBlocked && (
+                              {isOff && !isPast && !isBeyondLimit && !isBlocked && (
                                 <span style={{ fontSize: '0.55rem', color: '#94a3b8' }}>Off</span>
                               )}
-                              {isDayFull && !isPast && !isBlocked && !isOff && (
+                              {isDayFull && !isPast && !isBeyondLimit && !isBlocked && !isOff && (
                                 <span className="php-cal-full-tag">Full</span>
                               )}
                             </button>
@@ -1205,6 +1272,9 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                         </span>
                         <span className="php-legend-item">
                           <span className="php-legend-dot sel" /> Selected
+                        </span>
+                        <span className="php-legend-item">
+                          <span className="php-legend-dot beyond" /> &gt;{MAX_BOOKING_DAYS_AHEAD}d
                         </span>
                       </div>
                     </div>
@@ -1246,7 +1316,19 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   )}
 
                   {/* Selected Date Status Banner */}
-                  {isSelectedDateBlocked ? (
+                  {isSelectedDateBeyondLimit ? (
+                    <div className="php-date-status-alert blocked">
+                      <span style={{ display: 'inline-flex', alignItems: 'center' }}><AlertTriangleIcon size={16} /></span>
+                      <span>
+                        Appointments can only be booked up to {MAX_BOOKING_DAYS_AHEAD} days in advance. Please select an earlier date.
+                      </span>
+                    </div>
+                  ) : isSelectedDatePast ? (
+                    <div className="php-date-status-alert blocked">
+                      <span style={{ display: 'inline-flex', alignItems: 'center' }}><AlertTriangleIcon size={16} /></span>
+                      <span>Cannot book an appointment on a past date.</span>
+                    </div>
+                  ) : isSelectedDateBlocked ? (
                     <div className="php-date-status-alert blocked">
                       <span style={{ display: 'inline-flex', alignItems: 'center' }}><BlockedIcon size={16} /></span>
                       <span>

@@ -5,6 +5,8 @@ import UserModel from "../models/user.model.js";
 import NotificationModel from "../models/notification.model.js";
 import type { AuthenticatedRequest } from "../types/auth.js";
 
+export const MAX_BOOKING_DAYS_AHEAD = Number(process.env.MAX_BOOKING_DAYS_AHEAD) || 90;
+
 export const getMyAppointments = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -126,6 +128,20 @@ export const createAppointment = async (
       return res.status(400).json({
         success: false,
         message: "Cannot book an appointment on a past date.",
+      });
+    }
+
+    // Check if appointment date exceeds maximum advance booking window
+    const maxDate = new Date(now);
+    maxDate.setDate(maxDate.getDate() + MAX_BOOKING_DAYS_AHEAD);
+    const maxDateLocal = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, "0")}-${String(maxDate.getDate()).padStart(2, "0")}`;
+    const maxDateIso = maxDate.toISOString().split("T")[0];
+
+    const isBeyondLimit = (dateStr > maxDateLocal && dateStr > maxDateIso) || localDateStr > maxDateLocal;
+    if (isBeyondLimit) {
+      return res.status(400).json({
+        success: false,
+        message: `Appointments can only be booked up to ${MAX_BOOKING_DAYS_AHEAD} days in advance.`,
       });
     }
 

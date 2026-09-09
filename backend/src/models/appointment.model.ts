@@ -20,6 +20,28 @@ const appointmentSchema = new Schema(
     appointmentDate: {
       type: Date,
       required: true,
+      validate: [
+        {
+          validator: function (v: Date) {
+            if (!v) return false;
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+            return v >= startOfToday;
+          },
+          message: "Cannot book an appointment on a past date.",
+        },
+        {
+          validator: function (v: Date) {
+            if (!v) return false;
+            const maxDays = Number(process.env.MAX_BOOKING_DAYS_AHEAD) || 90;
+            const maxDate = new Date();
+            maxDate.setDate(maxDate.getDate() + maxDays);
+            maxDate.setHours(23, 59, 59, 999);
+            return v <= maxDate;
+          },
+          message: "Appointments can only be booked up to 90 days in advance.",
+        },
+      ],
     },
     timeSlot: {
       type: String,
