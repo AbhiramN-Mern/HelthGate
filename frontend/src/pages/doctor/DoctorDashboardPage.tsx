@@ -75,6 +75,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
   // Loading & Error States
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [statusUpdating, setStatusUpdating] = useState(false)
 
   // 5. Manage Availability Modal State
   const [showAvailModal, setShowAvailModal] = useState(false)
@@ -267,6 +268,35 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
     }
   }
 
+  // Quick Toggle Active / Non-Active Status
+  const handleToggleActiveStatus = async () => {
+    if (!token || statusUpdating) return
+    const nextStatus = !isOnline
+    setStatusUpdating(true)
+    setError(null)
+    try {
+      const res = await updateDoctorAvailabilityApi(
+        {
+          workingDays: availability.workingDays,
+          workingHours: availability.workingHours,
+          availableSlots: availability.availableSlots,
+          blockedDates: availability.blockedDates,
+          available: nextStatus,
+        },
+        token,
+      )
+      const finalStatus = res.available !== undefined ? res.available : nextStatus
+      if (doctor) {
+        setDoctor({ ...doctor, available: finalStatus })
+      }
+      setAvailForm((prev) => ({ ...prev, available: finalStatus }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update active status.')
+    } finally {
+      setStatusUpdating(false)
+    }
+  }
+
   // Start Consultation Modal
   const handleStartConsultation = (appt: AppointmentItem) => {
     setConsultingAppt(appt)
@@ -373,6 +403,19 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
             </div>
 
             <div className="dd-header-actions">
+              {/* Quick Status Option (Active / Non-Active) */}
+              <button
+                id="doc-header-status-btn"
+                type="button"
+                className={`dd-header-status-pill ${isOnline ? 'active' : 'inactive'}`}
+                onClick={handleToggleActiveStatus}
+                disabled={statusUpdating}
+                title={isOnline ? 'Currently Active. Click to set Non-Active' : 'Currently Non-Active. Click to set Active'}
+              >
+                <span className={`dd-status-dot-sm ${isOnline ? 'active' : 'inactive'}`} />
+                <span>{statusUpdating ? 'Updating...' : isOnline ? 'Active' : 'Non-Active'}</span>
+              </button>
+
               <button
                 id="doc-nav-profile-btn"
                 type="button"
@@ -409,11 +452,27 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
             </p>
           </div>
 
-          <div className="dd-welcome-status">
-            <span className={`dd-status-dot ${isOnline ? '' : 'offline'}`} />
-            <span className="dd-status-label">
-              {isOnline ? 'Active & Accepting Patients' : 'Temporarily Offline'}
-            </span>
+          <div className="dd-welcome-status-card">
+            <div className="dd-welcome-status-info">
+              <span className={`dd-status-dot ${isOnline ? '' : 'offline'}`} />
+              <div>
+                <div className="dd-status-label">
+                  {isOnline ? 'Active' : 'Non-Active'}
+                </div>
+                <div className="dd-status-sublabel">
+                  {isOnline ? 'Accepting patient bookings' : 'Bookings paused / offline'}
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className={`dd-status-switch-btn ${isOnline ? 'active' : 'inactive'}`}
+              onClick={handleToggleActiveStatus}
+              disabled={statusUpdating}
+            >
+              {statusUpdating ? 'Saving...' : isOnline ? 'Set Non-Active' : 'Set Active'}
+            </button>
           </div>
         </div>
 
@@ -953,23 +1012,31 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
             )}
 
             <form className="dd-modal-form" onSubmit={handleSaveAvailability}>
-              {/* Online/Offline status toggle */}
+              {/* Active / Non-Active Status Selector */}
               <div className="dd-form-group">
-                <label className="dd-form-label">Accepting New Patient Bookings</label>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <label className="dd-form-label">Doctor Practice Status</label>
+                <div className="dd-status-options-grid">
                   <button
                     type="button"
-                    className={`dd-day-toggle ${availForm.available ? 'selected' : ''}`}
+                    className={`dd-status-option-btn ${availForm.available ? 'selected active' : ''}`}
                     onClick={() => setAvailForm((prev) => ({ ...prev, available: true }))}
                   >
-                    ● Available Online
+                    <span className="dd-status-dot" />
+                    <div>
+                      <strong>Active (Online)</strong>
+                      <span>Available for appointments and patient consultations</span>
+                    </div>
                   </button>
                   <button
                     type="button"
-                    className={`dd-day-toggle ${!availForm.available ? 'selected' : ''}`}
+                    className={`dd-status-option-btn ${!availForm.available ? 'selected inactive' : ''}`}
                     onClick={() => setAvailForm((prev) => ({ ...prev, available: false }))}
                   >
-                    ● Pause Bookings
+                    <span className="dd-status-dot offline" />
+                    <div>
+                      <strong>Non-Active (Offline)</strong>
+                      <span>Temporarily pause bookings and mark unavailable</span>
+                    </div>
                   </button>
                 </div>
               </div>

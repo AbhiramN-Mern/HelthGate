@@ -58,6 +58,16 @@ export const updateMyPatientProfile = async (
 ) => {
   try {
     const updates = pickPatientUpdates(req.body as Record<string, unknown>);
+
+    if (updates.dateOfBirth) {
+      const dob = new Date(updates.dateOfBirth as string);
+      if (isNaN(dob.getTime()) || dob > new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: "Date of birth cannot be in the future",
+        });
+      }
+    }
     const patient = await PatientModel.findOneAndUpdate(
       { user: req.user?.id },
       { $set: { user: req.user?.id, ...updates } },

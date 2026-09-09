@@ -139,6 +139,58 @@
   gap: 10px;
 }
 
+.dd-header-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1.5px solid transparent;
+}
+
+.dd-header-status-pill.active {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.dd-header-status-pill.active:hover {
+  background: #d1fae5;
+  transform: translateY(-1px);
+}
+
+.dd-header-status-pill.inactive {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.dd-header-status-pill.inactive:hover {
+  background: #fde68a;
+  transform: translateY(-1px);
+}
+
+.dd-status-dot-sm {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dd-status-dot-sm.active {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.dd-status-dot-sm.inactive {
+  background: #d97706;
+  box-shadow: 0 0 6px #d97706;
+}
+
 .dd-btn-profile {
   padding: 9px 18px;
   border-radius: 12px;
@@ -229,6 +281,63 @@
   margin: 0;
   max-width: 580px;
   line-height: 1.6;
+}
+
+.dd-welcome-status-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  padding: 12px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.dd-welcome-status-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dd-status-sublabel {
+  display: block;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 500;
+  margin-top: 1px;
+}
+
+.dd-status-switch-btn {
+  padding: 7px 14px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dd-status-switch-btn:hover {
+  background: #ffffff;
+  color: #0d5c63;
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.dd-status-switch-btn.inactive {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #ffffff;
+}
+
+.dd-status-switch-btn.inactive:hover {
+  background: #d97706;
+  border-color: #d97706;
+  color: #ffffff;
 }
 
 .dd-welcome-status {
@@ -1004,6 +1113,61 @@
   transform: translateY(-1px);
 }
 
+.dd-status-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .dd-status-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dd-status-option-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid #e2e8f0;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.dd-status-option-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.dd-status-option-btn.selected.active {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.dd-status-option-btn.selected.inactive {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.dd-status-option-btn strong {
+  display: block;
+  font-size: 0.92rem;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+
+.dd-status-option-btn span {
+  display: block;
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
 /* ========================================================
    RESPONSIVE
    ======================================================== */
@@ -1039,3 +1203,4 @@
     grid-template-columns: 1fr;
   }
 }
+
