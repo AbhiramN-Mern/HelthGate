@@ -1,12 +1,12 @@
 /* ========================================================
-   HEALTHGATE — Patient Home Page Styles
+   HEALTHGATE — Patient Portal Styles (Clinical Design)
    ======================================================== */
 
 .php-root {
   min-height: 100vh;
-  background: #f4fbfb;
-  color: #1b2430;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--hg-bg);
+  color: var(--hg-text-main);
+  font-family: inherit;
   display: flex;
   flex-direction: column;
 }
@@ -18,18 +18,16 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(13, 92, 99, 0.08);
-  box-shadow: 0 4px 20px rgba(13, 92, 99, 0.04);
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--hg-border);
+  box-shadow: var(--hg-shadow-xs);
 }
 
 .php-navbar-inner {
   max-width: 1240px;
   margin: 0 auto;
   padding: 0 24px;
-  height: 72px;
+  height: 68px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -39,23 +37,24 @@
 .php-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   text-decoration: none;
   color: inherit;
   cursor: pointer;
 }
 
 .php-brand-logo {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-primary);
   display: grid;
   place-items: center;
   color: #ffffff;
-  font-weight: 800;
-  font-size: 0.95rem;
-  box-shadow: 0 4px 12px rgba(13, 92, 99, 0.25);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
 }
 
 .php-brand-text {
@@ -64,19 +63,19 @@
 }
 
 .php-brand-name {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #0d5c63;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--hg-primary);
   letter-spacing: -0.02em;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 .php-brand-tag {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #0ea5a4;
+  letter-spacing: 0.06em;
+  color: var(--hg-text-muted);
 }
 
 .php-nav-links {
@@ -90,17 +89,17 @@
 
 .php-nav-link {
   text-decoration: none;
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: #4b5e71;
-  transition: color 0.18s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--hg-text-secondary);
+  transition: color 0.15s ease;
   position: relative;
   padding: 6px 0;
 }
 
 .php-nav-link:hover,
 .php-nav-link.active {
-  color: #0d5c63;
+  color: var(--hg-primary);
 }
 
 .php-nav-link.active::after {
@@ -109,47 +108,45 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 2.5px;
-  background: #0ea5a4;
+  height: 2px;
+  background-color: var(--hg-primary);
   border-radius: 2px;
 }
 
 .php-nav-user {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .php-user-badge-wrap {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 14px 6px 6px;
-  background: #eef8f8;
+  padding: 4px 12px 4px 4px;
+  background-color: var(--hg-surface-muted);
   border-radius: 999px;
-  border: 1px solid rgba(13, 92, 99, 0.12);
+  border: 1px solid var(--hg-border);
   cursor: pointer;
-  transition: background 0.18s ease, transform 0.14s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .php-user-badge-wrap:hover {
-  background: #e3f3f3;
-  transform: translateY(-1px);
+  background-color: #e2e8f0;
+  border-color: #cbd5e1;
 }
 
 .php-user-avatar {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
-  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  background-color: var(--hg-primary);
   color: #ffffff;
   display: grid;
   place-items: center;
   font-weight: 700;
-  font-size: 0.85rem;
-  border: 2px solid #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  font-size: 0.8rem;
 }
 
 .php-user-info {
@@ -159,89 +156,72 @@
 }
 
 .php-user-name {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #1b2430;
-  max-width: 140px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--hg-text-main);
+  max-width: 130px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .php-user-role {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  color: #0d5c63;
+  color: var(--hg-primary);
   text-transform: capitalize;
 }
 
 .php-btn-profile {
-  padding: 8px 16px;
-  border-radius: 12px;
-  border: 1.5px solid #d6e1eb;
-  background: #ffffff;
-  color: #1b2430;
+  padding: 7px 14px;
+  border-radius: var(--hg-radius-md);
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
+  color: var(--hg-text-main);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .php-btn-profile:hover {
-  border-color: #0ea5a4;
-  color: #0d5c63;
-  background: #f4fbfb;
+  border-color: #cbd5e1;
+  background-color: var(--hg-surface-muted);
 }
 
 .php-btn-logout {
-  padding: 8px 16px;
-  border-radius: 12px;
-  border: 1.5px solid #fee2e2;
-  background: #fff5f5;
-  color: #dc2626;
+  padding: 7px 14px;
+  border-radius: var(--hg-radius-md);
+  border: 1px solid var(--hg-danger-border);
+  background-color: var(--hg-danger-bg);
+  color: var(--hg-danger);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .php-btn-logout:hover {
-  background: #dc2626;
+  background-color: var(--hg-danger);
   color: #ffffff;
-  border-color: #dc2626;
 }
 
 /* ========================================================
-   WELCOME HERO BANNER
+   WELCOME HERO BANNER (Light, Structured Healthcare Banner)
    ======================================================== */
 .php-hero {
-  background: linear-gradient(135deg, #041e20 0%, #0d5c63 55%, #1a8c86 100%);
-  color: #ffffff;
-  padding: 56px 24px 64px;
-  position: relative;
-  overflow: hidden;
-}
-
-.php-hero::before {
-  content: '';
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  border-radius: 50%;
-  top: -240px;
-  right: -100px;
-  background: radial-gradient(circle, rgba(26, 169, 160, 0.3) 0%, transparent 70%);
-  pointer-events: none;
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--hg-border);
+  color: var(--hg-text-main);
+  padding: 36px 24px 40px;
 }
 
 .php-hero-inner {
   max-width: 1240px;
   margin: 0 auto;
-  position: relative;
-  z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
 }
 
 .php-hero-top {
@@ -255,84 +235,78 @@
 .php-hero-pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  font-size: 0.78rem;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--hg-radius-sm);
+  background-color: var(--hg-primary-subtle);
+  border: 1px solid var(--hg-primary-border);
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  color: #9cf0d7;
-  backdrop-filter: blur(8px);
+  color: var(--hg-primary);
 }
 
 .php-hero-pill-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #9cf0d7;
-  box-shadow: 0 0 8px #9cf0d7;
+  background-color: #059669;
 }
 
 .php-hero-greeting {
-  font-size: 1.15rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  margin-top: 10px;
+  color: var(--hg-text-muted);
+  margin-top: 8px;
 }
 
 .php-hero-title {
-  font-size: clamp(2.2rem, 4vw, 3.4rem);
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-  margin: 8px 0;
-  color: #ffffff;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 4px 0 8px;
+  color: var(--hg-text-main);
 }
 
 .php-hero-title span {
-  background: linear-gradient(90deg, #9cf0d7, #5eead4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--hg-primary);
 }
 
 .php-hero-sub {
-  font-size: 1.05rem;
-  color: rgba(255, 255, 255, 0.8);
-  max-width: 620px;
-  line-height: 1.65;
+  font-size: 0.95rem;
+  color: var(--hg-text-secondary);
+  max-width: 600px;
+  line-height: 1.6;
   margin: 0;
 }
 
 .php-hero-metrics {
   display: flex;
-  gap: 18px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
 .php-metric-card {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 18px;
-  padding: 16px 22px;
+  background-color: var(--hg-surface-subtle);
+  border: 1px solid var(--hg-border);
+  border-radius: var(--hg-radius-lg);
+  padding: 14px 18px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  min-width: 170px;
+  gap: 12px;
+  min-width: 150px;
+  box-shadow: var(--hg-shadow-xs);
 }
 
 .php-metric-icon {
-  font-size: 1.6rem;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(156, 240, 215, 0.18);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-primary-subtle);
+  color: var(--hg-primary);
   display: grid;
   place-items: center;
+  flex-shrink: 0;
 }
 
 .php-metric-info {
@@ -341,55 +315,55 @@
 }
 
 .php-metric-value {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--hg-text-main);
   line-height: 1.1;
 }
 
 .php-metric-label {
-  font-size: 0.74rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--hg-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 /* ========================================================
    SEARCH SECTION
    ======================================================== */
 .php-search-box {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 18px;
-  box-shadow: 0 16px 40px rgba(13, 92, 99, 0.12);
+  background-color: #ffffff;
+  border-radius: var(--hg-radius-lg);
+  padding: 14px;
+  box-shadow: var(--hg-shadow-sm);
   display: grid;
   grid-template-columns: 2fr 1.2fr 1.2fr auto auto;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  border: 1px solid rgba(13, 92, 99, 0.08);
+  border: 1px solid var(--hg-border);
 }
 
 .php-input-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: #f7fafb;
-  border: 1.5px solid #dce6ee;
-  border-radius: 14px;
-  padding: 12px 16px;
-  transition: border-color 0.18s ease, background 0.18s ease;
+  gap: 8px;
+  background-color: #ffffff;
+  border: 1px solid var(--hg-border);
+  border-radius: var(--hg-radius-md);
+  padding: 10px 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .php-input-wrap:focus-within {
-  border-color: #0ea5a4;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(14, 165, 164, 0.12);
+  border-color: var(--hg-primary);
+  box-shadow: 0 0 0 3px rgba(11, 90, 102, 0.15);
 }
 
 .php-input-icon {
-  font-size: 1.1rem;
-  color: #64748b;
+  color: var(--hg-text-muted);
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
 }
 
@@ -397,72 +371,74 @@
   border: none;
   background: transparent;
   width: 100%;
-  font-size: 0.92rem;
-  color: #1b2430;
-  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--hg-text-main);
   outline: none;
 }
 
 .php-search-input::placeholder {
-  color: #8a9ba8;
+  color: var(--hg-text-muted);
 }
 
 .php-select-wrap {
-  background: #f7fafb;
-  border: 1.5px solid #dce6ee;
-  border-radius: 14px;
-  padding: 12px 14px;
+  background-color: #ffffff;
+  border: 1px solid var(--hg-border);
+  border-radius: var(--hg-radius-md);
+  padding: 10px 12px;
   display: flex;
   align-items: center;
+  transition: border-color 0.15s ease;
+}
+
+.php-select-wrap:focus-within {
+  border-color: var(--hg-primary);
+  box-shadow: 0 0 0 3px rgba(11, 90, 102, 0.15);
 }
 
 .php-select-wrap select {
   border: none;
   background: transparent;
   width: 100%;
-  font-size: 0.9rem;
-  color: #1b2430;
-  font-family: inherit;
+  font-size: 0.88rem;
+  color: var(--hg-text-main);
   outline: none;
   cursor: pointer;
 }
 
 .php-btn-search {
-  padding: 14px 26px;
-  border-radius: 14px;
+  padding: 11px 22px;
+  border-radius: var(--hg-radius-md);
   border: none;
-  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  background-color: var(--hg-primary);
   color: #ffffff;
-  font-weight: 700;
-  font-size: 0.92rem;
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: 0 6px 18px rgba(13, 92, 99, 0.25);
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
-}
-
-.php-btn-search:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgba(13, 92, 99, 0.32);
-}
-
-.php-btn-reset {
-  padding: 14px 18px;
-  border-radius: 14px;
-  border: 1.5px solid #dce6ee;
-  background: #f7fafb;
-  color: #64748b;
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.16s ease;
+  box-shadow: var(--hg-shadow-xs);
+  transition: background-color 0.15s ease;
+}
+
+.php-btn-search:hover {
+  background-color: var(--hg-primary-hover);
+}
+
+.php-btn-reset {
+  padding: 11px 16px;
+  border-radius: var(--hg-radius-md);
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
+  color: var(--hg-text-secondary);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .php-btn-reset:hover {
-  background: #fee2e2;
-  color: #dc2626;
-  border-color: #fecaca;
+  background-color: var(--hg-surface-muted);
+  border-color: #cbd5e1;
 }
 
 /* Active filter pills */
@@ -471,38 +447,38 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 12px 0 0;
+  padding: 10px 0 0;
 }
 
 .php-filter-pill-label {
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.04em;
+  color: var(--hg-text-muted);
 }
 
 .php-filter-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 999px;
+  padding: 3px 8px;
+  background-color: var(--hg-primary-subtle);
+  border: 1px solid var(--hg-primary-border);
+  border-radius: var(--hg-radius-sm);
   font-size: 0.78rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--hg-primary);
 }
 
 .php-filter-pill button {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--hg-primary);
   cursor: pointer;
   padding: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
   font-size: 0.75rem;
 }
 
@@ -512,11 +488,11 @@
 .php-main {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 48px 24px 80px;
+  padding: 40px 24px 64px;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 64px;
+  gap: 48px;
 }
 
 /* Section headers */
@@ -526,7 +502,7 @@
   align-items: flex-end;
   flex-wrap: wrap;
   gap: 16px;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
 }
 
 .php-section-title-wrap {
@@ -536,112 +512,102 @@
 }
 
 .php-section-tag {
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #0ea5a4;
+  letter-spacing: 0.08em;
+  color: var(--hg-primary);
 }
 
 .php-section-title {
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #1b2430;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--hg-text-main);
   margin: 0;
 }
 
 .php-section-desc {
-  font-size: 0.92rem;
-  color: #53657a;
+  font-size: 0.9rem;
+  color: var(--hg-text-secondary);
   margin: 0;
 }
 
 .php-section-count {
-  font-size: 0.84rem;
-  font-weight: 700;
-  color: #0d5c63;
-  background: #eef8f8;
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(13, 92, 99, 0.12);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--hg-primary);
+  background-color: var(--hg-primary-subtle);
+  padding: 4px 12px;
+  border-radius: var(--hg-radius-sm);
+  border: 1px solid var(--hg-primary-border);
 }
 
 /* ========================================================
-   UPCOMING APPOINTMENTS SECTION (Conditional)
+   UPCOMING APPOINTMENTS SECTION
    ======================================================== */
 .php-appointments-section {
-  background: linear-gradient(135deg, #eef9f8 0%, #e6f5f4 100%);
-  border: 1.5px solid rgba(13, 92, 99, 0.15);
-  border-radius: 24px;
-  padding: 32px;
-  box-shadow: 0 12px 32px rgba(13, 92, 99, 0.05);
+  background-color: #ffffff;
+  border: 1px solid var(--hg-border);
+  border-radius: var(--hg-radius-xl);
+  padding: 28px;
+  box-shadow: var(--hg-shadow-xs);
 }
 
 .php-appointments-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  gap: 18px;
 }
 
 .php-appointment-card {
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 24px;
-  box-shadow: 0 8px 24px rgba(13, 92, 99, 0.06);
-  border: 1px solid rgba(13, 92, 99, 0.08);
+  background-color: #ffffff;
+  border-radius: var(--hg-radius-lg);
+  padding: 20px;
+  box-shadow: var(--hg-shadow-xs);
+  border: 1px solid var(--hg-border);
+  border-left: 4px solid var(--hg-primary);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   position: relative;
-  overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .php-appointment-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 36px rgba(13, 92, 99, 0.1);
-}
-
-.php-appointment-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 5px;
-  background: linear-gradient(180deg, #0d5c63, #1ba9a0);
+  border-color: #cbd5e1;
+  box-shadow: var(--hg-shadow-sm);
 }
 
 .php-appt-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
 }
 
 .php-appt-status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--hg-radius-sm);
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  background: #ecfdf5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
+  letter-spacing: 0.04em;
+  background-color: var(--hg-success-bg);
+  color: var(--hg-success);
+  border: 1px solid var(--hg-success-border);
 }
 
 .php-appt-time-badge {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #4b5e71;
-  background: #f1f5f9;
-  padding: 4px 8px;
-  border-radius: 8px;
+  color: var(--hg-text-secondary);
+  background-color: var(--hg-surface-muted);
+  padding: 3px 8px;
+  border-radius: var(--hg-radius-sm);
 }
 
 .php-appt-doctor {
@@ -651,13 +617,13 @@
 }
 
 .php-appt-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-primary);
   color: #ffffff;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -669,26 +635,26 @@
 }
 
 .php-appt-doc-name {
-  font-size: 1rem;
+  font-size: 0.98rem;
   font-weight: 700;
-  color: #1b2430;
+  color: var(--hg-text-main);
   margin: 0;
 }
 
 .php-appt-doc-spec {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #0ea5a4;
+  color: var(--hg-primary);
 }
 
 .php-appt-details {
   display: grid;
-  gap: 8px;
-  padding: 12px;
-  background: #f7fafb;
-  border-radius: 12px;
+  gap: 6px;
+  padding: 10px 12px;
+  background-color: var(--hg-surface-muted);
+  border-radius: var(--hg-radius-md);
   font-size: 0.82rem;
-  color: #475569;
+  color: var(--hg-text-secondary);
 }
 
 .php-appt-detail-row {
@@ -699,7 +665,7 @@
 
 .php-appt-reason {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--hg-text-muted);
   font-style: italic;
   margin: 0;
 }
@@ -710,51 +676,48 @@
 .php-specs-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 .php-spec-card {
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 20px;
-  border: 1.5px solid rgba(13, 92, 99, 0.08);
-  box-shadow: 0 4px 16px rgba(13, 92, 99, 0.04);
+  background-color: var(--hg-surface);
+  border-radius: var(--hg-radius-lg);
+  padding: 18px;
+  border: 1px solid var(--hg-border);
+  box-shadow: var(--hg-shadow-xs);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   text-align: left;
 }
 
 .php-spec-card:hover {
-  transform: translateY(-3px);
-  border-color: #0ea5a4;
-  box-shadow: 0 12px 28px rgba(13, 92, 99, 0.08);
-  background: #fcfefe;
+  border-color: var(--hg-primary);
+  box-shadow: var(--hg-shadow-sm);
 }
 
 .php-spec-card.active {
-  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
+  background-color: var(--hg-primary);
   color: #ffffff;
-  border-color: transparent;
-  box-shadow: 0 8px 24px rgba(13, 92, 99, 0.25);
+  border-color: var(--hg-primary);
 }
 
 .php-spec-icon-box {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: #eef8f8;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-primary-subtle);
+  color: var(--hg-primary);
   display: grid;
   place-items: center;
-  font-size: 1.35rem;
   flex-shrink: 0;
-  transition: background 0.18s ease;
 }
 
 .php-spec-card.active .php-spec-icon-box {
-  background: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
 }
 
 .php-spec-info {
@@ -763,8 +726,8 @@
 }
 
 .php-spec-name {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 0.92rem;
+  font-weight: 600;
   margin: 0;
   line-height: 1.2;
 }
@@ -774,13 +737,13 @@
 }
 
 .php-spec-sub {
-  font-size: 0.76rem;
-  color: #64748b;
+  font-size: 0.75rem;
+  color: var(--hg-text-muted);
   margin-top: 2px;
 }
 
 .php-spec-card.active .php-spec-sub {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 /* ========================================================
@@ -788,33 +751,32 @@
    ======================================================== */
 .php-doctors-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 20px;
 }
 
 .php-doctor-card {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 24px;
-  border: 1px solid rgba(13, 92, 99, 0.09);
-  box-shadow: 0 8px 24px rgba(13, 92, 99, 0.05);
+  background-color: var(--hg-surface);
+  border-radius: var(--hg-radius-lg);
+  padding: 22px;
+  border: 1px solid var(--hg-border);
+  box-shadow: var(--hg-shadow-xs);
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  gap: 16px;
   position: relative;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .php-doctor-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 48px rgba(13, 92, 99, 0.1);
-  border-color: rgba(14, 165, 164, 0.3);
+  border-color: #cbd5e1;
+  box-shadow: var(--hg-shadow-sm);
 }
 
 .php-doc-top {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 14px;
 }
 
 .php-doc-avatar-wrap {
@@ -822,60 +784,61 @@
 }
 
 .php-doc-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--hg-radius-md);
   object-fit: cover;
-  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
-  color: #ffffff;
-  font-size: 1.4rem;
-  font-weight: 800;
+  background-color: var(--hg-primary-subtle);
+  border: 1px solid var(--hg-primary-border);
+  color: var(--hg-primary);
+  font-size: 1.2rem;
+  font-weight: 700;
   display: grid;
   place-items: center;
-  box-shadow: 0 6px 16px rgba(13, 92, 99, 0.15);
 }
 
 .php-doc-status-indicator {
   position: absolute;
   bottom: -2px;
   right: -2px;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: #10b981;
-  border: 2.5px solid #ffffff;
+  background-color: #10b981;
+  border: 2px solid #ffffff;
 }
 
 .php-doc-main-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   flex: 1;
 }
 
 .php-doc-name {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #1b2430;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--hg-text-main);
   margin: 0;
 }
 
 .php-doc-spec-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 8px;
-  background: #eef8f8;
-  color: #0d5c63;
-  font-size: 0.78rem;
-  font-weight: 700;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--hg-radius-sm);
+  background-color: var(--hg-primary-subtle);
+  border: 1px solid var(--hg-primary-border);
+  color: var(--hg-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
   width: fit-content;
 }
 
 .php-doc-hospital-tag {
-  font-size: 0.82rem;
-  color: #53657a;
+  font-size: 0.8rem;
+  color: var(--hg-text-secondary);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -885,10 +848,10 @@
 .php-doc-meta-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 14px;
-  background: #f7fafb;
-  border-radius: 14px;
+  gap: 10px;
+  padding: 12px;
+  background-color: var(--hg-surface-muted);
+  border-radius: var(--hg-radius-md);
 }
 
 .php-doc-meta-item {
@@ -897,17 +860,17 @@
 }
 
 .php-doc-meta-label {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--hg-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .php-doc-meta-val {
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: #1b2430;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--hg-text-main);
 }
 
 .php-doc-actions {
@@ -917,21 +880,20 @@
 
 .php-btn-book {
   flex: 1;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 11px;
+  border-radius: var(--hg-radius-md);
   border: none;
-  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  background-color: var(--hg-primary);
   color: #ffffff;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.88rem;
   cursor: pointer;
-  transition: all 0.16s ease;
-  box-shadow: 0 4px 12px rgba(13, 92, 99, 0.2);
+  transition: background-color 0.15s ease;
+  box-shadow: var(--hg-shadow-xs);
 }
 
 .php-btn-book:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(13, 92, 99, 0.28);
+  background-color: var(--hg-primary-hover);
 }
 
 /* ========================================================
@@ -939,150 +901,148 @@
    ======================================================== */
 .php-hospitals-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
 }
 
 .php-hospital-card {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 24px;
-  border: 1px solid rgba(13, 92, 99, 0.08);
-  box-shadow: 0 6px 20px rgba(13, 92, 99, 0.04);
+  background-color: var(--hg-surface);
+  border-radius: var(--hg-radius-lg);
+  padding: 20px;
+  border: 1px solid var(--hg-border);
+  box-shadow: var(--hg-shadow-xs);
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  transition: all 0.2s ease;
+  gap: 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   cursor: pointer;
 }
 
 .php-hospital-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 36px rgba(13, 92, 99, 0.08);
-  border-color: #0ea5a4;
+  border-color: var(--hg-primary);
+  box-shadow: var(--hg-shadow-sm);
 }
 
 .php-hospital-card.active {
-  background: #eef8f8;
-  border-color: #0ea5a4;
-  box-shadow: 0 8px 24px rgba(14, 165, 164, 0.15);
+  background-color: var(--hg-primary-subtle);
+  border-color: var(--hg-primary);
 }
 
 .php-hosp-icon-wrap {
-  width: 50px;
-  height: 50px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
-  color: #ffffff;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-primary-subtle);
+  color: var(--hg-primary);
   display: grid;
   place-items: center;
-  font-size: 1.5rem;
 }
 
 .php-hosp-name {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #1b2430;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--hg-text-main);
   margin: 0;
 }
 
 .php-hosp-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 6px;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--hg-radius-sm);
   width: fit-content;
 }
 
 .php-hosp-badge.active {
-  background: #ecfdf5;
-  color: #059669;
+  background-color: var(--hg-success-bg);
+  border: 1px solid var(--hg-success-border);
+  color: var(--hg-success);
 }
 
 .php-hosp-badge.inactive {
-  background: #f1f5f9;
-  color: #64748b;
+  background-color: var(--hg-surface-muted);
+  color: var(--hg-text-muted);
 }
 
 /* ========================================================
    EMPTY, LOADING & ERROR STATES
    ======================================================== */
 .php-empty-card {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 48px 24px;
+  background-color: var(--hg-surface);
+  border-radius: var(--hg-radius-lg);
+  padding: 44px 24px;
   text-align: center;
-  border: 1.5px dashed #cbd5e1;
+  border: 1px dashed var(--hg-border);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .php-empty-icon {
-  font-size: 2.8rem;
-  opacity: 0.85;
+  font-size: 2.4rem;
+  color: var(--hg-text-muted);
 }
 
 .php-empty-title {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  color: #1b2430;
+  color: var(--hg-text-main);
   margin: 0;
 }
 
 .php-empty-desc {
-  font-size: 0.9rem;
-  color: #64748b;
-  max-width: 440px;
+  font-size: 0.88rem;
+  color: var(--hg-text-secondary);
+  max-width: 420px;
   margin: 0;
   line-height: 1.5;
 }
 
 .php-error-banner {
-  background: #fef2f2;
-  border: 1.5px solid #fecaca;
-  border-radius: 16px;
-  padding: 16px 20px;
+  background-color: var(--hg-danger-bg);
+  border: 1px solid var(--hg-danger-border);
+  border-radius: var(--hg-radius-md);
+  padding: 14px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  color: #991b1b;
-  margin-bottom: 24px;
+  color: var(--hg-danger);
+  margin-bottom: 20px;
 }
 
 .php-btn-retry {
-  padding: 8px 16px;
-  border-radius: 10px;
+  padding: 7px 14px;
+  border-radius: var(--hg-radius-md);
   border: none;
-  background: #dc2626;
+  background-color: var(--hg-danger);
   color: #ffffff;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.82rem;
   cursor: pointer;
   white-space: nowrap;
 }
 
-/* Shimmer Loading Skeleton */
+/* Skeleton Loading */
 .php-skeleton-card {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 24px;
-  border: 1px solid rgba(13, 92, 99, 0.06);
+  background-color: var(--hg-surface);
+  border-radius: var(--hg-radius-lg);
+  padding: 22px;
+  border: 1px solid var(--hg-border);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .php-skeleton {
-  background: linear-gradient(90deg, #edf2f7 25%, #e2e8f0 50%, #edf2f7 75%);
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-  border-radius: 8px;
+  border-radius: var(--hg-radius-sm);
 }
 
 @keyframes shimmer {
@@ -1096,9 +1056,7 @@
 .php-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(4, 30, 32, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background-color: rgba(15, 23, 42, 0.45);
   z-index: 200;
   display: grid;
   place-items: center;
@@ -1106,14 +1064,15 @@
 }
 
 .php-modal-card {
-  background: #ffffff;
-  border-radius: 24px;
+  background-color: #ffffff;
+  border-radius: var(--hg-radius-xl);
+  border: 1px solid var(--hg-border);
   width: min(520px, 100%);
-  padding: 32px;
-  box-shadow: 0 24px 60px rgba(4, 30, 32, 0.3);
+  padding: 28px;
+  box-shadow: var(--hg-shadow-lg);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   position: relative;
   max-height: 90vh;
   overflow-y: auto;
@@ -1127,28 +1086,29 @@
 }
 
 .php-modal-title {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: #1b2430;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--hg-text-main);
   margin: 0;
 }
 
 .php-btn-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: #f1f5f9;
-  color: #475569;
-  font-size: 1.1rem;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--hg-radius-sm);
+  border: 1px solid var(--hg-border);
+  background-color: var(--hg-surface);
+  color: var(--hg-text-secondary);
+  font-size: 1rem;
   display: grid;
   place-items: center;
   cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 
 .php-btn-close:hover {
-  background: #e2e8f0;
-  color: #1e293b;
+  background-color: var(--hg-surface-muted);
+  color: var(--hg-text-main);
 }
 
 .php-modal-form {
@@ -1165,29 +1125,29 @@
 
 .php-form-label {
   font-size: 0.84rem;
-  font-weight: 700;
-  color: #334155;
+  font-weight: 600;
+  color: var(--hg-text-main);
 }
 
 .php-form-input,
 .php-form-select,
 .php-form-textarea {
-  border: 1.5px solid #dce6ee;
-  border-radius: 12px;
-  padding: 12px 14px;
+  border: 1px solid var(--hg-border);
+  border-radius: var(--hg-radius-md);
+  padding: 10px 12px;
   font-family: inherit;
-  font-size: 0.92rem;
-  color: #1b2430;
+  font-size: 0.9rem;
+  color: var(--hg-text-main);
   outline: none;
-  background: #f8fafc;
+  background-color: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .php-form-input:focus,
 .php-form-select:focus,
 .php-form-textarea:focus {
-  border-color: #0ea5a4;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(14, 165, 164, 0.12);
+  border-color: var(--hg-primary);
+  box-shadow: 0 0 0 3px rgba(11, 90, 102, 0.15);
 }
 
 .php-time-grid {
@@ -1198,32 +1158,33 @@
 
 .php-time-btn {
   padding: 8px 10px;
-  border-radius: 10px;
-  border: 1.5px solid #e2e8f0;
-  background: #f8fafc;
-  font-size: 0.8rem;
+  border-radius: var(--hg-radius-md);
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
+  font-size: 0.82rem;
   font-weight: 600;
+  color: var(--hg-text-main);
   cursor: pointer;
-  transition: all 0.14s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.php-time-btn:hover {
-  border-color: #0ea5a4;
+.php-time-btn:hover:not(:disabled) {
+  border-color: var(--hg-primary);
+  background-color: var(--hg-primary-subtle);
 }
 
 .php-time-btn.active {
-  background: #0d5c63;
+  background-color: var(--hg-primary);
   color: #ffffff;
-  border-color: #0d5c63;
+  border-color: var(--hg-primary);
 }
 
 /* Booked & Blocked Time Slots */
 .php-time-btn.booked {
-  background: #fef2f2 !important;
-  color: #991b1b !important;
-  border-color: #fca5a5 !important;
+  background-color: var(--hg-danger-bg) !important;
+  color: var(--hg-danger) !important;
+  border-color: var(--hg-danger-border) !important;
   cursor: not-allowed !important;
-  opacity: 0.85;
   text-decoration: line-through;
   display: flex;
   align-items: center;
@@ -1233,23 +1194,21 @@
 
 .php-slot-booked-badge {
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
-  background: #fee2e2;
-  color: #dc2626;
-  border-radius: 4px;
-  padding: 1px 5px;
+  background-color: var(--hg-danger);
+  color: #ffffff;
+  border-radius: 3px;
+  padding: 1px 4px;
   text-decoration: none;
-  letter-spacing: 0.02em;
 }
 
 /* Past Time Slots */
 .php-time-btn.past {
-  background: #f1f5f9 !important;
-  color: #94a3b8 !important;
-  border-color: #e2e8f0 !important;
+  background-color: var(--hg-surface-muted) !important;
+  color: var(--hg-text-muted) !important;
+  border-color: var(--hg-border) !important;
   cursor: not-allowed !important;
-  opacity: 0.7;
   text-decoration: line-through;
   display: flex;
   align-items: center;
@@ -1259,14 +1218,13 @@
 
 .php-slot-past-badge {
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
-  background: #e2e8f0;
-  color: #64748b;
-  border-radius: 4px;
-  padding: 1px 5px;
+  background-color: #cbd5e1;
+  color: var(--hg-text-main);
+  border-radius: 3px;
+  padding: 1px 4px;
   text-decoration: none;
-  letter-spacing: 0.02em;
 }
 
 .php-slots-header-row {
@@ -1282,7 +1240,7 @@
   gap: 8px;
   font-size: 0.72rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--hg-text-muted);
 }
 
 .php-slots-legend-item {
@@ -1292,16 +1250,21 @@
 }
 
 .php-btn-submit {
-  padding: 14px;
-  border-radius: 12px;
+  padding: 12px;
+  border-radius: var(--hg-radius-md);
   border: none;
-  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  background-color: var(--hg-primary);
   color: #ffffff;
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: 0.92rem;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(13, 92, 99, 0.25);
-  margin-top: 8px;
+  box-shadow: var(--hg-shadow-xs);
+  transition: background-color 0.15s ease;
+  margin-top: 6px;
+}
+
+.php-btn-submit:hover:not(:disabled) {
+  background-color: var(--hg-primary-hover);
 }
 
 .php-btn-submit:disabled {
@@ -1310,16 +1273,16 @@
 }
 
 /* ========================================================
-   INTERACTIVE BOOKING CALENDAR (Blocked Dates Marked)
+   INTERACTIVE BOOKING CALENDAR
    ======================================================== */
 .php-calendar-box {
-  background: #f8fafc;
-  border: 1.5px solid #dce6ee;
-  border-radius: 16px;
-  padding: 16px;
+  background-color: var(--hg-surface-subtle);
+  border: 1px solid var(--hg-border);
+  border-radius: var(--hg-radius-lg);
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .php-cal-header {
@@ -1327,35 +1290,34 @@
   align-items: center;
   justify-content: space-between;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--hg-border);
 }
 
 .php-cal-month-title {
-  font-size: 0.96rem;
-  font-weight: 800;
-  color: #1b2430;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--hg-text-main);
   margin: 0;
 }
 
 .php-cal-nav-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
-  font-weight: 700;
-  font-size: 0.9rem;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--hg-radius-sm);
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
+  color: var(--hg-text-main);
+  font-weight: 600;
+  font-size: 0.85rem;
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: all 0.14s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .php-cal-nav-btn:hover:not(:disabled) {
-  background: #0d5c63;
-  color: #ffffff;
-  border-color: #0d5c63;
+  background-color: var(--hg-surface-muted);
+  border-color: #cbd5e1;
 }
 
 .php-cal-nav-btn:disabled {
@@ -1368,10 +1330,9 @@
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
   font-size: 0.72rem;
-  font-weight: 700;
-  color: #64748b;
+  font-weight: 600;
+  color: var(--hg-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .php-cal-grid {
@@ -1382,12 +1343,12 @@
 
 .php-cal-cell {
   aspect-ratio: 1;
-  border-radius: 10px;
+  border-radius: var(--hg-radius-sm);
   border: 1px solid transparent;
-  background: #ffffff;
-  color: #1b2430;
+  background-color: #ffffff;
+  color: var(--hg-text-main);
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   display: flex;
   flex-direction: column;
@@ -1395,7 +1356,7 @@
   justify-content: center;
   position: relative;
   cursor: pointer;
-  transition: all 0.14s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   padding: 2px;
 }
 
@@ -1406,121 +1367,104 @@
 }
 
 .php-cal-cell.past {
-  color: #cbd5e1;
-  background: #f8fafc;
+  color: var(--hg-text-muted);
+  background-color: var(--hg-surface-muted);
   cursor: not-allowed;
 }
 
-/* Dates Beyond Advance Booking Limit (> 90 days) */
 .php-cal-cell.beyond-limit {
-  color: #94a3b8;
-  background: #f1f5f9;
-  border-color: #e2e8f0;
+  color: var(--hg-text-muted);
+  background-color: var(--hg-surface-muted);
+  border-color: var(--hg-border);
   cursor: not-allowed !important;
   opacity: 0.6;
 }
 
-.php-cal-cell.beyond-limit:hover {
-  background: #f1f5f9;
-  border-color: #e2e8f0;
-  transform: none;
-}
-
 .php-cal-cell.available {
-  border-color: #a7f3d0;
-  color: #065f46;
-  background: #f0fdf4;
+  border-color: var(--hg-success-border);
+  color: var(--hg-success);
+  background-color: var(--hg-success-bg);
 }
 
 .php-cal-cell.available:hover {
-  background: #dcfce7;
-  border-color: #10b981;
-  transform: scale(1.04);
+  background-color: #d1fae5;
+  border-color: #059669;
 }
 
 .php-cal-cell.selected {
-  background: #0d5c63 !important;
+  background-color: var(--hg-primary) !important;
   color: #ffffff !important;
-  border-color: #0d5c63 !important;
-  font-weight: 800;
-  box-shadow: 0 4px 12px rgba(13, 92, 99, 0.3);
+  border-color: var(--hg-primary) !important;
+  font-weight: 700;
 }
 
-/* BLOCKED / ON LEAVE DATES - Distinct Red Marking */
 .php-cal-cell.blocked {
-  background: #fee2e2 !important;
-  color: #991b1b !important;
-  border-color: #fca5a5 !important;
+  background-color: var(--hg-danger-bg) !important;
+  color: var(--hg-danger) !important;
+  border-color: var(--hg-danger-border) !important;
   cursor: not-allowed !important;
-  opacity: 0.95;
   text-decoration: line-through;
 }
 
 .php-cal-blocked-tag {
   font-size: 0.55rem;
   line-height: 1;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
-  color: #dc2626;
+  color: var(--hg-danger);
   margin-top: 1px;
-  text-decoration: none;
 }
 
-/* OFF-DUTY DAYS */
 .php-cal-cell.off-duty {
-  background: #f1f5f9;
-  color: #94a3b8;
+  background-color: var(--hg-surface-muted);
+  color: var(--hg-text-muted);
   cursor: not-allowed;
 }
 
-/* FULLY BOOKED DAYS */
 .php-cal-cell.full {
-  background: #fff7ed !important;
-  color: #ea580c !important;
-  border-color: #ffedd5 !important;
+  background-color: var(--hg-warning-bg) !important;
+  color: var(--hg-warning) !important;
+  border-color: var(--hg-warning-border) !important;
   cursor: not-allowed !important;
-  opacity: 0.9;
 }
 
 .php-cal-full-tag {
   font-size: 0.55rem;
   line-height: 1;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
-  color: #ea580c;
+  color: var(--hg-warning);
   margin-top: 1px;
 }
 
-/* Limit Badge */
 .php-limit-badge {
   font-size: 0.72rem;
-  font-weight: 700;
-  color: #0d5c63;
-  background: #e6f7f6;
-  border: 1px solid #b2e3df;
-  border-radius: 999px;
-  padding: 2px 10px;
+  font-weight: 600;
+  color: var(--hg-primary);
+  background-color: var(--hg-primary-subtle);
+  border: 1px solid var(--hg-primary-border);
+  border-radius: var(--hg-radius-sm);
+  padding: 2px 8px;
   white-space: nowrap;
 }
 
-/* CALENDAR LEGEND */
 .php-cal-legend {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 12px;
   padding-top: 8px;
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px solid var(--hg-border);
   font-size: 0.72rem;
-  font-weight: 600;
-  color: #475569;
+  font-weight: 500;
+  color: var(--hg-text-secondary);
 }
 
 .php-legend-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .php-legend-dot {
@@ -1529,51 +1473,286 @@
   border-radius: 50%;
 }
 
-.php-legend-dot.avail { background: #10b981; }
-.php-legend-dot.block { background: #ef4444; }
-.php-legend-dot.off { background: #94a3b8; }
-.php-legend-dot.full { background: #f97316; }
-.php-legend-dot.sel { background: #0d5c63; }
-.php-legend-dot.beyond { background: #cbd5e1; }
+.php-legend-dot.avail { background-color: #10b981; }
+.php-legend-dot.block { background-color: #ef4444; }
+.php-legend-dot.off { background-color: #94a3b8; }
+.php-legend-dot.full { background-color: #f97316; }
+.php-legend-dot.sel { background-color: var(--hg-primary); }
+.php-legend-dot.beyond { background-color: #cbd5e1; }
 
-/* Blocked Date Alert Box */
 .php-date-status-alert {
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: 8px 12px;
+  border-radius: var(--hg-radius-md);
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .php-date-status-alert.blocked {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
+  background-color: var(--hg-danger-bg);
+  border: 1px solid var(--hg-danger-border);
+  color: var(--hg-danger);
 }
 
 .php-date-status-alert.available {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #15803d;
+  background-color: var(--hg-success-bg);
+  border: 1px solid var(--hg-success-border);
+  color: var(--hg-success);
 }
 
 .php-date-status-alert.off {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  color: #64748b;
+  background-color: var(--hg-surface-muted);
+  border: 1px solid var(--hg-border);
+  color: var(--hg-text-muted);
 }
 
+/* ========================================================
+   NOTIFICATION BELL & DROPDOWN
+   ======================================================== */
+.php-notif-bell-wrap {
+  position: relative;
+}
+
+.php-notif-bell-btn {
+  background-color: #ffffff;
+  border: 1px solid var(--hg-border);
+  border-radius: var(--hg-radius-md);
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  color: var(--hg-text-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.php-notif-bell-btn:hover {
+  background-color: var(--hg-surface-muted);
+  border-color: #cbd5e1;
+  color: var(--hg-text-main);
+}
+
+.php-notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background-color: var(--hg-danger);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+  line-height: 1;
+}
+
+.php-notif-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 340px;
+  max-width: 90vw;
+  background-color: #ffffff;
+  border-radius: var(--hg-radius-lg);
+  border: 1px solid var(--hg-border);
+  box-shadow: var(--hg-shadow-md);
+  padding: 14px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.php-notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--hg-border-subtle);
+}
+
+.php-notif-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--hg-text-main);
+  margin: 0;
+}
+
+.php-notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.php-notif-item {
+  padding: 8px 10px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-surface-muted);
+  border: 1px solid var(--hg-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.php-notif-item.unread {
+  background-color: var(--hg-primary-subtle);
+  border-color: var(--hg-primary-border);
+}
+
+.php-notif-item-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--hg-primary);
+}
+
+.php-notif-item-msg {
+  font-size: 0.78rem;
+  color: var(--hg-text-secondary);
+  line-height: 1.35;
+}
+
+.php-notif-item-time {
+  font-size: 0.68rem;
+  color: var(--hg-text-muted);
+}
+
+/* ========================================================
+   APPOINTMENT RESCHEDULE ACTION BOX
+   ======================================================== */
+.php-reschedule-action-box {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: var(--hg-warning-bg);
+  border: 1px solid var(--hg-warning-border);
+  border-radius: var(--hg-radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.php-reschedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.php-reschedule-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--hg-warning);
+  background-color: rgba(255, 255, 255, 0.6);
+  padding: 2px 8px;
+  border-radius: var(--hg-radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.php-reschedule-note {
+  font-size: 0.8rem;
+  color: var(--hg-warning);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.php-reschedule-compare {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  padding: 8px 10px;
+  border-radius: var(--hg-radius-sm);
+  border: 1px solid rgba(146, 64, 14, 0.2);
+}
+
+.php-compare-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.php-compare-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--hg-warning);
+}
+
+.php-compare-val {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--hg-text-main);
+}
+
+.php-compare-col.proposed .php-compare-val {
+  color: var(--hg-primary);
+}
+
+.php-compare-arrow {
+  color: var(--hg-warning);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.php-reschedule-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.php-btn-accept-reschedule {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: var(--hg-radius-md);
+  border: none;
+  background-color: var(--hg-primary);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.php-btn-accept-reschedule:hover:not(:disabled) {
+  background-color: var(--hg-primary-hover);
+}
+
+.php-btn-decline-reschedule {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: var(--hg-radius-md);
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
+  color: var(--hg-text-main);
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.php-btn-decline-reschedule:hover:not(:disabled) {
+  background-color: var(--hg-surface-muted);
+}
 
 /* ========================================================
    FOOTER
    ======================================================== */
 .php-footer {
   margin-top: auto;
-  background: #041e20;
-  color: rgba(255, 255, 255, 0.7);
-  padding: 40px 24px;
+  background-color: #0f172a;
+  color: #94a3b8;
+  padding: 32px 24px;
 }
 
 .php-footer-inner {
@@ -1583,15 +1762,15 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 20px;
-  font-size: 0.85rem;
+  gap: 16px;
+  font-size: 0.82rem;
 }
 
 .php-footer-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 700;
+  gap: 8px;
+  font-weight: 600;
   color: #ffffff;
 }
 
@@ -1619,7 +1798,7 @@
   }
 
   .php-hero {
-    padding: 40px 20px 48px;
+    padding: 28px 20px 32px;
   }
 
   .php-hero-top {
@@ -1628,249 +1807,6 @@
 
   .php-metric-card {
     flex: 1;
-    min-width: 140px;
+    min-width: 130px;
   }
 }
-
-/* ========================================================
-   NOTIFICATION BELL & DROPDOWN
-   ======================================================== */
-.php-notif-bell-wrap {
-  position: relative;
-}
-
-.php-notif-bell-btn {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  color: #334155;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.16s ease;
-}
-
-.php-notif-bell-btn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.php-notif-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #ef4444;
-  color: #ffffff;
-  font-size: 0.68rem;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 999px;
-  border: 2px solid #ffffff;
-  line-height: 1;
-}
-
-.php-notif-dropdown {
-  position: absolute;
-  top: calc(100% + 12px);
-  right: 0;
-  width: 360px;
-  max-width: 90vw;
-  background: #ffffff;
-  border-radius: 18px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
-  padding: 16px;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  animation: ddFadeIn 0.2s ease;
-}
-
-.php-notif-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.php-notif-title {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: #1e293b;
-  margin: 0;
-}
-
-.php-notif-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 320px;
-  overflow-y: auto;
-}
-
-.php-notif-item {
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #f1f5f9;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  transition: all 0.15s ease;
-}
-
-.php-notif-item.unread {
-  background: #f0fdfa;
-  border-color: #ccfbf1;
-}
-
-.php-notif-item-title {
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: #0d5c63;
-}
-
-.php-notif-item-msg {
-  font-size: 0.78rem;
-  color: #475569;
-  line-height: 1.35;
-}
-
-.php-notif-item-time {
-  font-size: 0.68rem;
-  color: #94a3b8;
-}
-
-/* ========================================================
-   APPOINTMENT RESCHEDULE ACTION BOX
-   ======================================================== */
-.php-reschedule-action-box {
-  margin-top: 14px;
-  padding: 14px;
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  border: 1.5px solid #fde68a;
-  border-radius: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.php-reschedule-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.php-reschedule-badge {
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #92400e;
-  background: #fef08a;
-  padding: 4px 10px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.php-reschedule-note {
-  font-size: 0.82rem;
-  color: #78350f;
-  font-style: italic;
-  margin: 0;
-  line-height: 1.35;
-}
-
-.php-reschedule-compare {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.8);
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(245, 158, 11, 0.2);
-}
-
-.php-compare-col {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.php-compare-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #78350f;
-}
-
-.php-compare-val {
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: #1e293b;
-}
-
-.php-compare-col.proposed .php-compare-val {
-  color: #0d5c63;
-}
-
-.php-compare-arrow {
-  color: #d97706;
-  font-weight: 900;
-  font-size: 1.1rem;
-}
-
-.php-reschedule-btns {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.php-btn-accept-reschedule {
-  flex: 1;
-  padding: 9px 14px;
-  border-radius: 10px;
-  border: none;
-  background: #0d5c63;
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 0.82rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  box-shadow: 0 2px 8px rgba(13, 92, 99, 0.2);
-  transition: all 0.15s ease;
-}
-
-.php-btn-accept-reschedule:hover:not(:disabled) {
-  background: #0a464c;
-  box-shadow: 0 4px 12px rgba(13, 92, 99, 0.3);
-}
-
-.php-btn-decline-reschedule {
-  flex: 1;
-  padding: 9px 14px;
-  border-radius: 10px;
-  border: 1.5px solid #cbd5e1;
-  background: #ffffff;
-  color: #475569;
-  font-weight: 700;
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.php-btn-decline-reschedule:hover:not(:disabled) {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-  color: #1e293b;
-}
-

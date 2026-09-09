@@ -1,38 +1,30 @@
+/* ==========================================================================
+   HEALTHGATE ERROR / SYSTEM NOTICE PAGE
+   Clean clinical diagnostic view adhering to healthcare design standards.
+   ========================================================================== */
+
 .error-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 32px 20px;
-  background: linear-gradient(135deg, #eef7f6 0%, #e3f2f5 50%, #eaf4fb 100%);
-  color: #1b2430;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background-color: var(--hg-bg, #f8fafc);
+  color: var(--hg-text, #0f172a);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .error-card {
-  width: min(640px, 100%);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  border-radius: 28px;
-  box-shadow: 0 24px 60px rgba(13, 92, 99, 0.12), 0 4px 16px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(14, 165, 164, 0.15);
-  padding: 48px 40px;
+  width: min(580px, 100%);
+  background: #ffffff;
+  border-radius: var(--hg-radius-lg, 12px);
+  box-shadow: var(--hg-shadow-md, 0 4px 6px -1px rgba(15, 23, 42, 0.07));
+  border: 1px solid var(--hg-border, #e2e8f0);
+  padding: 44px 36px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: errorFadeIn 0.4s ease-out;
-}
-
-@keyframes errorFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .error-badge-wrapper {
@@ -41,79 +33,82 @@
 }
 
 .error-icon-badge {
-  width: 80px;
-  height: 80px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
-  color: #ffffff;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 12px 28px rgba(13, 92, 99, 0.25);
-  font-size: 2.5rem;
+  font-size: 2.2rem;
 }
 
 .error-code-chip {
   position: absolute;
-  bottom: -8px;
-  right: -12px;
-  background: #e63946;
+  bottom: -6px;
+  right: -10px;
+  background: #dc2626;
   color: #ffffff;
-  font-weight: 800;
-  font-size: 0.82rem;
-  padding: 4px 10px;
-  border-radius: 999px;
-  letter-spacing: 0.05em;
-  box-shadow: 0 4px 10px rgba(230, 57, 70, 0.3);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
 }
 
 .error-title {
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-size: clamp(1.5rem, 3.5vw, 1.9rem);
   font-weight: 700;
-  color: #112a36;
-  margin-bottom: 12px;
+  color: var(--hg-text, #0f172a);
+  margin: 0 0 10px 0;
   line-height: 1.25;
+  letter-spacing: -0.02em;
 }
 
 .error-message {
-  font-size: 1.05rem;
-  color: #465768;
-  max-width: 480px;
-  line-height: 1.6;
-  margin-bottom: 28px;
+  font-size: 0.95rem;
+  color: var(--hg-text-muted, #475569);
+  max-width: 440px;
+  line-height: 1.55;
+  margin: 0 0 24px 0;
 }
 
 .error-details-toggle {
   background: transparent;
   border: none;
-  color: #0d5c63;
+  color: var(--hg-primary, #0b5a66);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.86rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 20px;
-  transition: color 0.2s;
+  margin-bottom: 18px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
 }
 
 .error-details-toggle:hover {
-  color: #1a8c86;
+  background-color: var(--hg-primary-subtle, #f0f7f8);
   text-decoration: underline;
 }
 
 .error-details-box {
   width: 100%;
   text-align: left;
-  background: #1e293b;
-  color: #f1f5f9;
-  font-family: 'Fira Code', 'Courier New', monospace;
-  font-size: 0.85rem;
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 28px;
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  padding: 14px 16px;
+  border-radius: 6px;
+  margin-bottom: 24px;
   overflow-x: auto;
-  max-height: 200px;
+  max-height: 180px;
   border: 1px solid #334155;
 }
 
@@ -121,7 +116,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
   width: 100%;
 }
@@ -131,42 +126,39 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 14px 24px;
-  border-radius: 14px;
+  padding: 10px 20px;
+  border-radius: var(--hg-radius-sm, 6px);
   font-weight: 600;
-  font-size: 0.98rem;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  border: 1px solid transparent;
   text-decoration: none;
 }
 
 .error-btn-primary {
-  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  background: var(--hg-primary, #0b5a66);
   color: #ffffff;
-  box-shadow: 0 8px 20px rgba(13, 92, 99, 0.25);
 }
 
 .error-btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(13, 92, 99, 0.35);
+  background: var(--hg-primary-hover, #084852);
 }
 
 .error-btn-secondary {
   background: #ffffff;
-  color: #274157;
-  border: 1px solid #d0dfeb;
+  color: var(--hg-text, #0f172a);
+  border: 1px solid var(--hg-border-strong, #cbd5e1);
 }
 
 .error-btn-secondary:hover {
-  background: #f4f8fb;
-  border-color: #b8cfdf;
-  transform: translateY(-1px);
+  background: var(--hg-bg, #f8fafc);
+  border-color: var(--hg-text-muted, #94a3b8);
 }
 
 @media (max-width: 580px) {
   .error-card {
-    padding: 36px 24px;
+    padding: 32px 20px;
   }
   .error-actions {
     flex-direction: column;

@@ -137,7 +137,7 @@ function HomePage({ isLoggedIn }: HomePageProps) {
 
             <p className="hp-hero-sub">
               Discover hospitals, find the right doctors and specialists, and book
-              appointments — all through <strong style={{ color: '#9cf0d7' }}>HealthGate</strong>.
+              appointments — all through <strong className="hp-brand-highlight">HealthGate</strong>.
             </p>
 
             <div className="hp-hero-ctas">

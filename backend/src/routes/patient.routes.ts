@@ -14,7 +14,7 @@ const router = Router();
 router.get("/me", protect, authorize("patient"), getMyPatientProfile);
 router.put(
   "/me",
-  protect,
+  protect,  
   authorize("patient"),
   uploadProfileImage,
   updateMyPatientProfile,

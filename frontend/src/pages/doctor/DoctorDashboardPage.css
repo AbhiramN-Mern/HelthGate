@@ -1,12 +1,12 @@
 /* ========================================================
-   HEALTHGATE — Doctor Dashboard Styles
+   HEALTHGATE — Doctor Dashboard Styles (Clinical Design)
    ======================================================== */
 
 .dd-root {
   min-height: 100vh;
-  background: #f4fbfb;
-  color: #1b2430;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--hg-bg);
+  color: var(--hg-text-main);
+  font-family: inherit;
   display: flex;
   flex-direction: column;
 }
@@ -18,18 +18,16 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(13, 92, 99, 0.09);
-  box-shadow: 0 4px 20px rgba(13, 92, 99, 0.05);
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--hg-border);
+  box-shadow: var(--hg-shadow-xs);
 }
 
 .dd-header-inner {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 24px;
-  height: 80px;
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -39,69 +37,68 @@
 .dd-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   cursor: pointer;
 }
 
 .dd-brand-logo {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-primary);
   display: grid;
   place-items: center;
   color: #ffffff;
-  font-weight: 800;
-  font-size: 1rem;
-  box-shadow: 0 4px 12px rgba(13, 92, 99, 0.25);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
 }
 
 .dd-brand-title {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #0d5c63;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--hg-primary);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
 .dd-brand-tag {
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 0.68rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #0ea5a4;
+  letter-spacing: 0.06em;
+  color: var(--hg-text-muted);
 }
 
 /* Doctor Profile Header Block */
 .dd-header-profile {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .dd-doc-chip {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 14px 6px 6px;
-  background: #f0f9f8;
-  border: 1px solid rgba(13, 92, 99, 0.12);
+  gap: 10px;
+  padding: 4px 12px 4px 4px;
+  background-color: var(--hg-surface-muted);
+  border: 1px solid var(--hg-border);
   border-radius: 999px;
 }
 
 .dd-doc-avatar {
-  width: 44px;
-  height: 44px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   object-fit: cover;
-  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  background-color: var(--hg-primary);
   color: #ffffff;
   display: grid;
   place-items: center;
-  font-weight: 800;
-  font-size: 1rem;
-  border: 2px solid #ffffff;
-  box-shadow: 0 2px 8px rgba(13, 92, 99, 0.15);
+  font-weight: 700;
+  font-size: 0.85rem;
 }
 
 .dd-doc-text {
@@ -111,26 +108,26 @@
 }
 
 .dd-doc-name {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: #1b2430;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--hg-text-main);
 }
 
 .dd-doc-sub {
-  font-size: 0.75rem;
-  color: #53657a;
+  font-size: 0.72rem;
+  color: var(--hg-text-secondary);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .dd-doc-spec-tag {
-  color: #0d5c63;
-  font-weight: 700;
+  color: var(--hg-primary);
+  font-weight: 600;
 }
 
 .dd-doc-hosp-tag {
-  color: #64748b;
+  color: var(--hg-text-muted);
 }
 
 .dd-header-actions {
@@ -142,89 +139,83 @@
 .dd-header-status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 9999px;
-  font-size: 0.82rem;
-  font-weight: 700;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--hg-radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1.5px solid transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  border: 1px solid transparent;
 }
 
 .dd-header-status-pill.active {
-  background: #ecfdf5;
-  color: #065f46;
-  border-color: #a7f3d0;
+  background-color: var(--hg-success-bg);
+  color: var(--hg-success);
+  border-color: var(--hg-success-border);
 }
 
 .dd-header-status-pill.active:hover {
-  background: #d1fae5;
-  transform: translateY(-1px);
+  background-color: #d1fae5;
 }
 
 .dd-header-status-pill.inactive {
-  background: #fef3c7;
-  color: #92400e;
-  border-color: #fde68a;
+  background-color: var(--hg-warning-bg);
+  color: var(--hg-warning);
+  border-color: var(--hg-warning-border);
 }
 
 .dd-header-status-pill.inactive:hover {
-  background: #fde68a;
-  transform: translateY(-1px);
+  background-color: #fde68a;
 }
 
 .dd-status-dot-sm {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   display: inline-block;
 }
 
 .dd-status-dot-sm.active {
-  background: #10b981;
-  box-shadow: 0 0 6px #10b981;
+  background-color: #059669;
 }
 
 .dd-status-dot-sm.inactive {
-  background: #d97706;
-  box-shadow: 0 0 6px #d97706;
+  background-color: #d97706;
 }
 
 .dd-btn-profile {
-  padding: 9px 18px;
-  border-radius: 12px;
-  border: 1.5px solid #d6e1eb;
-  background: #ffffff;
-  color: #1b2430;
-  font-size: 0.88rem;
+  padding: 7px 14px;
+  border-radius: var(--hg-radius-md);
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
+  color: var(--hg-text-main);
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .dd-btn-profile:hover {
-  border-color: #0ea5a4;
-  color: #0d5c63;
-  background: #f4fbfb;
+  border-color: #cbd5e1;
+  background-color: var(--hg-surface-muted);
 }
 
 .dd-btn-logout {
-  padding: 9px 18px;
-  border-radius: 12px;
-  border: 1.5px solid #fee2e2;
-  background: #fff5f5;
-  color: #dc2626;
-  font-size: 0.88rem;
+  padding: 7px 14px;
+  border-radius: var(--hg-radius-md);
+  border: 1px solid var(--hg-danger-border);
+  background-color: var(--hg-danger-bg);
+  color: var(--hg-danger);
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .dd-btn-logout:hover {
-  background: #dc2626;
+  background-color: var(--hg-danger);
   color: #ffffff;
-  border-color: #dc2626;
 }
 
 /* ========================================================
@@ -233,51 +224,39 @@
 .dd-main {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 36px 24px 80px;
+  padding: 32px 24px 64px;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 32px;
 }
 
-/* Welcome Banner */
+/* Welcome Banner (Clean, Deep Clinical Teal Card) */
 .dd-welcome-banner {
-  background: linear-gradient(135deg, #041e20 0%, #0d5c63 60%, #1a8c86 100%);
+  background-color: var(--hg-primary);
   color: #ffffff;
-  border-radius: 24px;
-  padding: 36px 32px;
+  border-radius: var(--hg-radius-lg);
+  padding: 28px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 24px;
-  box-shadow: 0 16px 40px rgba(13, 92, 99, 0.15);
-  position: relative;
-  overflow: hidden;
-}
-
-.dd-welcome-banner::before {
-  content: '';
-  position: absolute;
-  width: 400px;
-  height: 400px;
-  border-radius: 50%;
-  top: -150px;
-  right: -80px;
-  background: radial-gradient(circle, rgba(26, 169, 160, 0.25) 0%, transparent 70%);
-  pointer-events: none;
+  gap: 20px;
+  border: 1px solid var(--hg-primary-border);
+  box-shadow: var(--hg-shadow-sm);
 }
 
 .dd-welcome-text h1 {
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
-  font-weight: 900;
-  margin: 0 0 8px;
+  font-size: clamp(1.6rem, 2.5vw, 2.1rem);
+  font-weight: 700;
+  margin: 0 0 6px;
   letter-spacing: -0.02em;
+  color: #ffffff;
 }
 
 .dd-welcome-text p {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.88);
   margin: 0;
   max-width: 580px;
   line-height: 1.6;
@@ -286,87 +265,81 @@
 .dd-welcome-status-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(12px);
-  padding: 12px 18px;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  gap: 14px;
+  background-color: rgba(255, 255, 255, 0.12);
+  padding: 10px 16px;
+  border-radius: var(--hg-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .dd-welcome-status-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .dd-status-sublabel {
   display: block;
-  font-size: 0.74rem;
-  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.8);
   font-weight: 500;
   margin-top: 1px;
 }
 
 .dd-status-switch-btn {
-  padding: 7px 14px;
-  border-radius: 9999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  border: 1.5px solid rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+  border-radius: var(--hg-radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background-color: rgba(255, 255, 255, 0.15);
   color: #ffffff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease;
   white-space: nowrap;
 }
 
 .dd-status-switch-btn:hover {
-  background: #ffffff;
-  color: #0d5c63;
+  background-color: #ffffff;
+  color: var(--hg-primary);
   border-color: #ffffff;
-  transform: translateY(-1px);
 }
 
 .dd-status-switch-btn.inactive {
-  background: #f59e0b;
-  border-color: #f59e0b;
+  background-color: var(--hg-warning);
+  border-color: var(--hg-warning);
   color: #ffffff;
 }
 
 .dd-status-switch-btn.inactive:hover {
-  background: #d97706;
-  border-color: #d97706;
-  color: #ffffff;
+  background-color: #b45309;
 }
 
 .dd-welcome-status {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(10px);
-  padding: 12px 20px;
-  border-radius: 16px;
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.12);
+  padding: 10px 16px;
+  border-radius: var(--hg-radius-md);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .dd-status-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 10px #10b981;
+  background-color: #10b981;
 }
 
 .dd-status-dot.offline {
-  background: #f59e0b;
-  box-shadow: 0 0 10px #f59e0b;
+  background-color: #f59e0b;
 }
 
 .dd-status-label {
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #ffffff;
 }
 
 /* ========================================================
@@ -375,42 +348,41 @@
 .dd-stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  gap: 18px;
 }
 
 .dd-stat-card {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 24px;
-  border: 1px solid rgba(13, 92, 99, 0.08);
-  box-shadow: 0 8px 24px rgba(13, 92, 99, 0.04);
+  background-color: var(--hg-surface);
+  border-radius: var(--hg-radius-lg);
+  padding: 20px;
+  border: 1px solid var(--hg-border);
+  box-shadow: var(--hg-shadow-xs);
   display: flex;
   align-items: center;
-  gap: 18px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: 16px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   cursor: pointer;
 }
 
 .dd-stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 36px rgba(13, 92, 99, 0.09);
-  border-color: rgba(14, 165, 164, 0.3);
+  border-color: var(--hg-primary);
+  box-shadow: var(--hg-shadow-sm);
 }
 
 .dd-stat-icon-wrap {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--hg-radius-md);
   display: grid;
   place-items: center;
-  font-size: 1.7rem;
+  font-size: 1.4rem;
   flex-shrink: 0;
 }
 
-.dd-stat-icon-wrap.today { background: #e0f2fe; color: #0284c7; }
-.dd-stat-icon-wrap.upcoming { background: #fef3c7; color: #d97706; }
-.dd-stat-icon-wrap.completed { background: #dcfce7; color: #15803d; }
-.dd-stat-icon-wrap.patients { background: #f3e8ff; color: #7e22ce; }
+.dd-stat-icon-wrap.today { background-color: var(--hg-info-bg); color: var(--hg-info); }
+.dd-stat-icon-wrap.upcoming { background-color: var(--hg-warning-bg); color: var(--hg-warning); }
+.dd-stat-icon-wrap.completed { background-color: var(--hg-success-bg); color: var(--hg-success); }
+.dd-stat-icon-wrap.patients { background-color: #f5f3ff; color: #6d28d9; }
 
 .dd-stat-info {
   display: flex;
@@ -418,15 +390,15 @@
 }
 
 .dd-stat-val {
-  font-size: 2rem;
-  font-weight: 900;
-  color: #1b2430;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--hg-text-main);
   line-height: 1.1;
 }
 
 .dd-stat-label {
-  font-size: 0.82rem;
-  color: #64748b;
+  font-size: 0.75rem;
+  color: var(--hg-text-muted);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -439,7 +411,7 @@
 .dd-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .dd-section-header {
@@ -453,71 +425,60 @@
 .dd-section-title-wrap {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .dd-section-tag {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #0ea5a4;
+  letter-spacing: 0.08em;
+  color: var(--hg-primary);
 }
 
 .dd-section-title {
-  font-size: 1.45rem;
-  font-weight: 800;
-  color: #1b2430;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--hg-text-main);
   margin: 0;
 }
 
 .dd-section-badge {
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: #eef8f8;
-  color: #0d5c63;
-  border: 1px solid rgba(13, 92, 99, 0.12);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--hg-radius-sm);
+  background-color: var(--hg-primary-subtle);
+  color: var(--hg-primary);
+  border: 1px solid var(--hg-primary-border);
 }
 
 /* ========================================================
-   3. TODAY'S APPOINTMENTS & 4. UPCOMING APPOINTMENTS
+   3. APPOINTMENT CARDS
    ======================================================== */
 .dd-appointments-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
 }
 
 .dd-appointment-card {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 24px;
-  border: 1px solid rgba(13, 92, 99, 0.09);
-  box-shadow: 0 8px 24px rgba(13, 92, 99, 0.04);
+  background-color: var(--hg-surface);
+  border-radius: var(--hg-radius-lg);
+  padding: 20px;
+  border: 1px solid var(--hg-border);
+  border-left: 4px solid var(--hg-primary);
+  box-shadow: var(--hg-shadow-xs);
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  transition: all 0.2s ease;
+  gap: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   position: relative;
-  overflow: hidden;
 }
 
 .dd-appointment-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 36px rgba(13, 92, 99, 0.09);
-  border-color: rgba(14, 165, 164, 0.35);
-}
-
-.dd-appointment-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 5px;
-  background: linear-gradient(180deg, #0d5c63, #1ba9a0);
+  border-color: #cbd5e1;
+  box-shadow: var(--hg-shadow-sm);
 }
 
 .dd-appt-top {
@@ -530,17 +491,17 @@
 .dd-patient-chip {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .dd-patient-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-primary);
   color: #ffffff;
-  font-weight: 800;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 0.95rem;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -552,43 +513,43 @@
 }
 
 .dd-patient-name {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #1b2430;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--hg-text-main);
   margin: 0;
 }
 
 .dd-patient-meta {
-  font-size: 0.78rem;
-  color: #64748b;
+  font-size: 0.76rem;
+  color: var(--hg-text-muted);
 }
 
 .dd-status-pill {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--hg-radius-sm);
+  font-size: 0.7rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
-.dd-status-pill.scheduled { background: #fef3c7; color: #b45309; }
-.dd-status-pill.confirmed { background: #e0f2fe; color: #0369a1; }
-.dd-status-pill.in-consultation { background: #dbeafe; color: #1d4ed8; animation: pulse 1.5s infinite; }
-.dd-status-pill.completed { background: #dcfce7; color: #15803d; }
-.dd-status-pill.cancelled { background: #fee2e2; color: #b91c1c; }
+.dd-status-pill.scheduled { background-color: var(--hg-warning-bg); color: var(--hg-warning); border: 1px solid var(--hg-warning-border); }
+.dd-status-pill.confirmed { background-color: var(--hg-info-bg); color: var(--hg-info); border: 1px solid var(--hg-info-border); }
+.dd-status-pill.in-consultation { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.dd-status-pill.completed { background-color: var(--hg-success-bg); color: var(--hg-success); border: 1px solid var(--hg-success-border); }
+.dd-status-pill.cancelled { background-color: var(--hg-danger-bg); color: var(--hg-danger); border: 1px solid var(--hg-danger-border); }
 
 .dd-appt-details-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 12px 14px;
-  background: #f8fafc;
-  border-radius: 14px;
-  font-size: 0.82rem;
+  gap: 8px;
+  padding: 10px 12px;
+  background-color: var(--hg-surface-muted);
+  border-radius: var(--hg-radius-md);
+  font-size: 0.8rem;
 }
 
 .dd-detail-cell {
@@ -598,36 +559,36 @@
 }
 
 .dd-detail-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--hg-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .dd-detail-val {
-  font-weight: 700;
-  color: #1b2430;
+  font-weight: 600;
+  color: var(--hg-text-main);
 }
 
 .dd-appt-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin-top: auto;
 }
 
 .dd-btn-consult {
   flex: 1;
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: 9px 12px;
+  border-radius: var(--hg-radius-md);
   border: none;
-  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  background-color: var(--hg-primary);
   color: #ffffff;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.16s ease;
-  box-shadow: 0 4px 12px rgba(13, 92, 99, 0.2);
+  transition: background-color 0.15s ease;
+  box-shadow: var(--hg-shadow-xs);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -635,93 +596,90 @@
 }
 
 .dd-btn-consult:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(13, 92, 99, 0.28);
+  background-color: var(--hg-primary-hover);
 }
 
 .dd-btn-view-details {
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: 1.5px solid #d6e1eb;
-  background: #ffffff;
-  color: #334155;
-  font-weight: 700;
+  padding: 9px 14px;
+  border-radius: var(--hg-radius-md);
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
+  color: var(--hg-text-main);
+  font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .dd-btn-view-details:hover {
-  border-color: #0ea5a4;
-  color: #0d5c63;
-  background: #f4fbfb;
+  background-color: var(--hg-surface-muted);
+  border-color: #cbd5e1;
 }
 
 .dd-btn-reschedule {
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1.5px solid #cbd5e1;
-  background: #ffffff;
-  color: #0d5c63;
-  font-weight: 700;
+  padding: 9px 12px;
+  border-radius: var(--hg-radius-md);
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
+  color: var(--hg-primary);
+  font-weight: 600;
   font-size: 0.82rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  transition: all 0.16s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .dd-btn-reschedule:hover {
-  background: #f0fdfa;
-  border-color: #0ea5a4;
-  color: #0f766e;
+  background-color: var(--hg-primary-subtle);
+  border-color: var(--hg-primary-border);
 }
 
 .dd-reschedule-banner {
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  padding: 8px 10px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-warning-bg);
+  border: 1px solid var(--hg-warning-border);
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 0.78rem;
-  margin-top: -4px;
+  font-size: 0.76rem;
+  margin-top: -2px;
 }
 
 .dd-reschedule-tag {
-  color: #b45309;
-  font-weight: 800;
+  color: var(--hg-warning);
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .dd-reschedule-desc {
-  color: #92400e;
-  font-weight: 600;
+  color: var(--hg-warning);
+  font-weight: 500;
 }
 
 /* Reschedule Modal Specifics */
 .dd-slots-picker-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 6px;
   margin-top: 6px;
 }
 
 .dd-slot-pick-btn {
   padding: 8px 10px;
-  border-radius: 10px;
-  border: 1.5px solid #e2e8f0;
-  background: #f8fafc;
-  color: #1e293b;
-  font-size: 0.82rem;
-  font-weight: 700;
+  border-radius: var(--hg-radius-md);
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
+  color: var(--hg-text-main);
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -729,28 +687,26 @@
 }
 
 .dd-slot-pick-btn:hover:not(:disabled) {
-  border-color: #0ea5a4;
-  background: #f0fdfa;
-  color: #0d5c63;
+  border-color: var(--hg-primary);
+  background-color: var(--hg-primary-subtle);
 }
 
 .dd-slot-pick-btn.selected {
-  border-color: #0d5c63;
-  background: #0d5c63;
+  border-color: var(--hg-primary);
+  background-color: var(--hg-primary);
   color: #ffffff;
-  box-shadow: 0 4px 10px rgba(13, 92, 99, 0.25);
 }
 
 .dd-slot-pick-btn:disabled {
-  opacity: 0.55;
-  background: #f1f5f9;
-  border-color: #e2e8f0;
-  color: #94a3b8;
+  opacity: 0.5;
+  background-color: var(--hg-surface-muted);
+  border-color: var(--hg-border);
+  color: var(--hg-text-muted);
   cursor: not-allowed;
 }
 
 .dd-slot-status-label {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 600;
   text-transform: uppercase;
 }
@@ -763,54 +719,53 @@
 }
 
 .dd-preset-chip {
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: 3px 8px;
+  border-radius: var(--hg-radius-sm);
   font-size: 0.75rem;
-  font-weight: 600;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #475569;
+  font-weight: 500;
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
+  color: var(--hg-text-secondary);
   cursor: pointer;
-  transition: all 0.14s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .dd-preset-chip:hover {
-  background: #e2e8f0;
-  color: #1e293b;
+  background-color: var(--hg-surface-muted);
 }
 
 .dd-preset-chip.active {
-  background: #e0f2fe;
-  border-color: #38bdf8;
-  color: #0369a1;
+  background-color: var(--hg-primary-subtle);
+  border-color: var(--hg-primary-border);
+  color: var(--hg-primary);
 }
 
 /* ========================================================
    5. AVAILABILITY SECTION
    ======================================================== */
 .dd-avail-card {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 28px;
-  border: 1px solid rgba(13, 92, 99, 0.08);
-  box-shadow: 0 8px 24px rgba(13, 92, 99, 0.04);
+  background-color: var(--hg-surface);
+  border-radius: var(--hg-radius-lg);
+  padding: 24px;
+  border: 1px solid var(--hg-border);
+  box-shadow: var(--hg-shadow-xs);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+  gap: 20px;
 }
 
 .dd-avail-block {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .dd-avail-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hg-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -823,13 +778,13 @@
 }
 
 .dd-day-pill {
-  padding: 5px 10px;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  background: #eef8f8;
-  color: #0d5c63;
-  border: 1px solid rgba(13, 92, 99, 0.15);
+  padding: 3px 8px;
+  border-radius: var(--hg-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--hg-primary-subtle);
+  color: var(--hg-primary);
+  border: 1px solid var(--hg-primary-border);
 }
 
 .dd-slots-pills {
@@ -839,18 +794,19 @@
 }
 
 .dd-slot-pill {
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 3px 8px;
+  border-radius: var(--hg-radius-sm);
   font-size: 0.75rem;
-  font-weight: 600;
-  background: #f1f5f9;
-  color: #334155;
+  font-weight: 500;
+  background-color: var(--hg-surface-muted);
+  color: var(--hg-text-secondary);
+  border: 1px solid var(--hg-border-subtle);
 }
 
 .dd-avail-hours-val {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #0d5c63;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--hg-primary);
 }
 
 .dd-avail-actions {
@@ -860,67 +816,63 @@
 }
 
 .dd-btn-manage-avail {
-  padding: 12px 24px;
-  border-radius: 14px;
+  padding: 10px 20px;
+  border-radius: var(--hg-radius-md);
   border: none;
-  background: linear-gradient(135deg, #0d5c63 0%, #1a8c86 100%);
+  background-color: var(--hg-primary);
   color: #ffffff;
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.88rem;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(13, 92, 99, 0.22);
-  transition: all 0.16s ease;
+  box-shadow: var(--hg-shadow-xs);
+  transition: background-color 0.15s ease;
   white-space: nowrap;
 }
 
 .dd-btn-manage-avail:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(13, 92, 99, 0.3);
+  background-color: var(--hg-primary-hover);
 }
 
 /* ========================================================
-   6. RECENT PATIENTS & 8. NOTIFICATIONS TWO-COL GRID
+   6. RECENT PATIENTS & NOTIFICATIONS TWO-COL GRID
    ======================================================== */
 .dd-split-grid {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
-  gap: 24px;
+  gap: 20px;
 }
 
-/* Recent Patients Table / List */
 .dd-patients-card {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 24px;
-  border: 1px solid rgba(13, 92, 99, 0.08);
-  box-shadow: 0 8px 24px rgba(13, 92, 99, 0.04);
+  background-color: var(--hg-surface);
+  border-radius: var(--hg-radius-lg);
+  padding: 22px;
+  border: 1px solid var(--hg-border);
+  box-shadow: var(--hg-shadow-xs);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .dd-patient-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: #f8fafc;
-  border: 1px solid #f1f5f9;
-  transition: all 0.16s ease;
-  gap: 14px;
+  padding: 12px 14px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-surface-muted);
+  border: 1px solid var(--hg-border-subtle);
+  transition: border-color 0.15s ease;
+  gap: 12px;
 }
 
 .dd-patient-item:hover {
-  background: #f0f9f8;
-  border-color: rgba(14, 165, 164, 0.2);
-  transform: translateX(2px);
+  border-color: #cbd5e1;
 }
 
 .dd-patient-col {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .dd-patient-text {
@@ -929,67 +881,64 @@
 }
 
 .dd-patient-name-text {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #1b2430;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--hg-text-main);
 }
 
 .dd-patient-sub-text {
-  font-size: 0.78rem;
-  color: #64748b;
+  font-size: 0.75rem;
+  color: var(--hg-text-muted);
 }
 
 .dd-btn-view-patient {
-  padding: 7px 14px;
-  border-radius: 10px;
-  border: 1.5px solid #d6e1eb;
-  background: #ffffff;
-  color: #0d5c63;
-  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--hg-radius-sm);
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
+  color: var(--hg-primary);
+  font-weight: 600;
   font-size: 0.78rem;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.16s ease;
+  transition: background-color 0.15s ease;
 }
 
 .dd-btn-view-patient:hover {
-  background: #0d5c63;
-  color: #ffffff;
-  border-color: #0d5c63;
+  background-color: var(--hg-primary-subtle);
 }
 
 /* Notifications Card */
 .dd-notifications-card {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 24px;
-  border: 1px solid rgba(13, 92, 99, 0.08);
-  box-shadow: 0 8px 24px rgba(13, 92, 99, 0.04);
+  background-color: var(--hg-surface);
+  border-radius: var(--hg-radius-lg);
+  padding: 22px;
+  border: 1px solid var(--hg-border);
+  box-shadow: var(--hg-shadow-xs);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .dd-notif-item {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #edf2f7;
-  transition: background 0.16s ease;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-surface-muted);
+  border: 1px solid var(--hg-border-subtle);
 }
 
 .dd-notif-item.unread {
-  background: #f0fdfa;
-  border-color: #ccfbf1;
+  background-color: var(--hg-primary-subtle);
+  border-color: var(--hg-primary-border);
 }
 
 .dd-notif-icon {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .dd-notif-content {
@@ -1000,23 +949,23 @@
 }
 
 .dd-notif-title {
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: #1b2430;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--hg-text-main);
   margin: 0;
 }
 
 .dd-notif-msg {
-  font-size: 0.78rem;
-  color: #475569;
+  font-size: 0.76rem;
+  color: var(--hg-text-secondary);
   line-height: 1.4;
   margin: 0;
 }
 
 .dd-notif-time {
-  font-size: 0.7rem;
-  color: #94a3b8;
-  margin-top: 4px;
+  font-size: 0.68rem;
+  color: var(--hg-text-muted);
+  margin-top: 2px;
 }
 
 /* ========================================================
@@ -1025,39 +974,38 @@
 .dd-quick-actions-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 14px;
 }
 
 .dd-quick-btn {
-  padding: 20px 22px;
-  border-radius: 18px;
-  border: 1.5px solid rgba(13, 92, 99, 0.1);
-  background: #ffffff;
-  color: #1b2430;
-  font-family: inherit;
-  font-weight: 700;
-  font-size: 0.95rem;
+  padding: 16px 18px;
+  border-radius: var(--hg-radius-lg);
+  border: 1px solid var(--hg-border);
+  background-color: var(--hg-surface);
+  color: var(--hg-text-main);
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 14px;
-  box-shadow: 0 4px 16px rgba(13, 92, 99, 0.04);
-  transition: all 0.2s ease;
+  gap: 12px;
+  box-shadow: var(--hg-shadow-xs);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .dd-quick-btn:hover {
-  transform: translateY(-2px);
-  border-color: #0ea5a4;
-  box-shadow: 0 10px 24px rgba(13, 92, 99, 0.09);
-  color: #0d5c63;
+  border-color: var(--hg-primary);
+  box-shadow: var(--hg-shadow-sm);
+  color: var(--hg-primary);
 }
 
 .dd-quick-icon {
-  font-size: 1.5rem;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: #eef8f8;
+  font-size: 1.3rem;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-primary-subtle);
+  color: var(--hg-primary);
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -1067,11 +1015,11 @@
    EMPTY & LOADING STATES
    ======================================================== */
 .dd-empty-state {
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 36px 20px;
+  background-color: var(--hg-surface);
+  border-radius: var(--hg-radius-lg);
+  padding: 32px 20px;
   text-align: center;
-  border: 1.5px dashed #cbd5e1;
+  border: 1px dashed var(--hg-border);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1079,32 +1027,30 @@
 }
 
 .dd-empty-icon {
-  font-size: 2.2rem;
-  opacity: 0.75;
+  font-size: 2rem;
+  color: var(--hg-text-muted);
 }
 
 .dd-empty-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #334155;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--hg-text-main);
   margin: 0;
 }
 
 .dd-empty-desc {
-  font-size: 0.85rem;
-  color: #64748b;
+  font-size: 0.82rem;
+  color: var(--hg-text-muted);
   margin: 0;
 }
 
 /* ========================================================
-   MODALS (Availability, Consultation, Patient Details)
+   MODALS
    ======================================================== */
 .dd-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(4, 30, 32, 0.65);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background-color: rgba(15, 23, 42, 0.45);
   z-index: 200;
   display: grid;
   place-items: center;
@@ -1112,14 +1058,15 @@
 }
 
 .dd-modal-card {
-  background: #ffffff;
-  border-radius: 24px;
-  width: min(560px, 100%);
-  padding: 32px;
-  box-shadow: 0 24px 60px rgba(4, 30, 32, 0.3);
+  background-color: #ffffff;
+  border-radius: var(--hg-radius-xl);
+  border: 1px solid var(--hg-border);
+  width: min(540px, 100%);
+  padding: 28px;
+  box-shadow: var(--hg-shadow-lg);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -1132,35 +1079,35 @@
 }
 
 .dd-modal-title {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: #1b2430;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--hg-text-main);
   margin: 0;
 }
 
 .dd-btn-close {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: none;
-  background: #f1f5f9;
-  color: #475569;
-  font-size: 1.1rem;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--hg-radius-sm);
+  border: 1px solid var(--hg-border);
+  background-color: var(--hg-surface);
+  color: var(--hg-text-secondary);
+  font-size: 1rem;
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: all 0.14s ease;
+  transition: background-color 0.15s ease;
 }
 
 .dd-btn-close:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+  background-color: var(--hg-surface-muted);
+  color: var(--hg-text-main);
 }
 
 .dd-modal-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .dd-form-group {
@@ -1170,9 +1117,9 @@
 }
 
 .dd-form-label {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--hg-text-main);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -1180,71 +1127,70 @@
 .dd-form-input,
 .dd-form-select,
 .dd-form-textarea {
-  border: 1.5px solid #dce6ee;
-  border-radius: 12px;
-  padding: 12px 14px;
+  border: 1px solid var(--hg-border);
+  border-radius: var(--hg-radius-md);
+  padding: 10px 12px;
   font-family: inherit;
-  font-size: 0.92rem;
-  color: #1b2430;
+  font-size: 0.9rem;
+  color: var(--hg-text-main);
   outline: none;
-  background: #f8fafc;
-  transition: border-color 0.16s ease;
+  background-color: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .dd-form-input:focus,
 .dd-form-select:focus,
 .dd-form-textarea:focus {
-  border-color: #0ea5a4;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(14, 165, 164, 0.12);
+  border-color: var(--hg-primary);
+  box-shadow: 0 0 0 3px rgba(11, 90, 102, 0.15);
 }
 
 .dd-days-selector {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .dd-day-toggle {
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1.5px solid #d6e1eb;
-  background: #f8fafc;
-  color: #475569;
-  font-weight: 700;
-  font-size: 0.82rem;
+  padding: 6px 12px;
+  border-radius: var(--hg-radius-sm);
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
+  color: var(--hg-text-secondary);
+  font-weight: 600;
+  font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.14s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .dd-day-toggle.selected {
-  background: #0d5c63;
+  background-color: var(--hg-primary);
   color: #ffffff;
-  border-color: #0d5c63;
+  border-color: var(--hg-primary);
 }
 
 .dd-btn-submit {
-  padding: 14px;
-  border-radius: 12px;
+  padding: 12px;
+  border-radius: var(--hg-radius-md);
   border: none;
-  background: linear-gradient(135deg, #0d5c63 0%, #1ba9a0 100%);
+  background-color: var(--hg-primary);
   color: #ffffff;
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: 0.92rem;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(13, 92, 99, 0.25);
-  transition: transform 0.14s ease;
-  margin-top: 8px;
+  box-shadow: var(--hg-shadow-xs);
+  transition: background-color 0.15s ease;
+  margin-top: 6px;
 }
 
 .dd-btn-submit:hover {
-  transform: translateY(-1px);
+  background-color: var(--hg-primary-hover);
 }
 
 .dd-status-options-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
 }
 
 @media (max-width: 600px) {
@@ -1256,43 +1202,43 @@
 .dd-status-option-btn {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: 2px solid #e2e8f0;
-  background: #ffffff;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--hg-radius-md);
+  border: 1px solid var(--hg-border);
+  background-color: #ffffff;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   font-family: inherit;
 }
 
 .dd-status-option-btn:hover {
   border-color: #cbd5e1;
-  background: #f8fafc;
+  background-color: var(--hg-surface-muted);
 }
 
 .dd-status-option-btn.selected.active {
-  border-color: #10b981;
-  background: #f0fdf4;
+  border-color: #059669;
+  background-color: var(--hg-success-bg);
 }
 
 .dd-status-option-btn.selected.inactive {
-  border-color: #f59e0b;
-  background: #fffbeb;
+  border-color: var(--hg-warning-border);
+  background-color: var(--hg-warning-bg);
 }
 
 .dd-status-option-btn strong {
   display: block;
-  font-size: 0.92rem;
-  color: #0f172a;
+  font-size: 0.88rem;
+  color: var(--hg-text-main);
   margin-bottom: 2px;
 }
 
 .dd-status-option-btn span {
   display: block;
-  font-size: 0.78rem;
-  color: #64748b;
+  font-size: 0.75rem;
+  color: var(--hg-text-secondary);
   line-height: 1.4;
 }
 
@@ -1317,7 +1263,7 @@
 @media (max-width: 640px) {
   .dd-header-inner {
     height: auto;
-    padding: 16px;
+    padding: 14px 16px;
     flex-direction: column;
     align-items: flex-start;
   }
@@ -1331,4 +1277,5 @@
     grid-template-columns: 1fr;
   }
 }
+
 
