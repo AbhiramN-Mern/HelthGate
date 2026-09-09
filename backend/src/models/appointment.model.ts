@@ -63,6 +63,40 @@ const appointmentSchema = new Schema(
       enum: ["In-Person", "Video", "Follow-up"],
       default: "In-Person",
     },
+    rescheduleRequest: {
+      status: {
+        type: String,
+        enum: ["pending", "accepted", "declined", "none"],
+        default: "none",
+      },
+      proposedDate: {
+        type: Date,
+        default: null,
+      },
+      proposedTimeSlot: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      reason: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      requestedBy: {
+        type: String,
+        enum: ["doctor", "patient"],
+        default: "doctor",
+      },
+      requestedAt: {
+        type: Date,
+        default: null,
+      },
+      respondedAt: {
+        type: Date,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,

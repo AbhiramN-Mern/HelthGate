@@ -6,6 +6,8 @@ import {
   updateAppointmentStatusApi,
   getDoctorPatientDetailsApi,
   markNotificationReadApi,
+  getDoctorBookedSlotsApi,
+  requestAppointmentRescheduleApi,
   type AuthUser,
   type DoctorProfile,
   type DoctorAvailability,
@@ -123,6 +125,17 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
     address?: string
   } | null>(null)
   const [patientAppointments, setPatientAppointments] = useState<AppointmentItem[]>([])
+
+  // Reschedule Modal State
+  const [rescheduleModalAppt, setRescheduleModalAppt] = useState<AppointmentItem | null>(null)
+  const [rescheduleDate, setRescheduleDate] = useState<string>('')
+  const [rescheduleTimeSlot, setRescheduleTimeSlot] = useState<string>('')
+  const [rescheduleReason, setRescheduleReason] = useState<string>('')
+  const [rescheduleSubmitting, setRescheduleSubmitting] = useState<boolean>(false)
+  const [rescheduleBookedSlots, setRescheduleBookedSlots] = useState<string[]>([])
+  const [rescheduleLoadingSlots, setRescheduleLoadingSlots] = useState<boolean>(false)
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null)
+  const [rescheduleSuccess, setRescheduleSuccess] = useState<string | null>(null)
 
   // Load Dashboard Data
   useEffect(() => {
@@ -351,6 +364,96 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
       setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)))
     } catch (err) {
       console.warn('Failed to mark notification read:', err)
+    }
+  }
+
+  // Fetch booked slots for reschedule modal
+  const fetchBookedSlotsForDate = async (dateStr: string) => {
+    if (!doctor?._id || !dateStr) return
+    setRescheduleLoadingSlots(true)
+    setRescheduleError(null)
+    try {
+      const res = await getDoctorBookedSlotsApi(doctor._id, { date: dateStr }, token)
+      setRescheduleBookedSlots(res.bookedSlots || [])
+    } catch (err) {
+      console.warn('Failed to load doctor booked slots:', err)
+    } finally {
+      setRescheduleLoadingSlots(false)
+    }
+  }
+
+  // Open Reschedule Modal
+  const handleOpenRescheduleModal = (appt: AppointmentItem) => {
+    setRescheduleModalAppt(appt)
+    setRescheduleError(null)
+    setRescheduleSuccess(null)
+    setRescheduleReason(appt.rescheduleRequest?.reason || '')
+    setRescheduleTimeSlot(appt.rescheduleRequest?.proposedTimeSlot || '')
+
+    const targetDate = appt.rescheduleRequest?.proposedDate
+      ? new Date(appt.rescheduleRequest.proposedDate).toISOString().split('T')[0]
+      : (() => {
+          const d = new Date()
+          d.setDate(d.getDate() + 1)
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        })()
+
+    setRescheduleDate(targetDate)
+    fetchBookedSlotsForDate(targetDate)
+  }
+
+  // On date change in Reschedule Modal
+  const handleDateChange = (newDate: string) => {
+    setRescheduleDate(newDate)
+    setRescheduleTimeSlot('')
+    fetchBookedSlotsForDate(newDate)
+  }
+
+  // Submit Reschedule Request
+  const handleSubmitReschedule = async () => {
+    if (!rescheduleModalAppt?._id) return
+    if (!rescheduleDate) {
+      setRescheduleError('Please select a valid date.')
+      return
+    }
+    if (!rescheduleTimeSlot) {
+      setRescheduleError('Please select an available time slot.')
+      return
+    }
+
+    setRescheduleSubmitting(true)
+    setRescheduleError(null)
+    setRescheduleSuccess(null)
+
+    try {
+      const res = await requestAppointmentRescheduleApi(
+        rescheduleModalAppt._id,
+        {
+          newDate: rescheduleDate,
+          newTimeSlot: rescheduleTimeSlot,
+          reason: rescheduleReason || 'Doctor schedule adjustment',
+        },
+        token,
+      )
+
+      if (res.appointment) {
+        const updated = res.appointment
+        setTodayAppointments((prev) => prev.map((a) => (a._id === updated._id ? updated : a)))
+        setUpcomingAppointments((prev) => prev.map((a) => (a._id === updated._id ? updated : a)))
+        if (viewingAppt?._id === updated._id) setViewingAppt(updated)
+      }
+
+      setRescheduleSuccess(
+        'Reschedule request sent to patient. The current confirmed schedule remains active until the patient accepts the new time.',
+      )
+      setTimeout(() => {
+        setRescheduleModalAppt(null)
+        setRescheduleSuccess(null)
+      }, 2200)
+    } catch (err) {
+      setRescheduleError(err instanceof Error ? err.message : 'Failed to request reschedule')
+    } finally {
+      setRescheduleSubmitting(false)
     }
   }
 
@@ -664,6 +767,17 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                       </div>
                     </div>
 
+                    {appt.rescheduleRequest?.status === 'pending' && (
+                      <div className="dd-reschedule-banner">
+                        <span className="dd-reschedule-tag">
+                          <ClockIcon size={12} /> Reschedule Pending Confirmation
+                        </span>
+                        <span className="dd-reschedule-desc">
+                          Proposed: {appt.rescheduleRequest.proposedDate ? new Date(appt.rescheduleRequest.proposedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''} at {appt.rescheduleRequest.proposedTimeSlot}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="dd-appt-actions">
                       <button
                         type="button"
@@ -673,13 +787,24 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                         View Details
                       </button>
 
+                      {!isCompleted && appt.status !== 'cancelled' && (
+                        <button
+                          type="button"
+                          className="dd-btn-reschedule"
+                          onClick={() => handleOpenRescheduleModal(appt)}
+                          title="Propose a new date and time slot"
+                        >
+                          <CalendarIcon size={13} /> {appt.rescheduleRequest?.status === 'pending' ? 'Change' : 'Reschedule'}
+                        </button>
+                      )}
+
                       {!isCompleted && (
                         <button
                           type="button"
                           className="dd-btn-consult"
                           onClick={() => handleStartConsultation(appt)}
                         >
-                          ▶ Start Consultation
+                          ▶ Start
                         </button>
                       )}
                     </div>
@@ -756,15 +881,37 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                       </div>
                     </div>
 
+                    {appt.rescheduleRequest?.status === 'pending' && (
+                      <div className="dd-reschedule-banner">
+                        <span className="dd-reschedule-tag">
+                          <ClockIcon size={12} /> Reschedule Pending Confirmation
+                        </span>
+                        <span className="dd-reschedule-desc">
+                          Proposed: {appt.rescheduleRequest.proposedDate ? new Date(appt.rescheduleRequest.proposedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''} at {appt.rescheduleRequest.proposedTimeSlot}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="dd-appt-actions">
                       <button
                         type="button"
                         className="dd-btn-view-details"
-                        style={{ width: '100%' }}
+                        style={{ flex: 1 }}
                         onClick={() => setViewingAppt(appt)}
                       >
                         View Details
                       </button>
+
+                      {appt.status !== 'completed' && appt.status !== 'cancelled' && (
+                        <button
+                          type="button"
+                          className="dd-btn-reschedule"
+                          style={{ flex: 1 }}
+                          onClick={() => handleOpenRescheduleModal(appt)}
+                        >
+                          <CalendarIcon size={13} /> {appt.rescheduleRequest?.status === 'pending' ? 'Change' : 'Reschedule'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )
@@ -1322,6 +1469,35 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                   </div>
                 </div>
               )}
+
+              {viewingAppt.rescheduleRequest?.status === 'pending' && (
+                <div style={{ padding: '12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px' }}>
+                  <div style={{ fontWeight: 800, color: '#92400e', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <AlertCircleIcon size={16} /> Reschedule Pending Patient Confirmation
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#b45309', marginTop: '4px' }}>
+                    Proposed: {viewingAppt.rescheduleRequest.proposedDate ? new Date(viewingAppt.rescheduleRequest.proposedDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : ''} at {viewingAppt.rescheduleRequest.proposedTimeSlot}
+                    {viewingAppt.rescheduleRequest.reason && ` • "${viewingAppt.rescheduleRequest.reason}"`}
+                  </div>
+                </div>
+              )}
+
+              {viewingAppt.status !== 'completed' && viewingAppt.status !== 'cancelled' && (
+                <div style={{ marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    className="dd-btn-reschedule"
+                    style={{ width: '100%', padding: '10px 14px', fontSize: '0.85rem' }}
+                    onClick={() => {
+                      const target = viewingAppt
+                      setViewingAppt(null)
+                      handleOpenRescheduleModal(target)
+                    }}
+                  >
+                    <CalendarIcon size={14} /> {viewingAppt.rescheduleRequest?.status === 'pending' ? 'Change Proposed Reschedule' : 'Reschedule Appointment'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1421,6 +1597,309 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                 </div>
               </div>
             ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* 7. DOCTOR RESCHEDULE APPOINTMENT MODAL */}
+      {rescheduleModalAppt && (
+        <div className="dd-modal-overlay" onClick={() => setRescheduleModalAppt(null)}>
+          <div
+            className="dd-modal-card"
+            style={{ maxWidth: '540px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="dd-modal-header">
+              <div>
+                <span className="dd-section-tag">Appointment Rescheduling</span>
+                <h3 className="dd-modal-title">Propose New Schedule</h3>
+              </div>
+              <button
+                type="button"
+                className="dd-btn-close"
+                onClick={() => setRescheduleModalAppt(null)}
+                aria-label="Close"
+              >
+                <CloseIcon size={16} />
+              </button>
+            </div>
+
+            {/* Current Schedule Summary */}
+            <div
+              style={{
+                padding: '14px',
+                background: '#f8fafc',
+                borderRadius: '14px',
+                border: '1px solid #e2e8f0',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '0.72rem',
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                }}
+              >
+                Current Confirmed Appointment
+              </div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1b2430' }}>
+                {rescheduleModalAppt.patient?.name || 'Patient'}
+              </div>
+              <div
+                style={{
+                  fontSize: '0.85rem',
+                  color: '#475569',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <CalendarIcon size={14} />{' '}
+                {rescheduleModalAppt.appointmentDate
+                  ? new Date(rescheduleModalAppt.appointmentDate).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : 'Today'}{' '}
+                • <ClockIcon size={14} /> {rescheduleModalAppt.timeSlot || '10:00 AM'}
+              </div>
+              <div
+                style={{
+                  fontSize: '0.74rem',
+                  color: '#0369a1',
+                  background: '#e0f2fe',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  marginTop: '4px',
+                  width: 'fit-content',
+                  fontWeight: 600,
+                }}
+              >
+                ● Current appointment stays confirmed until patient accepts the new schedule
+              </div>
+            </div>
+
+            {/* Error or Success message */}
+            {rescheduleError && (
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: '#fee2e2',
+                  border: '1px solid #fecaca',
+                  color: '#b91c1c',
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <AlertCircleIcon size={16} /> {rescheduleError}
+              </div>
+            )}
+            {rescheduleSuccess && (
+              <div
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  background: '#dcfce7',
+                  border: '1px solid #bbf7d0',
+                  color: '#15803d',
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <CheckCircleIcon size={18} /> {rescheduleSuccess}
+              </div>
+            )}
+
+            {!rescheduleSuccess && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleSubmitReschedule()
+                }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+              >
+                {/* 1. Pick Date */}
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      color: '#334155',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    1. Select New Date (Within 90 Days)
+                  </label>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split('T')[0]}
+                    max={(() => {
+                      const d = new Date()
+                      d.setDate(d.getDate() + 90)
+                      return d.toISOString().split('T')[0]
+                    })()}
+                    value={rescheduleDate}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #cbd5e1',
+                      fontSize: '0.9rem',
+                      fontFamily: 'inherit',
+                      background: '#ffffff',
+                    }}
+                  />
+                  {doctor?.availability?.blockedDates?.includes(rescheduleDate) && (
+                    <span
+                      style={{
+                        fontSize: '0.75rem',
+                        color: '#b91c1c',
+                        fontWeight: 600,
+                        display: 'block',
+                        marginTop: '4px',
+                      }}
+                    >
+                      ⚠️ You have marked this date as blocked/leave in your availability settings.
+                    </span>
+                  )}
+                </div>
+
+                {/* 2. Pick Time Slot */}
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>
+                      2. Select Available Time Slot
+                    </label>
+                    {rescheduleLoadingSlots && (
+                      <span style={{ fontSize: '0.75rem', color: '#0ea5a4' }}>
+                        Verifying slot availability...
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="dd-slots-picker-grid">
+                    {(doctor?.availability?.availableSlots?.length
+                      ? doctor.availability.availableSlots
+                      : DEFAULT_SLOTS
+                    ).map((slot) => {
+                      const isBooked = rescheduleBookedSlots.includes(slot)
+                      const isSelected = rescheduleTimeSlot === slot
+
+                      return (
+                        <button
+                          key={slot}
+                          type="button"
+                          disabled={isBooked}
+                          className={`dd-slot-pick-btn ${isSelected ? 'selected' : ''}`}
+                          onClick={() => setRescheduleTimeSlot(slot)}
+                        >
+                          <span>{slot}</span>
+                          <span className="dd-slot-status-label">
+                            {isBooked ? 'Booked' : isSelected ? 'Selected' : 'Open'}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Reason for Rescheduling */}
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      color: '#334155',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    3. Reason for Reschedule (Sent to Patient)
+                  </label>
+                  <div className="dd-preset-chips" style={{ marginBottom: '8px' }}>
+                    {[
+                      'Emergency Surgery / On-Call Duty',
+                      'Doctor Schedule Conflict',
+                      'Hospital Staffing Adjustment',
+                      'Clinic Equipment Maintenance',
+                    ].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        className={`dd-preset-chip ${rescheduleReason === preset ? 'active' : ''}`}
+                        onClick={() => setRescheduleReason(preset)}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    rows={2}
+                    value={rescheduleReason}
+                    onChange={(e) => setRescheduleReason(e.target.value)}
+                    placeholder="Briefly explain the reason for the reschedule..."
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #cbd5e1',
+                      fontSize: '0.85rem',
+                      fontFamily: 'inherit',
+                      resize: 'none',
+                    }}
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '10px',
+                    justifyContent: 'flex-end',
+                    marginTop: '6px',
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="dd-btn-view-details"
+                    onClick={() => setRescheduleModalAppt(null)}
+                    disabled={rescheduleSubmitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="dd-btn-consult"
+                    disabled={rescheduleSubmitting || !rescheduleDate || !rescheduleTimeSlot}
+                    style={{ flex: 'none', minWidth: '190px' }}
+                  >
+                    {rescheduleSubmitting ? 'Sending Request...' : 'Send Reschedule Request'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

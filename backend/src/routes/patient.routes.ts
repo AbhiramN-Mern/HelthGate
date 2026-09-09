@@ -3,6 +3,8 @@ import { Router } from "express";
 import {
   getMyPatientProfile,
   updateMyPatientProfile,
+  getPatientNotifications,
+  markPatientNotificationRead,
 } from "../controllers/patient.controller.js";
 import { authorize, protect } from "../middleware/auth.middleware.js";
 import { uploadProfileImage } from "../middleware/upload.middleware.js";
@@ -17,5 +19,8 @@ router.put(
   uploadProfileImage,
   updateMyPatientProfile,
 );
+
+router.get("/notifications", protect, authorize("patient"), getPatientNotifications);
+router.patch("/notifications/:notificationId/read", protect, authorize("patient"), markPatientNotificationRead);
 
 export default router;

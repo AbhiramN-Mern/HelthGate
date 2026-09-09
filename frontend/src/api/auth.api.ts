@@ -341,6 +341,16 @@ export const updateHospitalByIdForAdmin = async (id: string, payload: Record<str
   return request<{ success: boolean; hospital?: Hospital }>(`/api/hospitals/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, token)
 }
 
+export type RescheduleRequest = {
+  status: 'pending' | 'accepted' | 'declined' | 'none'
+  proposedDate?: string
+  proposedTimeSlot?: string
+  reason?: string
+  requestedBy?: 'doctor' | 'patient'
+  requestedAt?: string
+  respondedAt?: string
+}
+
 export type AppointmentItem = {
   _id?: string
   patient?: { _id?: string; name?: string; email?: string }
@@ -352,6 +362,7 @@ export type AppointmentItem = {
   reason?: string
   type?: string
   createdAt?: string
+  rescheduleRequest?: RescheduleRequest
 }
 
 export const getSpecializations = async (): Promise<{ success: boolean; specializations?: string[] }> => {
@@ -380,10 +391,18 @@ export const getMyAppointments = async (token: string): Promise<{ success: boole
 
 export type NotificationItem = {
   _id: string
-  type: 'new_appointment' | 'cancellation' | 'rescheduled' | 'system' | 'general'
+  type:
+    | 'new_appointment'
+    | 'cancellation'
+    | 'rescheduled'
+    | 'reschedule_request'
+    | 'reschedule_response'
+    | 'system'
+    | 'general'
   title: string
   message: string
   isRead?: boolean
+  appointment?: string
   createdAt?: string
 }
 
@@ -504,6 +523,57 @@ export const getDoctorBookedSlotsApi = async (
     bookedSlots?: string[]
     bookedSlotsByDate?: Record<string, string[]>
   }>(`/api/appointments/booked-slots?${query.toString()}`, { method: 'GET' }, token || undefined)
+}
+
+export const requestAppointmentRescheduleApi = async (
+  appointmentId: string,
+  payload: { newDate: string; newTimeSlot: string; reason?: string },
+  token: string,
+): Promise<{ success: boolean; message?: string; appointment?: AppointmentItem }> => {
+  return request<{ success: boolean; message?: string; appointment?: AppointmentItem }>(
+    `/api/appointments/${appointmentId}/reschedule`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+    token,
+  )
+}
+
+export const respondAppointmentRescheduleApi = async (
+  appointmentId: string,
+  action: 'accept' | 'decline',
+  token: string,
+): Promise<{ success: boolean; message?: string; appointment?: AppointmentItem }> => {
+  return request<{ success: boolean; message?: string; appointment?: AppointmentItem }>(
+    `/api/appointments/${appointmentId}/reschedule/respond`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ action }),
+    },
+    token,
+  )
+}
+
+export const getPatientNotificationsApi = async (
+  token: string,
+): Promise<{ success: boolean; notifications?: NotificationItem[] }> => {
+  return request<{ success: boolean; notifications?: NotificationItem[] }>(
+    '/api/patients/notifications',
+    { method: 'GET' },
+    token,
+  )
+}
+
+export const markPatientNotificationReadApi = async (
+  notificationId: string,
+  token: string,
+): Promise<{ success: boolean; message?: string }> => {
+  return request<{ success: boolean; message?: string }>(
+    `/api/patients/notifications/${notificationId}/read`,
+    { method: 'PATCH' },
+    token,
+  )
 }
 
 export type AdminDashboardStats = {

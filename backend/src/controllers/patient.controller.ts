@@ -1,6 +1,7 @@
 import type { Response } from "express";
 
 import PatientModel from "../models/patient.model.js";
+import NotificationModel from "../models/notification.model.js";
 import type { AuthenticatedRequest } from "../types/auth.js";
 
 const patientUpdateFields = [
@@ -95,6 +96,52 @@ export const updateMyPatientProfile = async (
     return res.status(500).json({
       success: false,
       message: "Failed to update patient profile",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const getPatientNotifications = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const notifications = await NotificationModel.find({ recipient: req.user?.id })
+      .sort({ createdAt: -1 })
+      .limit(30);
+
+    return res.status(200).json({
+      success: true,
+      notifications,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch notifications",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const markPatientNotificationRead = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const { notificationId } = req.params;
+    await NotificationModel.findOneAndUpdate(
+      { _id: notificationId, recipient: req.user?.id },
+      { isRead: true },
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Notification marked as read",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to mark notification as read",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }

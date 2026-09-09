@@ -10,7 +10,15 @@ const notificationSchema = new Schema(
     },
     type: {
       type: String,
-      enum: ["new_appointment", "cancellation", "rescheduled", "system", "general"],
+      enum: [
+        "new_appointment",
+        "cancellation",
+        "rescheduled",
+        "reschedule_request",
+        "reschedule_response",
+        "system",
+        "general",
+      ],
       default: "new_appointment",
     },
     title: {

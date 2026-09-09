@@ -7,11 +7,15 @@ import {
   getHospitals,
   getMyAppointments,
   getDoctorBookedSlotsApi,
+  respondAppointmentRescheduleApi,
+  getPatientNotificationsApi,
+  markPatientNotificationReadApi,
   type AuthUser,
   type PatientProfile,
   type DoctorProfile,
   type Hospital,
   type AppointmentItem,
+  type NotificationItem,
 } from '../../api/auth.api'
 import {
   SearchIcon,
@@ -27,6 +31,7 @@ import {
   CloseIcon,
   MedicalCrossIcon,
   ShieldCheckIcon,
+  BellIcon,
 } from '../../components/common/Icons'
 import './PatientHomePage.css'
 
@@ -91,6 +96,14 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   const [calMonth, setCalMonth] = useState<Date>(new Date())
   const [bookedSlotsByDate, setBookedSlotsByDate] = useState<Record<string, string[]>>({})
 
+  // Patient Notifications State
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [showNotifs, setShowNotifs] = useState(false)
+
+  // Reschedule Response State
+  const [respondingApptId, setRespondingApptId] = useState<string | null>(null)
+  const [rescheduleFeedback, setRescheduleFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
   // Fetch doctor's booked slots whenever bookingDoctor or calMonth changes
   useEffect(() => {
     if (!bookingDoctor?._id || !token) {
@@ -136,6 +149,9 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
 
     // Fetch patient's actual appointments from backend
     fetchAppointments()
+
+    // Fetch patient's notifications
+    fetchNotifications()
   }, [token])
 
   // 2. Fetch Doctors on filter changes
@@ -187,6 +203,57 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
       setAppointments(res.appointments || [])
     } catch (err) {
       console.warn('Failed to load appointments:', err)
+    }
+  }
+
+  const fetchNotifications = async () => {
+    if (!token) return
+    try {
+      const res = await getPatientNotificationsApi(token)
+      if (res.notifications) {
+        setNotifications(res.notifications)
+      }
+    } catch (err) {
+      console.warn('Failed to load patient notifications:', err)
+    }
+  }
+
+  const handleMarkNotificationRead = async (id: string) => {
+    try {
+      await markPatientNotificationReadApi(id, token)
+      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)))
+    } catch (err) {
+      console.warn('Failed to mark notification as read:', err)
+    }
+  }
+
+  const handleRespondReschedule = async (appointmentId: string, action: 'accept' | 'decline') => {
+    setRespondingApptId(appointmentId)
+    setRescheduleFeedback(null)
+    try {
+      const res = await respondAppointmentRescheduleApi(appointmentId, action, token)
+      if (res.appointment) {
+        const updated = res.appointment
+        setAppointments((prev) => prev.map((a) => (a._id === updated._id ? updated : a)))
+      }
+      setRescheduleFeedback({
+        type: 'success',
+        text:
+          action === 'accept'
+            ? 'Appointment rescheduled successfully! Your new appointment date and time are confirmed.'
+            : 'Reschedule request declined. Your original appointment date and time remain unchanged.',
+      })
+      fetchNotifications()
+    } catch (err) {
+      setRescheduleFeedback({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to respond to reschedule request',
+      })
+    } finally {
+      setRespondingApptId(null)
+      setTimeout(() => {
+        setRescheduleFeedback(null)
+      }, 6000)
     }
   }
 
@@ -449,8 +516,72 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             </li>
           </ul>
 
-          {/* User Profile & Logout */}
+          {/* User Profile, Notifications & Logout */}
           <div className="php-nav-user">
+            {/* Notification Bell */}
+            <div className="php-notif-bell-wrap">
+              <button
+                type="button"
+                className="php-notif-bell-btn"
+                onClick={() => setShowNotifs((prev) => !prev)}
+                title="Notifications"
+                aria-label="Notifications"
+              >
+                <BellIcon size={18} />
+                {notifications.filter((n) => !n.isRead).length > 0 && (
+                  <span className="php-notif-badge">
+                    {notifications.filter((n) => !n.isRead).length}
+                  </span>
+                )}
+              </button>
+
+              {showNotifs && (
+                <div className="php-notif-dropdown">
+                  <div className="php-notif-header">
+                    <h4 className="php-notif-title">Notifications</h4>
+                    <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
+                      {notifications.filter((n) => !n.isRead).length} Unread
+                    </span>
+                  </div>
+
+                  <div className="php-notif-list">
+                    {notifications.length === 0 ? (
+                      <p style={{ fontSize: '0.82rem', color: '#64748b', textAlign: 'center', margin: '14px 0' }}>
+                        No notifications yet
+                      </p>
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n._id}
+                          className={`php-notif-item ${!n.isRead ? 'unread' : ''}`}
+                          onClick={() => {
+                            if (!n.isRead) handleMarkNotificationRead(n._id)
+                            if (n.appointment) {
+                              const el = document.getElementById('appointments')
+                              if (el) el.scrollIntoView({ behavior: 'smooth' })
+                              setShowNotifs(false)
+                            }
+                          }}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span className="php-notif-item-title">{n.title}</span>
+                            {!n.isRead && (
+                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0ea5a4' }} />
+                            )}
+                          </div>
+                          <p className="php-notif-item-msg">{n.message}</p>
+                          <span className="php-notif-item-time">
+                            {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Recent'}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div
               className="php-user-badge-wrap"
               onClick={() => navigate('/profile')}
@@ -665,6 +796,32 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               <span className="php-section-count">{appointments.length} Scheduled</span>
             </div>
 
+            {/* Reschedule Response Feedback Alert */}
+            {rescheduleFeedback && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  marginBottom: '16px',
+                  background: rescheduleFeedback.type === 'success' ? '#dcfce7' : '#fee2e2',
+                  border: `1.5px solid ${rescheduleFeedback.type === 'success' ? '#86efac' : '#fca5a5'}`,
+                  color: rescheduleFeedback.type === 'success' ? '#15803d' : '#b91c1c',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                {rescheduleFeedback.type === 'success' ? (
+                  <CheckCircleIcon size={18} />
+                ) : (
+                  <AlertTriangleIcon size={18} />
+                )}
+                <span>{rescheduleFeedback.text}</span>
+              </div>
+            )}
+
             <div className="php-appointments-grid">
               {appointments.map((appt) => {
                 const docName = appt.doctor?.user?.name || 'Doctor'
@@ -721,6 +878,67 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                       <p className="php-appt-reason">
                         "{appt.reason}"
                       </p>
+                    )}
+
+                    {/* Pending Reschedule Proposal from Doctor */}
+                    {appt.rescheduleRequest?.status === 'pending' && (
+                      <div className="php-reschedule-action-box">
+                        <div className="php-reschedule-header">
+                          <span className="php-reschedule-badge">
+                            <ClockIcon size={13} /> Doctor Requested Reschedule
+                          </span>
+                        </div>
+
+                        <p className="php-reschedule-note">
+                          {appt.rescheduleRequest.reason
+                            ? `"${appt.rescheduleRequest.reason}"`
+                            : 'The doctor has requested to adjust your appointment time.'}
+                        </p>
+
+                        <div className="php-reschedule-compare">
+                          <div className="php-compare-col current">
+                            <span className="php-compare-label">Current Confirmed</span>
+                            <span className="php-compare-val">
+                              {formattedDate} • {appt.timeSlot}
+                            </span>
+                          </div>
+                          <div className="php-compare-arrow">➔</div>
+                          <div className="php-compare-col proposed">
+                            <span className="php-compare-label">Proposed New Time</span>
+                            <span className="php-compare-val">
+                              {appt.rescheduleRequest.proposedDate
+                                ? new Date(appt.rescheduleRequest.proposedDate).toLocaleDateString('en-US', {
+                                    weekday: 'short',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })
+                                : 'Proposed Date'}{' '}
+                              • {appt.rescheduleRequest.proposedTimeSlot}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="php-reschedule-btns">
+                          <button
+                            type="button"
+                            className="php-btn-accept-reschedule"
+                            disabled={respondingApptId === appt._id}
+                            onClick={() => handleRespondReschedule(appt._id!, 'accept')}
+                          >
+                            <CheckCircleIcon size={15} />{' '}
+                            {respondingApptId === appt._id ? 'Confirming...' : 'Accept New Time'}
+                          </button>
+                          <button
+                            type="button"
+                            className="php-btn-decline-reschedule"
+                            disabled={respondingApptId === appt._id}
+                            onClick={() => handleRespondReschedule(appt._id!, 'decline')}
+                          >
+                            Keep Current Time
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )
