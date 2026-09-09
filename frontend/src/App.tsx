@@ -269,26 +269,6 @@ function AppShell() {
             )
           }
         />
-        <Route
-          path="/admin/notifications"
-          element={
-            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
-              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="notifications" />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route
-          path="/admin/settings"
-          element={
-            localStorage.getItem('helthgate_token') && user?.role === 'admin' ? (
-              <AdminDashboardPage user={user} onLogout={handleLogout} initialSection="settings" />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
         <Route path="/error" element={<ErrorPage />} />
         <Route
           path="*"

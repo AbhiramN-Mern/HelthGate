@@ -33,8 +33,6 @@ import {
   CreditCardIcon,
   MessageSquareIcon,
   TrendingUpIcon,
-  BellIcon,
-  SettingsIcon,
   SearchIcon,
   CheckCircleIcon,
   ClockIcon,
@@ -64,8 +62,6 @@ type NavSection =
   | 'payments'
   | 'complaints'
   | 'reports'
-  | 'notifications'
-  | 'settings'
 
 type PatientFormState = {
   gender: string
@@ -628,32 +624,6 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
               <div className="admin-nav-item-content">
                 <TrendingUpIcon size={18} />
                 <span>Reports</span>
-              </div>
-            </button>
-          </div>
-
-          {/* SYSTEM */}
-          <div className="admin-nav-group">
-            <span className="admin-nav-group-title">System</span>
-            <button
-              type="button"
-              className={`admin-nav-item ${activeSection === 'notifications' ? 'active' : ''}`}
-              onClick={() => handleNavClick('notifications')}
-            >
-              <div className="admin-nav-item-content">
-                <BellIcon size={18} />
-                <span>Notifications</span>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              className={`admin-nav-item ${activeSection === 'settings' ? 'active' : ''}`}
-              onClick={() => handleNavClick('settings')}
-            >
-              <div className="admin-nav-item-content">
-                <SettingsIcon size={18} />
-                <span>Settings</span>
               </div>
             </button>
           </div>
@@ -1971,17 +1941,15 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
           )}
 
           {/* ========================================================
-              MODULE SHELLS: PAYMENTS, COMPLAINTS, REPORTS, NOTIFICATIONS, SETTINGS
+              MODULE SHELLS: PAYMENTS, COMPLAINTS, REPORTS
               "Build the dashboard shell first, then implement each management module one by one"
               ======================================================== */}
-          {['payments', 'complaints', 'reports', 'notifications', 'settings'].includes(activeSection) && (
+          {['payments', 'complaints', 'reports'].includes(activeSection) && (
             <div className="admin-placeholder-shell">
               <div className="admin-placeholder-icon">
                 {activeSection === 'payments' && <CreditCardIcon size={32} />}
                 {activeSection === 'complaints' && <MessageSquareIcon size={32} />}
                 {activeSection === 'reports' && <TrendingUpIcon size={32} />}
-                {activeSection === 'notifications' && <BellIcon size={32} />}
-                {activeSection === 'settings' && <SettingsIcon size={32} />}
               </div>
 
               <h2 className="admin-placeholder-title">
