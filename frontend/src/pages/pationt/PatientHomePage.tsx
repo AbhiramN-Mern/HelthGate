@@ -60,6 +60,17 @@ export const getTodayAndMaxDates = (maxDays: number = MAX_BOOKING_DAYS_AHEAD) =>
   return { today, todayStr, maxDate, maxDateStr }
 }
 
+export type BookingSuccessDetails = {
+  doctor: DoctorProfile
+  appointmentDate: string
+  timeSlot: string
+  reason: string
+  appointmentId?: string
+  hospitalName?: string
+  department?: string
+  type?: string
+}
+
 function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps) {
   const navigate = useNavigate()
   const token = localStorage.getItem('helthgate_token') || ''
@@ -95,6 +106,9 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   const [bookingFeedback, setBookingFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [calMonth, setCalMonth] = useState<Date>(new Date())
   const [bookedSlotsByDate, setBookedSlotsByDate] = useState<Record<string, string[]>>({})
+
+  // Booking Success Message Modal State
+  const [bookingSuccessModal, setBookingSuccessModal] = useState<BookingSuccessDetails | null>(null)
 
   // Patient Notifications State
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
@@ -429,7 +443,6 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
         throw new Error(data.message || 'Failed to book appointment')
       }
 
-      setBookingFeedback({ type: 'success', text: 'Appointment booked successfully!' })
       // Re-fetch patient's appointments immediately so upcoming appointments section appears!
       await fetchAppointments()
 
@@ -442,9 +455,33 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
         }).catch(() => {})
       }
 
-      setTimeout(() => {
-        handleCloseBooking()
-      }, 1500)
+      const confirmedDoctor = bookingDoctor
+      const confirmedDate = bookingDate
+      const confirmedTime = bookingTime
+      const confirmedReason = bookingReason.trim() || 'General Consultation'
+      const appt = data.appointment
+
+      // Close the booking calendar modal
+      handleCloseBooking()
+
+      // Open the dedicated success message modal
+      setBookingSuccessModal({
+        doctor: confirmedDoctor,
+        appointmentDate: confirmedDate,
+        timeSlot: confirmedTime,
+        reason: confirmedReason,
+        appointmentId: appt?._id || '',
+        hospitalName:
+          appt?.hospital?.name ||
+          (confirmedDoctor.affiliatedHospitals && confirmedDoctor.affiliatedHospitals[0]?.name) ||
+          confirmedDoctor.hospital?.name ||
+          'HealthGate Medical Practice',
+        department:
+          appt?.department ||
+          (confirmedDoctor.affiliatedHospitals && confirmedDoctor.affiliatedHospitals[0]?.department) ||
+          '',
+        type: appt?.type || 'In-Person Consultation',
+      })
     } catch (err) {
       setBookingFeedback({
         type: 'error',
@@ -1765,6 +1802,177 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 </form>
               )
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          BOOKING SUCCESS MESSAGE MODAL
+          ======================================================== */}
+      {bookingSuccessModal && (
+        <div
+          className="php-modal-overlay"
+          onClick={() => setBookingSuccessModal(null)}
+          role="presentation"
+        >
+          <div
+            className="php-modal-card php-success-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="success-modal-heading"
+          >
+            <button
+              type="button"
+              className="php-btn-close php-success-close-btn"
+              onClick={() => setBookingSuccessModal(null)}
+              aria-label="Close success dialog"
+            >
+              <CloseIcon size={16} />
+            </button>
+
+            {/* Success Icon with glowing ring */}
+            <div className="php-success-icon-area">
+              <div className="php-success-icon-ring">
+                <CheckCircleIcon size={38} />
+              </div>
+            </div>
+
+            <div className="php-success-header">
+              <span className="php-success-tag">Appointment Confirmed</span>
+              <h2 id="success-modal-heading" className="php-success-title">
+                Booking Successful!
+              </h2>
+              <p className="php-success-desc">
+                Your consultation has been successfully scheduled. A confirmation has also been dispatched to your healthcare provider.
+              </p>
+            </div>
+
+            {/* Structured Appointment Summary Card */}
+            <div className="php-success-card">
+              {/* Doctor Information */}
+              <div className="php-success-doctor-row">
+                <div className="php-success-doctor-avatar">
+                  <UserIcon size={24} />
+                </div>
+                <div className="php-success-doctor-info">
+                  <span className="php-success-doc-label">Consulting Practitioner</span>
+                  <h3 className="php-success-doc-name">
+                    Dr. {bookingSuccessModal.doctor.user?.name || 'Healthcare Practitioner'}
+                  </h3>
+                  <div className="php-success-doc-badges">
+                    <span className="php-success-badge spec">
+                      {getSpecIcon(bookingSuccessModal.doctor.specialization || '')}
+                      {bookingSuccessModal.doctor.specialization || 'Specialist'}
+                    </span>
+                    {bookingSuccessModal.doctor.experience && (
+                      <span className="php-success-badge exp">
+                        {bookingSuccessModal.doctor.experience} yrs exp
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="php-success-divider" />
+
+              {/* Schedule and Practice Details */}
+              <div className="php-success-grid">
+                <div className="php-success-grid-item">
+                  <div className="php-success-grid-label">
+                    <CalendarIcon size={14} /> Date
+                  </div>
+                  <div className="php-success-grid-value">
+                    {new Date(bookingSuccessModal.appointmentDate).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </div>
+                </div>
+
+                <div className="php-success-grid-item">
+                  <div className="php-success-grid-label">
+                    <ClockIcon size={14} /> Time Slot
+                  </div>
+                  <div className="php-success-grid-value time-highlight">
+                    {bookingSuccessModal.timeSlot}
+                  </div>
+                </div>
+
+                <div className="php-success-grid-item">
+                  <div className="php-success-grid-label">
+                    <HospitalIcon size={14} /> Healthcare Facility
+                  </div>
+                  <div className="php-success-grid-value">
+                    {bookingSuccessModal.hospitalName || 'HealthGate Medical Network'}
+                    {bookingSuccessModal.department ? ` (${bookingSuccessModal.department})` : ''}
+                  </div>
+                </div>
+
+                <div className="php-success-grid-item">
+                  <div className="php-success-grid-label">
+                    <StethoscopeIcon size={14} /> Consultation Mode
+                  </div>
+                  <div className="php-success-grid-value">
+                    {bookingSuccessModal.type || 'In-Person Consultation'}
+                  </div>
+                </div>
+
+                {bookingSuccessModal.reason && (
+                  <div className="php-success-grid-item full-width">
+                    <div className="php-success-grid-label">Reason for Visit</div>
+                    <div className="php-success-grid-value reason-text">
+                      "{bookingSuccessModal.reason}"
+                    </div>
+                  </div>
+                )}
+
+                {bookingSuccessModal.appointmentId && (
+                  <div className="php-success-grid-item full-width appt-ref-row">
+                    <span className="php-success-grid-label">Reference Code</span>
+                    <span className="php-success-ref-code">
+                      #{bookingSuccessModal.appointmentId.slice(-8).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Helpful Notice */}
+            <div className="php-success-notice">
+              <span className="php-success-notice-icon">💡</span>
+              <p className="php-success-notice-text">
+                Please arrive at the facility <strong>10–15 minutes prior</strong> to your appointment. Keep any previous test results or medical records ready.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="php-success-actions">
+              <button
+                type="button"
+                className="php-success-btn-primary"
+                onClick={() => {
+                  setBookingSuccessModal(null)
+                  setTimeout(() => {
+                    const el = document.getElementById('appointments')
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }
+                  }, 100)
+                }}
+              >
+                <CalendarIcon size={16} /> View in My Appointments
+              </button>
+              <button
+                type="button"
+                className="php-success-btn-secondary"
+                onClick={() => setBookingSuccessModal(null)}
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
