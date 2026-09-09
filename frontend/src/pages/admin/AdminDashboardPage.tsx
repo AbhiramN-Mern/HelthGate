@@ -189,38 +189,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
   const [pendingDoctors, setPendingDoctors] = useState<AdminDoctor[]>([])
 
   // Complaints state for bottom card
-  const [complaints, setComplaints] = useState<ComplaintItem[]>([
-    {
-      id: 'CMP-1042',
-      userName: 'Rahul Sharma',
-      userRole: 'Patient',
-      category: 'Slot Scheduling Delay',
-      severity: 'high',
-      status: 'Under Review',
-      date: 'Today, 02:30 PM',
-      message: 'Doctor consultation started 40 minutes after scheduled slot without notification.',
-    },
-    {
-      id: 'CMP-1041',
-      userName: 'Dr. Sarah Jenkins',
-      userRole: 'Doctor',
-      category: 'Billing Dispute',
-      severity: 'medium',
-      status: 'Investigating',
-      date: 'Yesterday, 05:15 PM',
-      message: 'Cancellation policy fee reconciliation pending for last-minute patient dropout.',
-    },
-    {
-      id: 'CMP-1039',
-      userName: 'Priya Patel',
-      userRole: 'Patient',
-      category: 'Prescription Access',
-      severity: 'low',
-      status: 'Resolved',
-      date: 'Sep 6, 2026',
-      message: 'Requested digital copy of prescription notes follow-up consultation.',
-    },
-  ])
+  const [complaints, setComplaints] = useState<ComplaintItem[]>([])
 
   // 2. Module Data States
   const [patients, setPatients] = useState<AdminPatient[]>([])
@@ -1106,38 +1075,44 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                   </div>
 
                   <div className="admin-table-list">
-                    {complaints.map((cmp) => (
-                      <div key={cmp.id} className="admin-complaint-item">
-                        <div className="admin-complaint-top">
-                          <span className="admin-complaint-cat">{cmp.category}</span>
-                          <span className={`admin-severity-pill ${cmp.severity}`}>
-                            {cmp.severity}
-                          </span>
-                        </div>
+                    {complaints.length === 0 ? (
+                      <p style={{ fontSize: '0.82rem', color: '#94a3b8', textAlign: 'center', padding: '24px 0' }}>
+                        No complaints reported.
+                      </p>
+                    ) : (
+                      complaints.map((cmp) => (
+                        <div key={cmp.id} className="admin-complaint-item">
+                          <div className="admin-complaint-top">
+                            <span className="admin-complaint-cat">{cmp.category}</span>
+                            <span className={`admin-severity-pill ${cmp.severity}`}>
+                              {cmp.severity}
+                            </span>
+                          </div>
 
-                        <p className="admin-complaint-desc">{cmp.message}</p>
+                          <p className="admin-complaint-desc">{cmp.message}</p>
 
-                        <div className="admin-complaint-footer">
-                          <span>
-                            {cmp.userName} ({cmp.userRole})
-                          </span>
-                          <button
-                            type="button"
-                            className="admin-tf-tab"
-                            style={{
-                              padding: '2px 8px',
-                              fontSize: '0.68rem',
-                              background: cmp.status === 'Resolved' ? '#d1fae5' : '#fef3c7',
-                              color: cmp.status === 'Resolved' ? '#065f46' : '#92400e',
-                            }}
-                            onClick={() => handleToggleComplaintStatus(cmp.id)}
-                            title="Click to toggle resolution status"
-                          >
-                            {cmp.status}
-                          </button>
+                          <div className="admin-complaint-footer">
+                            <span>
+                              {cmp.userName} ({cmp.userRole})
+                            </span>
+                            <button
+                              type="button"
+                              className="admin-tf-tab"
+                              style={{
+                                padding: '2px 8px',
+                                fontSize: '0.68rem',
+                                background: cmp.status === 'Resolved' ? '#d1fae5' : '#fef3c7',
+                                color: cmp.status === 'Resolved' ? '#065f46' : '#92400e',
+                              }}
+                              onClick={() => handleToggleComplaintStatus(cmp.id)}
+                              title="Click to toggle resolution status"
+                            >
+                              {cmp.status}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               </section>
