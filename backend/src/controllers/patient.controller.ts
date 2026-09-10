@@ -1,54 +1,28 @@
 import type { Response } from "express";
-
-import PatientModel from "../models/patient.model.js";
-import NotificationModel from "../models/notification.model.js";
 import type { AuthenticatedRequest } from "../types/auth.js";
-
-const patientUpdateFields = [
-  "dateOfBirth",
-  "gender",
-  "phone",
-  "address",
-  "profileImage",
-  "bloodGroup",
-  "allergies",
-  "medicalHistory",
-] as const;
-
-const pickPatientUpdates = (body: Record<string, unknown>) => {
-  return Object.fromEntries(
-    patientUpdateFields
-      .filter((field) => body[field] !== undefined)
-      .map((field) => [field, body[field]]),
-  );
-};
+import { patientService } from "../container.js";
 
 export const getMyPatientProfile = async (
   req: AuthenticatedRequest,
   res: Response,
 ) => {
   try {
-    const patient = await PatientModel.findOne({ user: req.user?.id }).populate(
-      "user",
-      "name email role",
-    );
-
-    if (!patient) {
-      return res.status(404).json({
-        success: false,
-        message: "Patient profile not found",
-      });
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
+    const patient = await patientService.getMyPatientProfile(userId);
     return res.status(200).json({
       success: true,
       patient,
     });
-  } catch (error) {
-    return res.status(500).json({
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
       success: false,
-      message: "Failed to fetch patient profile",
-      error: error instanceof Error ? error.message : "Unknown error",
+      message: error.message || "Failed to fetch patient profile",
+      error: error.message || "Unknown error",
     });
   }
 };
@@ -58,45 +32,23 @@ export const updateMyPatientProfile = async (
   res: Response,
 ) => {
   try {
-    const updates = pickPatientUpdates(req.body as Record<string, unknown>);
-
-    if (updates.dateOfBirth) {
-      const dob = new Date(updates.dateOfBirth as string);
-      if (isNaN(dob.getTime()) || dob > new Date()) {
-        return res.status(400).json({
-          success: false,
-          message: "Date of birth cannot be in the future",
-        });
-      }
-    }
-    const patient = await PatientModel.findOneAndUpdate(
-      { user: req.user?.id },
-      { $set: { user: req.user?.id, ...updates } },
-      {
-        new: true,
-        runValidators: true,
-        upsert: true,
-        setDefaultsOnInsert: true,
-      },
-    ).populate("user", "name email role");
-
-    if (!patient) {
-      return res.status(404).json({
-        success: false,
-        message: "Patient profile not found",
-      });
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
+    const patient = await patientService.updateMyPatientProfile(userId, req.body || {});
     return res.status(200).json({
       success: true,
       message: "Patient profile updated successfully",
       patient,
     });
-  } catch (error) {
-    return res.status(500).json({
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
       success: false,
-      message: "Failed to update patient profile",
-      error: error instanceof Error ? error.message : "Unknown error",
+      message: error.message || "Failed to update patient profile",
+      error: error.message || "Unknown error",
     });
   }
 };
@@ -106,19 +58,22 @@ export const getPatientNotifications = async (
   res: Response,
 ) => {
   try {
-    const notifications = await NotificationModel.find({ recipient: req.user?.id })
-      .sort({ createdAt: -1 })
-      .limit(30);
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
 
+    const notifications = await patientService.getPatientNotifications(userId);
     return res.status(200).json({
       success: true,
       notifications,
     });
-  } catch (error) {
-    return res.status(500).json({
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
       success: false,
-      message: "Failed to fetch notifications",
-      error: error instanceof Error ? error.message : "Unknown error",
+      message: error.message || "Failed to fetch notifications",
+      error: error.message || "Unknown error",
     });
   }
 };
@@ -128,21 +83,24 @@ export const markPatientNotificationRead = async (
   res: Response,
 ) => {
   try {
-    const { notificationId } = req.params;
-    await NotificationModel.findOneAndUpdate(
-      { _id: notificationId, recipient: req.user?.id },
-      { isRead: true },
-    );
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const notificationId = String(req.params.notificationId);
+    await patientService.markPatientNotificationRead(notificationId, userId);
 
     return res.status(200).json({
       success: true,
       message: "Notification marked as read",
     });
-  } catch (error) {
-    return res.status(500).json({
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
       success: false,
-      message: "Failed to mark notification as read",
-      error: error instanceof Error ? error.message : "Unknown error",
+      message: error.message || "Failed to mark notification as read",
+      error: error.message || "Unknown error",
     });
   }
 };
