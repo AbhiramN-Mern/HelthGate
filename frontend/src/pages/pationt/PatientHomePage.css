@@ -670,6 +670,222 @@
   margin: 0;
 }
 
+/* History Section Header Tag */
+.php-section-tag.history {
+  background-color: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.php-section-count.history {
+  background-color: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.php-section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.php-history-jump-btn {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--hg-primary);
+  text-decoration: none;
+  background-color: var(--hg-primary-subtle);
+  border: 1px solid var(--hg-primary-border);
+  padding: 5px 14px;
+  border-radius: var(--hg-radius-full);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.php-history-jump-btn:hover {
+  background-color: var(--hg-primary);
+  color: #ffffff;
+}
+
+.php-hide-history-btn {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #64748b;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 5px 12px;
+  border-radius: var(--hg-radius-full);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.php-hide-history-btn:hover {
+  background-color: #e2e8f0;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+
+.php-quick-book-link,
+.php-quick-history-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: var(--hg-radius-md);
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  font-family: inherit;
+  border: none;
+}
+
+.php-quick-book-link {
+  background-color: var(--hg-primary);
+  color: #ffffff;
+}
+
+.php-quick-book-link:hover {
+  opacity: 0.9;
+}
+
+.php-quick-history-link {
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+}
+
+.php-quick-history-link:hover {
+  background-color: #e2e8f0;
+}
+
+/* History Filter Pills */
+.php-history-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.php-history-filter-pill {
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #64748b;
+  padding: 6px 14px;
+  border-radius: var(--hg-radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.php-history-filter-pill:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+.php-history-filter-pill.active {
+  background-color: #1e293b;
+  border-color: #1e293b;
+  color: #ffffff;
+}
+
+.php-history-filter-pill.completed.active {
+  background-color: #059669;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+.php-history-filter-pill.cancelled.active {
+  background-color: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+/* Appointment History Cards */
+.php-history-section {
+  background-color: #fafbfd;
+  border: 1px solid #e2e8f0;
+}
+
+.php-appointment-card.history {
+  border-left-width: 4px;
+  background-color: #ffffff;
+}
+
+.php-appointment-card.history.completed {
+  border-left-color: #10b981;
+}
+
+.php-appointment-card.history.cancelled {
+  border-left-color: #ef4444;
+  opacity: 0.9;
+}
+
+.php-appointment-card.history.past {
+  border-left-color: #94a3b8;
+}
+
+.php-appt-avatar.history {
+  background-color: #64748b;
+}
+
+.php-appt-status-badge.completed {
+  background-color: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+
+.php-appt-status-badge.cancelled {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+.php-appt-status-badge.past {
+  background-color: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+
+.php-history-card-footer {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+  display: flex;
+  align-items: center;
+}
+
+.php-history-card-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.php-history-card-tag.completed {
+  color: #059669;
+}
+
+.php-history-card-tag.cancelled {
+  color: #dc2626;
+}
+
+.php-history-card-tag.past {
+  color: #64748b;
+}
+
 /* ========================================================
    SPECIALIZATIONS SECTION
    ======================================================== */

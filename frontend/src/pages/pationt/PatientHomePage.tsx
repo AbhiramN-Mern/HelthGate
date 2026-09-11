@@ -118,6 +118,64 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   const [respondingApptId, setRespondingApptId] = useState<string | null>(null)
   const [rescheduleFeedback, setRescheduleFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+  // Appointment History Visibility State (hidden by default, only shown on click, can be hidden after)
+  const [showHistory, setShowHistory] = useState(false)
+
+  // Appointment History Filter State ('all' | 'completed' | 'cancelled')
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'completed' | 'cancelled'>('all')
+
+  // Helper to determine if an appointment is in the past
+  const isAppointmentPast = (appt: AppointmentItem): boolean => {
+    if (appt.status === 'completed' || appt.status === 'cancelled') {
+      return true
+    }
+    if (!appt.appointmentDate) return false
+
+    const dateParts = String(appt.appointmentDate).split('T')[0].split('-')
+    if (dateParts.length !== 3) {
+      const parsed = new Date(appt.appointmentDate)
+      return isNaN(parsed.getTime()) ? false : parsed.getTime() < Date.now()
+    }
+
+    const year = parseInt(dateParts[0], 10)
+    const month = parseInt(dateParts[1], 10) - 1
+    const day = parseInt(dateParts[2], 10)
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const apptDay = new Date(year, month, day)
+    apptDay.setHours(0, 0, 0, 0)
+
+    // If appointment day is strictly prior to today, it belongs to past history
+    return apptDay.getTime() < today.getTime()
+  }
+
+  // Partition appointments into upcoming and past
+  const upcomingAppointments = appointments
+    .filter((a) => !isAppointmentPast(a))
+    .sort((a, b) => {
+      const da = a.appointmentDate ? new Date(a.appointmentDate).getTime() : 0
+      const db = b.appointmentDate ? new Date(b.appointmentDate).getTime() : 0
+      return da - db
+    })
+
+  const pastAppointments = appointments
+    .filter((a) => isAppointmentPast(a))
+    .sort((a, b) => {
+      const da = a.appointmentDate ? new Date(a.appointmentDate).getTime() : 0
+      const db = b.appointmentDate ? new Date(b.appointmentDate).getTime() : 0
+      return db - da
+    })
+
+  const completedCount = pastAppointments.filter((a) => a.status === 'completed').length
+  const cancelledCount = pastAppointments.filter((a) => a.status === 'cancelled').length
+
+  const filteredPastAppointments = pastAppointments.filter((a) => {
+    if (historyFilter === 'completed') return a.status === 'completed'
+    if (historyFilter === 'cancelled') return a.status === 'cancelled'
+    return true
+  })
+
   // Fetch doctor's booked slots whenever bookingDoctor or calMonth changes
   useEffect(() => {
     if (!bookingDoctor?._id || !token) {
@@ -534,11 +592,31 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             <li>
               <a href="#welcome" className="php-nav-link active">Home</a>
             </li>
-            {appointments.length > 0 && (
+            {upcomingAppointments.length > 0 && (
               <li>
                 <a href="#appointments" className="php-nav-link">
-                  My Appointments ({appointments.length})
+                  Upcoming ({upcomingAppointments.length})
                 </a>
+              </li>
+            )}
+            {pastAppointments.length > 0 && (
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !showHistory
+                    setShowHistory(next)
+                    if (next) {
+                      setTimeout(() => {
+                        document.getElementById('appointment-history')?.scrollIntoView({ behavior: 'smooth' })
+                      }, 100)
+                    }
+                  }}
+                  className={`php-nav-link ${showHistory ? 'active' : ''}`}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }}
+                >
+                  {showHistory ? 'Hide History' : `Appointment History (${pastAppointments.length})`}
+                </button>
               </li>
             )}
             <li>
@@ -593,8 +671,20 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           onClick={() => {
                             if (!n.isRead) handleMarkNotificationRead(n._id)
                             if (n.appointment) {
-                              const el = document.getElementById('appointments')
-                              if (el) el.scrollIntoView({ behavior: 'smooth' })
+                              const isPast = pastAppointments.some(
+                                (p) =>
+                                  p._id === n.appointment ||
+                                  (typeof n.appointment === 'object' && (n.appointment as any)?._id === p._id),
+                              )
+                              if (isPast) {
+                                setShowHistory(true)
+                                setTimeout(() => {
+                                  document.getElementById('appointment-history')?.scrollIntoView({ behavior: 'smooth' })
+                                }, 100)
+                              } else {
+                                const el = document.getElementById('appointments')
+                                if (el) el.scrollIntoView({ behavior: 'smooth' })
+                              }
                               setShowNotifs(false)
                             }
                           }}
@@ -817,10 +907,10 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
       <main className="php-main">
         {/* ========================================================
             7. UPCOMING APPOINTMENTS
-            (Show section ONLY when appointments exist from GET /api/appointments/my)
+            (Show upcoming appointments only)
             ======================================================== */}
-        {appointments.length > 0 && (
-          <section id="appointments" className="php-appointments-section" aria-label="My Appointments">
+        {upcomingAppointments.length > 0 ? (
+          <section id="appointments" className="php-appointments-section" aria-label="Upcoming Appointments">
             <div className="php-section-header" style={{ marginBottom: '20px' }}>
               <div className="php-section-title-wrap">
                 <span className="php-section-tag">Your Schedule</span>
@@ -829,7 +919,27 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   Here are your scheduled appointments verified with your healthcare providers.
                 </p>
               </div>
-              <span className="php-section-count">{appointments.length} Scheduled</span>
+              <div className="php-section-header-actions">
+                <span className="php-section-count">{upcomingAppointments.length} Upcoming</span>
+                {pastAppointments.length > 0 && (
+                  <button
+                    type="button"
+                    className="php-history-jump-btn"
+                    onClick={() => {
+                      const next = !showHistory
+                      setShowHistory(next)
+                      if (next) {
+                        setTimeout(() => {
+                          document.getElementById('appointment-history')?.scrollIntoView({ behavior: 'smooth' })
+                        }, 100)
+                      }
+                    }}
+                  >
+                    <ClockIcon size={14} />{' '}
+                    {showHistory ? 'Hide History ↑' : `View Appointment History (${pastAppointments.length}) ↓`}
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Reschedule Response Feedback Alert */}
@@ -859,7 +969,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             )}
 
             <div className="php-appointments-grid">
-              {appointments.map((appt) => {
+              {upcomingAppointments.map((appt) => {
                 const docName = appt.doctor?.user?.name || 'Doctor'
                 const docSpec = appt.doctor?.specialization || 'Specialist'
                 const formattedDate = appt.appointmentDate
@@ -872,7 +982,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   : 'Upcoming'
 
                 return (
-                  <div key={appt._id} className="php-appointment-card">
+                  <div key={appt._id} className="php-appointment-card upcoming">
                     <div className="php-appt-header">
                       <span className="php-appt-status-badge">
                         ● {appt.status || 'Confirmed'}
@@ -993,6 +1103,220 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 )
               })}
             </div>
+          </section>
+        ) : pastAppointments.length > 0 ? (
+          <section id="appointments" className="php-appointments-section php-appointments-empty" aria-label="Upcoming Appointments">
+            <div className="php-empty-card" style={{ padding: '24px' }}>
+              <span className="php-empty-icon"><CalendarIcon size={32} /></span>
+              <h3 className="php-empty-title">No Upcoming Appointments</h3>
+              <p className="php-empty-desc">
+                You have no upcoming consultations scheduled right now. You can check your past visits in Appointment History below or book a new appointment.
+              </p>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <a href="#doctors" className="php-quick-book-link">Find a Doctor</a>
+                <button
+                  type="button"
+                  className="php-quick-history-link"
+                  onClick={() => {
+                    const next = !showHistory
+                    setShowHistory(next)
+                    if (next) {
+                      setTimeout(() => {
+                        document.getElementById('appointment-history')?.scrollIntoView({ behavior: 'smooth' })
+                      }, 100)
+                    }
+                  }}
+                  style={{ cursor: 'pointer', font: 'inherit' }}
+                >
+                  <ClockIcon size={14} style={{ marginRight: '6px' }} />
+                  {showHistory ? 'Hide History ↑' : `View Appointment History (${pastAppointments.length}) ↓`}
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {/* ========================================================
+            8. APPOINTMENT HISTORY (Past, Completed, Cancelled)
+            (Only shown when user clicks History, can be hidden after that)
+            ======================================================== */}
+        {pastAppointments.length > 0 && showHistory && (
+          <section id="appointment-history" className="php-appointments-section php-history-section" aria-label="Appointment History">
+            <div className="php-section-header" style={{ marginBottom: '20px' }}>
+              <div className="php-section-title-wrap">
+                <span className="php-section-tag history">Consultation Archive</span>
+                <h2 className="php-section-title">Appointment History</h2>
+                <p className="php-section-desc">
+                  Review your completed visits, past consultations, and previous appointment records.
+                </p>
+              </div>
+              <div className="php-section-header-actions">
+                <span className="php-section-count history">{pastAppointments.length} Past Visits</span>
+                <button
+                  type="button"
+                  className="php-hide-history-btn"
+                  onClick={() => {
+                    setShowHistory(false)
+                    document.getElementById('appointments')?.scrollIntoView({ behavior: 'smooth' })
+                  }}
+                  title="Hide Appointment History"
+                >
+                  <CloseIcon size={14} /> Hide History
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="php-history-filters">
+              <button
+                type="button"
+                className={`php-history-filter-pill ${historyFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setHistoryFilter('all')}
+              >
+                All Past ({pastAppointments.length})
+              </button>
+              {completedCount > 0 && (
+                <button
+                  type="button"
+                  className={`php-history-filter-pill completed ${historyFilter === 'completed' ? 'active' : ''}`}
+                  onClick={() => setHistoryFilter('completed')}
+                >
+                  Completed ({completedCount})
+                </button>
+              )}
+              {cancelledCount > 0 && (
+                <button
+                  type="button"
+                  className={`php-history-filter-pill cancelled ${historyFilter === 'cancelled' ? 'active' : ''}`}
+                  onClick={() => setHistoryFilter('cancelled')}
+                >
+                  Cancelled ({cancelledCount})
+                </button>
+              )}
+            </div>
+
+            {filteredPastAppointments.length === 0 ? (
+              <div className="php-empty-card" style={{ padding: '24px' }}>
+                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+                  No appointments found matching "{historyFilter}".
+                </p>
+              </div>
+            ) : (
+              <div className="php-appointments-grid">
+                {filteredPastAppointments.map((appt) => {
+                  const docName = appt.doctor?.user?.name || 'Doctor'
+                  const docSpec = appt.doctor?.specialization || 'Specialist'
+                  const formattedDate = appt.appointmentDate
+                    ? new Date(appt.appointmentDate).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                    : 'Past Date'
+
+                  const isCompleted = appt.status === 'completed'
+                  const isCancelled = appt.status === 'cancelled'
+
+                  const cardClass = isCompleted
+                    ? 'php-appointment-card history completed'
+                    : isCancelled
+                    ? 'php-appointment-card history cancelled'
+                    : 'php-appointment-card history past'
+
+                  const statusBadgeClass = isCompleted
+                    ? 'php-appt-status-badge completed'
+                    : isCancelled
+                    ? 'php-appt-status-badge cancelled'
+                    : 'php-appt-status-badge past'
+
+                  const statusLabel = isCompleted
+                    ? 'Completed'
+                    : isCancelled
+                    ? 'Cancelled'
+                    : 'Past Visit'
+
+                  return (
+                    <div key={appt._id} className={cardClass}>
+                      <div className="php-appt-header">
+                        <span className={statusBadgeClass}>
+                          ● {statusLabel}
+                        </span>
+                        <span className="php-appt-time-badge">
+                          {appt.timeSlot || '10:00 AM'}
+                        </span>
+                      </div>
+
+                      <div className="php-appt-doctor">
+                        <div className="php-appt-avatar history">
+                          {docName.replace(/^Dr\.?\s*/i, '').charAt(0) || 'D'}
+                        </div>
+                        <div className="php-appt-doc-info">
+                          <h3 className="php-appt-doc-name">{docName}</h3>
+                          <span className="php-appt-doc-spec">{docSpec}</span>
+                        </div>
+                      </div>
+
+                      <div className="php-appt-details">
+                        <div className="php-appt-detail-row">
+                          <span style={{ display: 'inline-flex', alignItems: 'center' }}><CalendarIcon size={14} /></span>
+                          <span>{formattedDate}</span>
+                        </div>
+                        <div className="php-appt-detail-row">
+                          {appt.hospital ? (
+                            <>
+                              <span style={{ display: 'inline-flex', alignItems: 'center' }}><HospitalIcon size={14} /></span>
+                              <span>
+                                {(appt.hospital as any)?.name || 'Hospital'}
+                                {appt.department ? ` (${appt.department})` : ''}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0d5c63' }}>
+                                <StethoscopeIcon size={14} />
+                              </span>
+                              <span style={{ color: '#0d5c63', fontWeight: 600 }}>Freelance / Independent</span>
+                            </>
+                          )}
+                        </div>
+                        {appt.type && (
+                          <div className="php-appt-detail-row">
+                            <span style={{ display: 'inline-flex', alignItems: 'center' }}><StethoscopeIcon size={14} /></span>
+                            <span>{appt.type} Visit</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {appt.reason && (
+                        <p className="php-appt-reason">
+                          "{appt.reason}"
+                        </p>
+                      )}
+
+                      {/* History Status Footer Note */}
+                      <div className="php-history-card-footer">
+                        {isCompleted && (
+                          <span className="php-history-card-tag completed">
+                            <CheckCircleIcon size={13} /> Consultation Completed
+                          </span>
+                        )}
+                        {isCancelled && (
+                          <span className="php-history-card-tag cancelled">
+                            <BlockedIcon size={13} /> Consultation Cancelled
+                          </span>
+                        )}
+                        {!isCompleted && !isCancelled && (
+                          <span className="php-history-card-tag past">
+                            <ClockIcon size={13} /> Past Scheduled Visit
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </section>
         )}
 

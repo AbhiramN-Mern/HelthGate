@@ -210,10 +210,9 @@ export class AppointmentService {
     return this.appointmentRepo.find(
       {
         patient: patientUserId,
-        status: { $in: ["scheduled", "confirmed"] },
       },
       true,
-      { appointmentDate: 1 },
+      { appointmentDate: -1 },
     );
   }
 
