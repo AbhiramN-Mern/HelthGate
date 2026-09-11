@@ -803,5 +803,156 @@ export const getAllAppointmentsForAdminApi = async (token: string): Promise<{ su
   return request<{ success: boolean; appointments?: AppointmentItem[] }>('/api/admin/appointments', { method: 'GET' }, token)
 }
 
+// ==========================================
+// PAYMENT MODULE TYPES & API CALLS
+// ==========================================
+
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED'
+export type PaymentProvider = 'MOCK' | 'RAZORPAY'
+
+export type PaymentRecord = {
+  _id: string
+  bookingId: string | {
+    _id: string
+    appointmentDate?: string
+    timeSlot?: string
+    doctor?: {
+      _id?: string
+      user?: { name?: string; email?: string }
+      specialization?: string
+      consultationFee?: number
+    }
+    hospital?: { name?: string }
+    status?: string
+    reason?: string
+    type?: string
+  }
+  patientId: string | {
+    _id: string
+    name?: string
+    email?: string
+  }
+  amount: number
+  currency: string
+  status: PaymentStatus
+  provider: PaymentProvider
+  providerOrderId: string
+  providerPaymentId?: string | null
+  failureReason?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type PaymentOrderResult = {
+  providerOrderId: string
+  amount: number
+  currency: string
+  provider: PaymentProvider
+  keyId?: string
+  mockCheckoutToken?: string
+  notes?: Record<string, any>
+}
+
+export type CreatePaymentOrderResponse = {
+  success: boolean
+  message?: string
+  payment: PaymentRecord
+  order: PaymentOrderResult
+  appointment?: any
+}
+
+export type VerifyPaymentRequest = {
+  paymentId?: string
+  providerOrderId?: string
+  providerPaymentId?: string
+  razorpaySignature?: string
+  simulateStatus?: 'SUCCESS' | 'FAILED'
+  failureReason?: string
+  mockToken?: string
+}
+
+export type VerifyPaymentResponse = {
+  success: boolean
+  message: string
+  payment?: PaymentRecord
+  appointment?: any
+  canRetry?: boolean
+}
+
+export type PaymentHistoryResponse = {
+  success: boolean
+  payments: PaymentRecord[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export const createPaymentOrderApi = async (
+  bookingId: string,
+  token: string,
+): Promise<CreatePaymentOrderResponse> => {
+  return request<CreatePaymentOrderResponse>(
+    '/api/payments/orders',
+    {
+      method: 'POST',
+      body: JSON.stringify({ bookingId }),
+    },
+    token,
+  )
+}
+
+export const verifyPaymentApi = async (
+  payload: VerifyPaymentRequest,
+  token: string,
+): Promise<VerifyPaymentResponse> => {
+  return request<VerifyPaymentResponse>(
+    '/api/payments/verify',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+    token,
+  )
+}
+
+export const retryPaymentApi = async (
+  paymentId: string,
+  token: string,
+): Promise<CreatePaymentOrderResponse> => {
+  return request<CreatePaymentOrderResponse>(
+    `/api/payments/${paymentId}/retry`,
+    {
+      method: 'POST',
+    },
+    token,
+  )
+}
+
+export const getPaymentsApi = async (
+  params?: { status?: string; page?: number; limit?: number },
+  token?: string,
+): Promise<PaymentHistoryResponse> => {
+  const query = new URLSearchParams()
+  if (params?.status) query.append('status', params.status)
+  if (params?.page) query.append('page', String(params.page))
+  if (params?.limit) query.append('limit', String(params.limit))
+  const qs = query.toString() ? `?${query.toString()}` : ''
+
+  return request<PaymentHistoryResponse>(`/api/payments${qs}`, { method: 'GET' }, token)
+}
+
+export const getPaymentByIdApi = async (
+  paymentId: string,
+  token: string,
+): Promise<{ success: boolean; payment: PaymentRecord }> => {
+  return request<{ success: boolean; payment: PaymentRecord }>(
+    `/api/payments/${paymentId}`,
+    { method: 'GET' },
+    token,
+  )
+}
+
+
 
 

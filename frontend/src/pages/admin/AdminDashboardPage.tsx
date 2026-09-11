@@ -25,12 +25,14 @@ import {
   getAdminDashboardApi,
   getAllAppointmentsForAdminApi,
   getSpecializations,
+  getPaymentsApi,
   type AdminDoctor,
   type AdminPatient,
   type Hospital,
   type HospitalDoctorItem,
   type AppointmentItem,
   type AdminDashboardStats,
+  type PaymentRecord,
 } from '../../api/auth.api'
 import {
   DashboardIcon,
@@ -208,6 +210,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
   const [hospitals, setHospitals] = useState<Hospital[]>([])
   const [allAppointments, setAllAppointments] = useState<AppointmentItem[]>([])
   const [specializationsList, setSpecializationsList] = useState<string[]>([])
+  const [adminPayments, setAdminPayments] = useState<PaymentRecord[]>([])
 
   // Search & Filter States
   const [patientSearch, setPatientSearch] = useState('')
@@ -215,6 +218,8 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
   const [doctorStatusFilter, setDoctorStatusFilter] = useState<'all' | 'pending' | 'verified' | 'rejected'>('all')
   const [hospitalSearch, setHospitalSearch] = useState('')
   const [apptStatusFilter, setApptStatusFilter] = useState<string>('all')
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all')
+  const [paymentSearch, setPaymentSearch] = useState('')
 
   // Modals & Detail Forms
   const [selectedPatient, setSelectedPatient] = useState<AdminPatient | null>(null)
@@ -278,7 +283,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
         }
 
         // Fetch core collections
-        const [patientsData, doctorsData, hospitalsData, apptsData, specsData, hospitalDocsData, historyData] = await Promise.all([
+        const [patientsData, doctorsData, hospitalsData, apptsData, specsData, hospitalDocsData, historyData, paymentsData] = await Promise.all([
           getAllPatientsForAdmin(token).catch(() => ({ patients: [] })),
           getAllDoctorsForAdmin(token).catch(() => ({ doctors: [] })),
           getAllHospitalsForAdmin(token).catch(() => ({ hospitals: [] })),
@@ -286,6 +291,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
           getSpecializations().catch(() => ({ specializations: [] })),
           getAllHospitalDoctorsForAdminApi(token).catch(() => ({ relationships: [] })),
           getHospitalDoctorHistoryApi(token).catch(() => ({ history: [] })),
+          getPaymentsApi({}, token).catch(() => ({ payments: [] })),
         ])
 
         const pList = patientsData.patients || []
@@ -295,6 +301,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
         const sList = specsData.specializations || []
         const hdList = hospitalDocsData.relationships || []
         const histList = historyData.history || []
+        const payList = (paymentsData as any)?.payments || []
 
         setPatients(pList)
         setDoctors(dList)
@@ -303,6 +310,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
         setSpecializationsList(sList)
         setHospitalDoctors(hdList)
         setHospitalDoctorHistory(histList)
+        setAdminPayments(payList)
 
         const pendingJoinReqs = hdList.filter((r) => r.status === 'PENDING').length
 
@@ -3180,10 +3188,234 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
               MODULE SHELLS: PAYMENTS, COMPLAINTS, REPORTS
               "Build the dashboard shell first, then implement each management module one by one"
               ======================================================== */}
-          {['payments', 'complaints', 'reports'].includes(activeSection) && (
+          {/* ========================================================
+              MODULE 6: PAYMENTS MANAGEMENT (Admin Audit & Settlement)
+              ======================================================== */}
+          {activeSection === 'payments' && (() => {
+            const filteredPayments = adminPayments.filter((p) => {
+              const matchesStatus =
+                paymentStatusFilter === 'all' || p.status === paymentStatusFilter
+              const query = paymentSearch.toLowerCase().trim()
+              if (!query) return matchesStatus
+
+              const patientName =
+                (typeof p.patientId === 'object' && p.patientId?.name) || ''
+              const docName =
+                (typeof p.bookingId === 'object' &&
+                  (p.bookingId?.doctor as any)?.user?.name) ||
+                ''
+              const orderId = p.providerOrderId || ''
+              const payId = p.providerPaymentId || ''
+
+              const matchesSearch =
+                patientName.toLowerCase().includes(query) ||
+                docName.toLowerCase().includes(query) ||
+                orderId.toLowerCase().includes(query) ||
+                payId.toLowerCase().includes(query)
+
+              return matchesStatus && matchesSearch
+            })
+
+            const totalVol = adminPayments
+              .filter((p) => p.status === 'SUCCESS')
+              .reduce((acc, p) => acc + (p.amount || 0), 0)
+
+            return (
+              <div className="admin-module-card">
+                <div className="admin-module-header">
+                  <div>
+                    <h2 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>
+                      Billing & Payments Management
+                    </h2>
+                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                      Real-time audit log of doctor consultation payments, gateway settlements & transactions
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div className="admin-search-wrap" style={{ minWidth: '240px' }}>
+                      <SearchIcon size={16} />
+                      <input
+                        type="text"
+                        placeholder="Search by order, patient, doctor..."
+                        value={paymentSearch}
+                        onChange={(e) => setPaymentSearch(e.target.value)}
+                        className="admin-search-input"
+                      />
+                    </div>
+
+                    <select
+                      className="admin-filter-select"
+                      value={paymentStatusFilter}
+                      onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="SUCCESS">Success</option>
+                      <option value="PENDING">Pending</option>
+                      <option value="FAILED">Failed</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      className="admin-btn-secondary"
+                      onClick={() => {
+                        getPaymentsApi({}, token)
+                          .then((res) => setAdminPayments(res.payments || []))
+                          .catch(() => {})
+                      }}
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+
+                {/* KPI Summary Bar */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '14px',
+                  marginBottom: '20px',
+                }}>
+                  <div style={{
+                    padding: '14px 18px',
+                    background: '#f8fafc',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0',
+                  }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                      Total Volume Settled
+                    </span>
+                    <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', fontWeight: 800, color: '#0d9488' }}>
+                      ₹{totalVol.toLocaleString('en-IN')}
+                    </h3>
+                  </div>
+
+                  <div style={{
+                    padding: '14px 18px',
+                    background: '#f0fdf4',
+                    borderRadius: '12px',
+                    border: '1px solid #bbf7d0',
+                  }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#166534', textTransform: 'uppercase' }}>
+                      Successful Transactions
+                    </span>
+                    <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', fontWeight: 800, color: '#15803d' }}>
+                      {adminPayments.filter((p) => p.status === 'SUCCESS').length}
+                    </h3>
+                  </div>
+
+                  <div style={{
+                    padding: '14px 18px',
+                    background: '#fff1f2',
+                    borderRadius: '12px',
+                    border: '1px solid #fecdd3',
+                  }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#991b1b', textTransform: 'uppercase' }}>
+                      Failed Attempts
+                    </span>
+                    <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', fontWeight: 800, color: '#b91c1c' }}>
+                      {adminPayments.filter((p) => p.status === 'FAILED').length}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Table */}
+                {filteredPayments.length === 0 ? (
+                  <div className="admin-empty-table">
+                    <p style={{ margin: 0, color: '#64748b' }}>No payment records found matching your filters.</p>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Patient</th>
+                          <th>Doctor / Consultation</th>
+                          <th>Amount</th>
+                          <th>Provider</th>
+                          <th>Status</th>
+                          <th>Order & Payment ID</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPayments.map((p) => {
+                          const patientObj = typeof p.patientId === 'object' ? p.patientId : null
+                          const apptObj = typeof p.bookingId === 'object' ? p.bookingId : null
+                          const docObj = apptObj?.doctor as any
+
+                          return (
+                            <tr key={p._id}>
+                              <td>
+                                {p.createdAt
+                                  ? new Date(p.createdAt).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric',
+                                    })
+                                  : 'N/A'}
+                                <span style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8' }}>
+                                  {p.createdAt
+                                    ? new Date(p.createdAt).toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })
+                                    : ''}
+                                </span>
+                              </td>
+                              <td>
+                                <strong>{patientObj?.name || 'Patient'}</strong>
+                                <span style={{ display: 'block', fontSize: '0.74rem', color: '#64748b' }}>
+                                  {patientObj?.email || ''}
+                                </span>
+                              </td>
+                              <td>
+                                <strong>{docObj?.user?.name || 'Doctor'}</strong>
+                                <span style={{ display: 'block', fontSize: '0.74rem', color: '#64748b' }}>
+                                  {docObj?.specialization || 'Specialist'}
+                                </span>
+                              </td>
+                              <td>
+                                <strong style={{ color: '#0f172a' }}>₹{p.amount}</strong>
+                              </td>
+                              <td>
+                                <span className="admin-metric-tag blue">
+                                  {p.provider === 'RAZORPAY' ? 'Razorpay' : 'Mock Gateway'}
+                                </span>
+                              </td>
+                              <td>
+                                <span className={`admin-status-pill ${p.status.toLowerCase()}`}>
+                                  {p.status}
+                                </span>
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.74rem' }}>
+                                  <code>{p.providerOrderId}</code>
+                                  {p.providerPaymentId && <code>{p.providerPaymentId}</code>}
+                                  {p.failureReason && (
+                                    <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>
+                                      {p.failureReason}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
+          {/* ========================================================
+              MODULE SHELLS: COMPLAINTS, REPORTS
+              ======================================================== */}
+          {['complaints', 'reports'].includes(activeSection) && (
             <div className="admin-placeholder-shell">
               <div className="admin-placeholder-icon">
-                {activeSection === 'payments' && <CreditCardIcon size={32} />}
                 {activeSection === 'complaints' && <MessageSquareIcon size={32} />}
                 {activeSection === 'reports' && <TrendingUpIcon size={32} />}
               </div>
@@ -3194,8 +3426,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
 
               <p className="admin-placeholder-desc">
                 The {activeSection} management module architecture is provisioned in the dashboard shell.
-                Detailed transactions, automated settlement workflows, and configuration policies are ready
-                for module-by-module expansion.
+                Detailed workflows and configuration policies are ready for module-by-module expansion.
               </p>
 
               <div style={{ display: 'flex', gap: '10px' }}>

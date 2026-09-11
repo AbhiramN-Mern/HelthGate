@@ -64,8 +64,16 @@ const appointmentSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["scheduled", "confirmed", "completed", "cancelled"],
-      default: "scheduled",
+      enum: [
+        "pending_payment",
+        "PENDING_PAYMENT",
+        "scheduled",
+        "confirmed",
+        "CONFIRMED",
+        "completed",
+        "cancelled",
+      ],
+      default: "pending_payment",
     },
     reason: {
       type: String,

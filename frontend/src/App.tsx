@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
 import HomePage from './pages/HomePage'
 import PatientHomePage from './pages/pationt/PatientHomePage'
+import PatientPaymentsPage from './pages/pationt/PatientPaymentsPage'
 import DoctorDashboardPage from './pages/doctor/DoctorDashboardPage'
 import ErrorPage from './pages/error page/ErrorPage'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -94,6 +95,16 @@ function AppShell() {
         <Route
           path="/patient"
           element={<Navigate to="/patient/home" replace />}
+        />
+        <Route
+          path="/patient/payments"
+          element={
+            localStorage.getItem('helthgate_token') ? (
+              <PatientPaymentsPage user={user} onLogout={handleLogout} onRequireAuth={requireAuth} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
         />
         <Route
           path="/doctor/dashboard"

@@ -1,0 +1,660 @@
+/* ==========================================================================
+   Patient Payments Page Styles (HealthGate Design System)
+   ========================================================================== */
+
+.ppp-page-layout {
+  min-height: 100vh;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+/* Navbar */
+.ppp-navbar {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.ppp-nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ppp-logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.ppp-logo-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0d9488, #059669);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(13, 148, 136, 0.25);
+}
+
+.ppp-brand-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.ppp-brand-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #f0fdfa;
+  color: #0d9488;
+  border: 1px solid #ccfbf1;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.ppp-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ppp-nav-link {
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ppp-nav-link:hover {
+  color: #0d9488;
+  background: #f1f5f9;
+}
+
+.ppp-nav-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ppp-user-greeting {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.ppp-btn-logout {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ppp-btn-logout:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+/* Main Container */
+.ppp-main {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Header */
+.ppp-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.ppp-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ppp-header-tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #0d9488;
+  letter-spacing: 0.05em;
+}
+
+.ppp-page-title {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.ppp-page-desc {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #64748b;
+  max-width: 600px;
+}
+
+.ppp-btn-refresh {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ppp-btn-refresh:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+/* KPI Cards */
+.ppp-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .ppp-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .ppp-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ppp-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ppp-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+}
+
+.ppp-kpi-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ppp-kpi-icon.total {
+  background: #f0fdfa;
+  color: #0d9488;
+}
+
+.ppp-kpi-icon.success {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.ppp-kpi-icon.failed {
+  background: #fff1f2;
+  color: #f43f5e;
+}
+
+.ppp-kpi-icon.pending {
+  background: #fffbeb;
+  color: #f59e0b;
+}
+
+.ppp-kpi-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.ppp-kpi-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ppp-kpi-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Filter Tabs */
+.ppp-filter-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.ppp-filter-tab {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 9px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.ppp-filter-tab:hover {
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.ppp-filter-tab.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+.ppp-filter-tab.active.success {
+  background: #059669;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+.ppp-filter-tab.active.pending {
+  background: #d97706;
+  border-color: #d97706;
+  color: #ffffff;
+}
+
+.ppp-filter-tab.active.failed {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+/* Payments Grid */
+.ppp-payments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 480px) {
+  .ppp-payments-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ppp-payment-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.ppp-payment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.07);
+}
+
+.ppp-payment-card.success {
+  border-top: 4px solid #10b981;
+}
+
+.ppp-payment-card.failed {
+  border-top: 4px solid #ef4444;
+}
+
+.ppp-payment-card.pending {
+  border-top: 4px solid #f59e0b;
+}
+
+.ppp-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ppp-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ppp-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.ppp-status-badge.success {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.ppp-status-badge.failed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.ppp-status-badge.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.ppp-provider-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.ppp-card-amount {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ppp-card-doctor {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ppp-doc-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0d9488, #059669);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ppp-doc-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.ppp-doc-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ppp-doc-spec {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.ppp-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+.ppp-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ppp-card-identifiers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 10px;
+}
+
+.ppp-id-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.ppp-id-code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #0f172a;
+  font-size: 0.72rem;
+}
+
+.ppp-failure-alert {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #991b1b;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ppp-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.ppp-btn-retry {
+  width: 100%;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.ppp-btn-retry:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.ppp-btn-pay {
+  width: 100%;
+  background: #d97706;
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.ppp-btn-pay:hover:not(:disabled) {
+  background: #b45309;
+}
+
+.ppp-success-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #059669;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* Empty & Error States */
+.ppp-empty-card,
+.ppp-error-card {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 20px;
+  padding: 60px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 540px;
+  margin: 40px auto;
+}
+
+.ppp-empty-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ppp-empty-card h3,
+.ppp-error-card h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ppp-empty-card p,
+.ppp-error-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.ppp-btn-primary {
+  background: #0d9488;
+  color: #ffffff;
+  border: none;
+  padding: 11px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  margin-top: 8px;
+}
+
+.ppp-btn-primary:hover {
+  background: #0f766e;
+}
+
+/* Skeletons */
+.ppp-skeleton-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.ppp-skeleton-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 24px;
+  height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ppp-skeleton-row {
+  background: #f1f5f9;
+  border-radius: 8px;
+  animation: pppPulse 1.5s ease-in-out infinite;
+}
+
+.ppp-skeleton-row.header {
+  height: 32px;
+  width: 60%;
+}
+
+.ppp-skeleton-row.body {
+  height: 120px;
+  width: 100%;
+}
+
+@keyframes pppPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

@@ -15,7 +15,7 @@ export class AppointmentService {
     private hospitalDoctorRepo: IHospitalDoctorRepository,
     private notificationRepo: INotificationRepository,
     private userRepo: IUserRepository,
-  ) {}
+  ) { }
 
   async validateDoctorSlotAvailability({
     doctorId,
@@ -293,7 +293,7 @@ export class AppointmentService {
       timeSlot: cleanTimeSlot,
       reason: reason || "General Consultation",
       type: (type as any) || "In-Person",
-      status: "scheduled",
+      status: "pending_payment",
     });
 
     const populated = await this.appointmentRepo.findById(appointment._id, true);
@@ -304,8 +304,8 @@ export class AppointmentService {
         await this.notificationRepo.create({
           recipient: doctorDoc.user,
           type: "new_appointment",
-          title: "New Appointment Booked",
-          message: `${patientUser?.name || "A patient"} booked an appointment for ${new Date(appointmentDate).toLocaleDateString()} at ${cleanTimeSlot}.`,
+          title: "New Appointment Booked (Pending Payment)",
+          message: `${patientUser?.name || "A patient"} initiated an appointment booking for ${new Date(appointmentDate).toLocaleDateString()} at ${cleanTimeSlot} (Payment Pending).`,
           appointment: appointment._id,
         });
       }
@@ -385,11 +385,11 @@ export class AppointmentService {
       });
       const originalDateStr = appointment.appointmentDate
         ? new Date(appointment.appointmentDate).toLocaleDateString("en-US", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
         : "Current date";
 
       await this.notificationRepo.create({

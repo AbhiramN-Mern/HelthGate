@@ -10,12 +10,15 @@ import {
   respondAppointmentRescheduleApi,
   getPatientNotificationsApi,
   markPatientNotificationReadApi,
+  createPaymentOrderApi,
   type AuthUser,
   type PatientProfile,
   type DoctorProfile,
   type Hospital,
   type AppointmentItem,
   type NotificationItem,
+  type PaymentRecord,
+  type PaymentOrderResult,
 } from '../../api/auth.api'
 import {
   SearchIcon,
@@ -33,7 +36,10 @@ import {
   ShieldCheckIcon,
   BellIcon,
   MenuIcon,
+  CreditCardIcon,
 } from '../../components/common/Icons'
+import { MockPaymentModal } from '../../components/payment/MockPaymentModal'
+import { launchPaymentCheckout } from '../../utils/checkoutLauncher'
 import './PatientHomePage.css'
 
 type PatientHomePageProps = {
@@ -70,6 +76,15 @@ export type BookingSuccessDetails = {
   hospitalName?: string
   department?: string
   type?: string
+  paymentDetails?: {
+    paymentId?: string
+    providerPaymentId?: string
+    providerOrderId?: string
+    amount?: number
+    status?: string
+    provider?: string
+    paidAt?: string
+  }
 }
 
 function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps) {
@@ -119,6 +134,18 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   // Reschedule Response State
   const [respondingApptId, setRespondingApptId] = useState<string | null>(null)
   const [rescheduleFeedback, setRescheduleFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Payment Notice / Retry Banner State
+  const [paymentNotice, setPaymentNotice] = useState<{ type: 'warning' | 'info' | 'success'; text: string } | null>(null)
+
+  // Payment Checkout Modal State
+  const [checkoutModal, setCheckoutModal] = useState<{
+    paymentRecord: PaymentRecord
+    orderInfo: PaymentOrderResult
+    appointmentDetails: any
+    bookingDetails?: BookingSuccessDetails
+  } | null>(null)
+  const [payingApptId, setPayingApptId] = useState<string | null>(null)
 
   // Appointment History Visibility State (hidden by default, only shown on click, can be hidden after)
   const [showHistory, setShowHistory] = useState(false)
@@ -331,6 +358,98 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
     }
   }
 
+  const handleInitiatePayment = async (appointmentId: string, customApptDetails?: any) => {
+    setPayingApptId(appointmentId)
+    try {
+      const res = await createPaymentOrderApi(appointmentId, token)
+      if (res.success && res.order) {
+        const appt = appointments.find((a) => a._id === appointmentId)
+        const apptDetails = customApptDetails || {
+          doctorName: appt?.doctor?.user?.name || 'Doctor',
+          specialization: appt?.doctor?.specialization || 'Consultation',
+          hospitalName: (appt?.hospital as any)?.name || 'HealthGate Medical Practice',
+          appointmentDate: appt?.appointmentDate,
+          timeSlot: appt?.timeSlot,
+          consultationType: appt?.type || 'In-Person Consultation',
+        }
+
+        await launchPaymentCheckout({
+          paymentRecord: res.payment,
+          orderInfo: res.order,
+          appointmentDetails: apptDetails,
+          user,
+          token,
+          onSuccess: async (verifiedPayment) => {
+            await fetchAppointments()
+            await fetchNotifications()
+            setPaymentNotice({
+              type: 'success',
+              text: `Payment of ₹${verifiedPayment.amount} confirmed! Your appointment is now confirmed.`,
+            })
+            if (appt?.doctor) {
+              setBookingSuccessModal({
+                doctor: appt.doctor,
+                appointmentDate: appt.appointmentDate ? String(appt.appointmentDate) : '',
+                timeSlot: appt.timeSlot || '10:00 AM',
+                reason: appt.reason || 'General Consultation',
+                appointmentId: appt._id,
+                hospitalName: (appt.hospital as any)?.name || 'HealthGate Medical Practice',
+                department: appt.department || '',
+                type: appt.type || 'In-Person Consultation',
+                paymentDetails: {
+                  paymentId: verifiedPayment._id,
+                  providerPaymentId: verifiedPayment.providerPaymentId,
+                  providerOrderId: verifiedPayment.providerOrderId,
+                  amount: verifiedPayment.amount,
+                  status: verifiedPayment.status,
+                  provider: verifiedPayment.provider,
+                  paidAt: new Date().toISOString(),
+                },
+              })
+            }
+          },
+          onFailure: async (_failedPayment, errorMsg) => {
+            await fetchAppointments()
+            setPaymentNotice({
+              type: 'warning',
+              text: `Payment could not be completed (${errorMsg || 'Transaction cancelled or declined'}). You can retry payment anytime.`,
+            })
+          },
+          onDismiss: async () => {
+            await fetchAppointments()
+            setPaymentNotice({
+              type: 'info',
+              text: 'Payment checkout was closed. Your appointment remains Pending Payment.',
+            })
+          },
+          onOpenMockModal: () => {
+            setCheckoutModal({
+              paymentRecord: res.payment,
+              orderInfo: res.order,
+              appointmentDetails: apptDetails,
+              bookingDetails: appt?.doctor
+                ? {
+                    doctor: appt.doctor,
+                    appointmentDate: appt.appointmentDate ? String(appt.appointmentDate) : '',
+                    timeSlot: appt.timeSlot || '10:00 AM',
+                    reason: appt.reason || 'General Consultation',
+                    appointmentId: appt._id,
+                    hospitalName: (appt.hospital as any)?.name || 'HealthGate Medical Practice',
+                    department: appt.department || '',
+                    type: appt.type || 'In-Person Consultation',
+                  }
+                : undefined,
+            })
+          },
+        })
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to initialize payment gateway')
+    } finally {
+      setPayingApptId(null)
+    }
+  }
+
   const fetchDoctors = async (overrideSearch?: string) => {
     setLoadingDoctors(true)
     setDoctorsError(null)
@@ -512,7 +631,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
         const month = String(calMonth.getMonth() + 1).padStart(2, '0')
         getDoctorBookedSlotsApi(bookingDoctor._id, { month: `${year}-${month}` }, token).then((res) => {
           if (res.bookedSlotsByDate) setBookedSlotsByDate(res.bookedSlotsByDate)
-        }).catch(() => {})
+        }).catch(() => { })
       }
 
       const confirmedDoctor = bookingDoctor
@@ -521,16 +640,19 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
       const confirmedReason = bookingReason.trim() || 'General Consultation'
       const appt = data.appointment
 
-      // Close the booking calendar modal
+      // 1. Create payment order immediately for this new pending_payment booking
+      const paymentOrderRes = await createPaymentOrderApi(appt._id, token)
+      if (!paymentOrderRes.success || !paymentOrderRes.order) {
+        throw new Error(paymentOrderRes.message || 'Failed to initialize payment gateway order.')
+      }
+
+      // 2. Close the booking calendar modal
       handleCloseBooking()
 
-      // Open the dedicated success message modal
-      setBookingSuccessModal({
-        doctor: confirmedDoctor,
-        appointmentDate: confirmedDate,
-        timeSlot: confirmedTime,
-        reason: confirmedReason,
-        appointmentId: appt?._id || '',
+      // 3. Prepare appointment details and booking summary structure
+      const apptDetails = {
+        doctorName: confirmedDoctor.user?.name || 'Doctor',
+        specialization: confirmedDoctor.specialization || 'Consultation',
         hospitalName:
           appt?.hospital?.name ||
           (confirmedDoctor.affiliatedHospitals && confirmedDoctor.affiliatedHospitals[0]?.name) ||
@@ -540,7 +662,79 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
           appt?.department ||
           (confirmedDoctor.affiliatedHospitals && confirmedDoctor.affiliatedHospitals[0]?.department) ||
           '',
-        type: appt?.type || 'In-Person Consultation',
+        appointmentDate: confirmedDate,
+        timeSlot: confirmedTime,
+        consultationType: appt?.type || 'In-Person Consultation',
+      }
+
+      const bookingSuccessDetails: BookingSuccessDetails = {
+        doctor: confirmedDoctor,
+        appointmentDate: confirmedDate,
+        timeSlot: confirmedTime,
+        reason: confirmedReason,
+        appointmentId: appt?._id || '',
+        hospitalName: apptDetails.hospitalName,
+        department: apptDetails.department,
+        type: apptDetails.consultationType,
+      }
+
+      // 4. Immediately open Razorpay Checkout - DO NOT show "Booking Successful" yet!
+      await launchPaymentCheckout({
+        paymentRecord: paymentOrderRes.payment,
+        orderInfo: paymentOrderRes.order,
+        appointmentDetails: apptDetails,
+        user,
+        token,
+        onSuccess: async (verifiedPayment) => {
+          // ONLY after Razorpay payment is successfully completed & verified by backend:
+          await fetchAppointments()
+          await fetchNotifications()
+          setPaymentNotice(null)
+          setBookingSuccessModal({
+            ...bookingSuccessDetails,
+            paymentDetails: {
+              paymentId: verifiedPayment._id,
+              providerPaymentId: verifiedPayment.providerPaymentId,
+              providerOrderId: verifiedPayment.providerOrderId,
+              amount: verifiedPayment.amount,
+              status: verifiedPayment.status,
+              provider: verifiedPayment.provider,
+              paidAt: new Date().toISOString(),
+            },
+          })
+        },
+        onFailure: async (_failedPayment, errorMsg) => {
+          // If payment is cancelled or fails, do NOT show the success message. Allow payment retry.
+          await fetchAppointments()
+          setPaymentNotice({
+            type: 'warning',
+            text: `Payment was not completed (${errorMsg || 'Transaction cancelled or declined'}). Your appointment is saved as "Pending Payment". You can retry payment anytime below.`,
+          })
+          setTimeout(() => {
+            const el = document.getElementById('appointments')
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }, 200)
+        },
+        onDismiss: async () => {
+          // Razorpay checkout popup closed by user
+          await fetchAppointments()
+          setPaymentNotice({
+            type: 'info',
+            text: 'Payment checkout was closed. Your appointment is reserved as "Pending Payment". Please complete payment to confirm your booking.',
+          })
+          setTimeout(() => {
+            const el = document.getElementById('appointments')
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }, 200)
+        },
+        onOpenMockModal: () => {
+          setCheckoutModal({
+            paymentRecord: paymentOrderRes.payment,
+            orderInfo: paymentOrderRes.order,
+            appointmentDetails: apptDetails,
+            bookingDetails: bookingSuccessDetails,
+          })
+        },
       })
     } catch (err) {
       setBookingFeedback({
@@ -554,7 +748,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
         const month = String(calMonth.getMonth() + 1).padStart(2, '0')
         getDoctorBookedSlotsApi(bookingDoctor._id, { month: `${year}-${month}` }, token).then((res) => {
           if (res.bookedSlotsByDate) setBookedSlotsByDate(res.bookedSlotsByDate)
-        }).catch(() => {})
+        }).catch(() => { })
       }
     } finally {
       setBookingSubmitting(false)
@@ -630,6 +824,19 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             </li>
             <li>
               <a href="#hospitals" className="php-nav-link" onClick={() => setMobileNavOpen(false)}>Hospitals</a>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileNavOpen(false)
+                  navigate('/patient/payments')
+                }}
+                className="php-nav-link"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', color: '#0d9488', fontWeight: 700 }}
+              >
+                Payments & Billing
+              </button>
             </li>
           </ul>
 
@@ -964,6 +1171,67 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               </div>
             </div>
 
+            {/* Payment Notice / Failure Alert */}
+            {paymentNotice && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  marginBottom: '16px',
+                  background:
+                    paymentNotice.type === 'warning'
+                      ? '#fffbeb'
+                      : paymentNotice.type === 'success'
+                        ? '#dcfce7'
+                        : '#f0f9ff',
+                  border: `1.5px solid ${
+                    paymentNotice.type === 'warning'
+                      ? '#fde68a'
+                      : paymentNotice.type === 'success'
+                        ? '#86efac'
+                        : '#bae6fd'
+                  }`,
+                  color:
+                    paymentNotice.type === 'warning'
+                      ? '#92400e'
+                      : paymentNotice.type === 'success'
+                        ? '#15803d'
+                        : '#0369a1',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {paymentNotice.type === 'warning' ? (
+                    <AlertTriangleIcon size={18} />
+                  ) : paymentNotice.type === 'success' ? (
+                    <CheckCircleIcon size={18} />
+                  ) : (
+                    <ClockIcon size={18} />
+                  )}
+                  <span>{paymentNotice.text}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPaymentNotice(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'inherit',
+                    padding: '2px 4px',
+                  }}
+                  aria-label="Close notification"
+                >
+                  <CloseIcon size={14} />
+                </button>
+              </div>
+            )}
+
             {/* Reschedule Response Feedback Alert */}
             {rescheduleFeedback && (
               <div
@@ -996,18 +1264,18 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 const docSpec = appt.doctor?.specialization || 'Specialist'
                 const formattedDate = appt.appointmentDate
                   ? new Date(appt.appointmentDate).toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })
                   : 'Upcoming'
 
                 return (
                   <div key={appt._id} className="php-appointment-card upcoming">
                     <div className="php-appt-header">
-                      <span className="php-appt-status-badge">
-                        ● {appt.status || 'Confirmed'}
+                      <span className={`php-appt-status-badge ${appt.status === 'confirmed' ? 'confirmed' : 'pending_payment'}`}>
+                        ● {appt.status === 'confirmed' ? 'Confirmed' : 'Pending Payment'}
                       </span>
                       <span className="php-appt-time-badge">
                         {appt.timeSlot || '10:00 AM'}
@@ -1061,6 +1329,70 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                       </p>
                     )}
 
+                    {/* Consultation Fee & Payment Action */}
+                    <div className="php-card-payment-section" style={{
+                      margin: '12px 0 6px',
+                      padding: '12px',
+                      background: appt.status === 'confirmed' ? '#f0fdf4' : '#fffbeb',
+                      border: `1px solid ${appt.status === 'confirmed' ? '#bbf7d0' : '#fef3c7'}`,
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
+                          Consultation Fee
+                        </span>
+                        <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                          ₹{appt.doctor?.consultationFee ? appt.doctor.consultationFee : 500}
+                        </span>
+                      </div>
+
+                      {appt.status === 'confirmed' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            background: '#dcfce7',
+                            color: '#15803d',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            padding: '4px 10px',
+                            borderRadius: '9999px',
+                          }}>
+                            <CheckCircleIcon size={13} /> Paid & Confirmed
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleInitiatePayment(appt._id!)}
+                          disabled={payingApptId === appt._id}
+                          style={{
+                            background: 'linear-gradient(135deg, #0d9488 0%, #059669 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontSize: '0.82rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 2px 6px rgba(13, 148, 136, 0.3)',
+                          }}
+                        >
+                          <CreditCardIcon size={14} />
+                          {payingApptId === appt._id ? 'Connecting...' : 'Pay Now (Retry)'}
+                        </button>
+                      )}
+                    </div>
+
                     {/* Pending Reschedule Proposal from Doctor */}
                     {appt.rescheduleRequest?.status === 'pending' && (
                       <div className="php-reschedule-action-box">
@@ -1089,11 +1421,11 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                             <span className="php-compare-val">
                               {appt.rescheduleRequest.proposedDate
                                 ? new Date(appt.rescheduleRequest.proposedDate).toLocaleDateString('en-US', {
-                                    weekday: 'short',
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                  })
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                })
                                 : 'Proposed Date'}{' '}
                               • {appt.rescheduleRequest.proposedTimeSlot}
                             </span>
@@ -1230,11 +1562,11 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   const docSpec = appt.doctor?.specialization || 'Specialist'
                   const formattedDate = appt.appointmentDate
                     ? new Date(appt.appointmentDate).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
                     : 'Past Date'
 
                   const isCompleted = appt.status === 'completed'
@@ -1243,20 +1575,20 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   const cardClass = isCompleted
                     ? 'php-appointment-card history completed'
                     : isCancelled
-                    ? 'php-appointment-card history cancelled'
-                    : 'php-appointment-card history past'
+                      ? 'php-appointment-card history cancelled'
+                      : 'php-appointment-card history past'
 
                   const statusBadgeClass = isCompleted
                     ? 'php-appt-status-badge completed'
                     : isCancelled
-                    ? 'php-appt-status-badge cancelled'
-                    : 'php-appt-status-badge past'
+                      ? 'php-appt-status-badge cancelled'
+                      : 'php-appt-status-badge past'
 
                   const statusLabel = isCompleted
                     ? 'Completed'
                     : isCancelled
-                    ? 'Cancelled'
-                    : 'Past Visit'
+                      ? 'Cancelled'
+                      : 'Past Visit'
 
                   return (
                     <div key={appt._id} className={cardClass}>
@@ -1869,21 +2201,20 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                             <button
                               key={dateStr}
                               type="button"
-                              className={`php-cal-cell ${
-                                isBeyondLimit
-                                  ? 'beyond-limit'
-                                  : isBlocked
+                              className={`php-cal-cell ${isBeyondLimit
+                                ? 'beyond-limit'
+                                : isBlocked
                                   ? 'blocked'
                                   : isOff
-                                  ? 'off-duty'
-                                  : isPast
-                                  ? 'past'
-                                  : isDayFull
-                                  ? 'full'
-                                  : isSelected
-                                  ? 'selected'
-                                  : 'available'
-                              }`}
+                                    ? 'off-duty'
+                                    : isPast
+                                      ? 'past'
+                                      : isDayFull
+                                        ? 'full'
+                                        : isSelected
+                                          ? 'selected'
+                                          : 'available'
+                                }`}
                               disabled={!isAvailable}
                               onClick={() => {
                                 setBookingDate(dateStr)
@@ -1899,14 +2230,14 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                                 isBeyondLimit
                                   ? `Booking limit: Cannot book more than ${MAX_BOOKING_DAYS_AHEAD} days in advance`
                                   : isBlocked
-                                  ? 'Blocked: Doctor is unavailable / on leave'
-                                  : isOff
-                                  ? 'Off-duty day for doctor'
-                                  : isPast
-                                  ? 'Past date'
-                                  : isDayFull
-                                  ? 'No Available Slots: All slots on this date are taken or have passed'
-                                  : `Available: ${dateStr}`
+                                    ? 'Blocked: Doctor is unavailable / on leave'
+                                    : isOff
+                                      ? 'Off-duty day for doctor'
+                                      : isPast
+                                        ? 'Past date'
+                                        : isDayFull
+                                          ? 'No Available Slots: All slots on this date are taken or have passed'
+                                          : `Available: ${dateStr}`
                               }
                             >
                               <span>{d}</span>
@@ -2062,9 +2393,8 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           <button
                             key={time}
                             type="button"
-                            className={`php-time-btn ${bookingTime === time && !isUnavailable ? 'active' : ''} ${
-                              isSlotBooked ? 'booked' : isPast ? 'past' : ''
-                            }`}
+                            className={`php-time-btn ${bookingTime === time && !isUnavailable ? 'active' : ''} ${isSlotBooked ? 'booked' : isPast ? 'past' : ''
+                              }`}
                             onClick={() => {
                               if (!isUnavailable) setBookingTime(time)
                             }}
@@ -2073,8 +2403,8 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                               isPast
                                 ? `Time slot ${time} has already passed`
                                 : isSlotBooked
-                                ? `Time slot ${time} is already booked by another patient`
-                                : `Select ${time}`
+                                  ? `Time slot ${time} is already booked by another patient`
+                                  : `Select ${time}`
                             }
                           >
                             <span>{time}</span>
@@ -2132,18 +2462,18 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                     {bookingSubmitting
                       ? 'Confirming...'
                       : isSelectedDateBlocked
-                      ? 'Doctor Blocked on this Date'
-                      : isSelectedDateOffDuty
-                      ? 'Doctor Off-Duty'
-                      : isSelectedDatePast
-                      ? 'Date has passed'
-                      : allSlotsUnavailableOnDate
-                      ? 'No Available Slots'
-                      : isSelectedSlotPast
-                      ? 'Slot Has Passed'
-                      : isSelectedSlotBooked
-                      ? 'Selected Slot Already Booked'
-                      : 'Confirm Appointment'}
+                        ? 'Doctor Blocked on this Date'
+                        : isSelectedDateOffDuty
+                          ? 'Doctor Off-Duty'
+                          : isSelectedDatePast
+                            ? 'Date has passed'
+                            : allSlotsUnavailableOnDate
+                              ? 'No Available Slots'
+                              : isSelectedSlotPast
+                                ? 'Slot Has Passed'
+                                : isSelectedSlotBooked
+                                  ? 'Selected Slot Already Booked'
+                                  : 'Confirm Appointment'}
                   </button>
                 </form>
               )
@@ -2294,11 +2624,78 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               </p>
             </div>
 
+            {/* Verified Payment Details Card */}
+            {bookingSuccessModal.paymentDetails && (
+              <div className="php-success-payment-card">
+                <div className="php-success-payment-top">
+                  <div className="php-success-payment-tag">
+                    <ShieldCheckIcon size={15} />
+                    <span>Verified Payment Receipt</span>
+                  </div>
+                  <span className="php-success-paid-pill">
+                    ● Paid & Confirmed
+                  </span>
+                </div>
+
+                <div className="php-success-payment-grid">
+                  <div className="php-success-pay-item">
+                    <span className="php-pay-item-label">Amount Paid</span>
+                    <span className="php-pay-item-val highlight">
+                      ₹{bookingSuccessModal.paymentDetails.amount ?? (bookingSuccessModal.doctor?.consultationFee || 500)}
+                    </span>
+                  </div>
+
+                  <div className="php-success-pay-item">
+                    <span className="php-pay-item-label">Payment Gateway</span>
+                    <span className="php-pay-item-val">
+                      {bookingSuccessModal.paymentDetails.provider === 'RAZORPAY' || !bookingSuccessModal.paymentDetails.provider
+                        ? 'Razorpay Secure Gateway'
+                        : `${bookingSuccessModal.paymentDetails.provider} Gateway`}
+                    </span>
+                  </div>
+
+                  {bookingSuccessModal.paymentDetails.providerPaymentId && (
+                    <div className="php-success-pay-item">
+                      <span className="php-pay-item-label">Payment ID</span>
+                      <code className="php-pay-item-val code">
+                        {bookingSuccessModal.paymentDetails.providerPaymentId}
+                      </code>
+                    </div>
+                  )}
+
+                  {bookingSuccessModal.paymentDetails.providerOrderId && (
+                    <div className="php-success-pay-item">
+                      <span className="php-pay-item-label">Order ID</span>
+                      <code className="php-pay-item-val code">
+                        {bookingSuccessModal.paymentDetails.providerOrderId}
+                      </code>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
-            <div className="php-success-actions">
+            <div className="php-success-actions" style={{ display: 'flex', gap: '10px', width: '100%' }}>
               <button
                 type="button"
                 className="php-success-btn-primary"
+                style={{
+                  flex: 1,
+                  background: 'linear-gradient(135deg, #0d9488 0%, #059669 100%)',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  padding: '12px 18px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(13, 148, 136, 0.3)',
+                }}
                 onClick={() => {
                   setBookingSuccessModal(null)
                   setTimeout(() => {
@@ -2314,6 +2711,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               <button
                 type="button"
                 className="php-success-btn-secondary"
+                style={{ width: '100px' }}
                 onClick={() => setBookingSuccessModal(null)}
               >
                 Done
@@ -2321,6 +2719,48 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             </div>
           </div>
         </div>
+      )}
+
+      {/* ========================================================
+          MOCK PAYMENT CHECKOUT MODAL
+          ======================================================== */}
+      {checkoutModal && (
+        <MockPaymentModal
+          isOpen={!!checkoutModal}
+          onClose={() => {
+            setCheckoutModal(null)
+            fetchAppointments()
+          }}
+          onSuccess={(verifiedPayment) => {
+            fetchAppointments()
+            fetchNotifications()
+            if (checkoutModal?.bookingDetails) {
+              setBookingSuccessModal({
+                ...checkoutModal.bookingDetails,
+                paymentDetails: {
+                  paymentId: verifiedPayment._id,
+                  providerPaymentId: verifiedPayment.providerPaymentId,
+                  providerOrderId: verifiedPayment.providerOrderId,
+                  amount: verifiedPayment.amount,
+                  status: verifiedPayment.status,
+                  provider: verifiedPayment.provider,
+                  paidAt: new Date().toISOString(),
+                },
+              })
+            }
+          }}
+          onFailure={() => {
+            fetchAppointments()
+            setPaymentNotice({
+              type: 'warning',
+              text: 'Payment test failed or was cancelled. Your appointment remains Pending Payment and can be retried.',
+            })
+          }}
+          paymentRecord={checkoutModal.paymentRecord}
+          orderInfo={checkoutModal.orderInfo}
+          appointmentDetails={checkoutModal.appointmentDetails}
+          token={token}
+        />
       )}
 
       {/* ========================================================

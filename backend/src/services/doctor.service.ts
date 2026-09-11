@@ -27,7 +27,7 @@ export class DoctorService {
     private hospitalDoctorRepo: IHospitalDoctorRepository,
     private userRepo: IUserRepository,
     private patientRepo: IPatientRepository,
-  ) {}
+  ) { }
 
   private pickDoctorUpdates(body: Record<string, unknown>) {
     return Object.fromEntries(
