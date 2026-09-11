@@ -881,11 +881,107 @@
   }
 
   .hp-section {
-    padding: 56px 20px;
+    padding: 48px 16px;
   }
 
   .hp-footer-top {
     grid-template-columns: 1fr;
+    gap: 28px;
   }
 }
+
+@media (max-width: 480px) {
+  .hp-nav-inner {
+    padding: 0 12px;
+    gap: 8px;
+    height: 60px;
+  }
+
+  .hp-nav-logo {
+    width: 32px;
+    height: 32px;
+    font-size: 0.78rem;
+  }
+
+  .hp-nav-wordmark {
+    font-size: 1.05rem;
+  }
+
+  .hp-btn-ghost,
+  .hp-btn-primary {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .hp-hero {
+    padding: 36px 0 44px;
+  }
+
+  .hp-hero-inner {
+    padding: 0 16px;
+  }
+
+  .hp-hero-title {
+    font-size: 1.95rem;
+  }
+
+  .hp-hero-sub {
+    font-size: 0.92rem;
+  }
+
+  .hp-hero-ctas {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .hp-cta-main,
+  .hp-cta-outline {
+    width: 100%;
+    text-align: center;
+    padding: 12px 20px;
+  }
+
+  .hp-stat-card {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .hp-stat-value {
+    font-size: 1.35rem;
+  }
+
+  .hp-hospitals-inner {
+    padding: 0 16px;
+  }
+
+  .hp-footer {
+    padding: 40px 16px 24px;
+  }
+
+  .hp-footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .hp-footer-legal {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 380px) {
+  .hp-nav-wordmark {
+    font-size: 0.95rem;
+  }
+
+  .hp-hospitals-visual {
+    grid-template-columns: 1fr;
+  }
+
+  .hp-btn-ghost {
+    display: none;
+  }
+}
+
 

@@ -32,6 +32,7 @@ import {
   MedicalCrossIcon,
   ShieldCheckIcon,
   BellIcon,
+  MenuIcon,
 } from '../../components/common/Icons'
 import './PatientHomePage.css'
 
@@ -113,6 +114,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   // Patient Notifications State
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [showNotifs, setShowNotifs] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   // Reschedule Response State
   const [respondingApptId, setRespondingApptId] = useState<string | null>(null)
@@ -588,13 +590,13 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
           </div>
 
           {/* Quick Section Links */}
-          <ul className="php-nav-links">
+          <ul className={`php-nav-links ${mobileNavOpen ? 'mobile-open' : ''}`}>
             <li>
-              <a href="#welcome" className="php-nav-link active">Home</a>
+              <a href="#welcome" className="php-nav-link active" onClick={() => setMobileNavOpen(false)}>Home</a>
             </li>
             {upcomingAppointments.length > 0 && (
               <li>
-                <a href="#appointments" className="php-nav-link">
+                <a href="#appointments" className="php-nav-link" onClick={() => setMobileNavOpen(false)}>
                   Upcoming ({upcomingAppointments.length})
                 </a>
               </li>
@@ -606,6 +608,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   onClick={() => {
                     const next = !showHistory
                     setShowHistory(next)
+                    setMobileNavOpen(false)
                     if (next) {
                       setTimeout(() => {
                         document.getElementById('appointment-history')?.scrollIntoView({ behavior: 'smooth' })
@@ -620,13 +623,13 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               </li>
             )}
             <li>
-              <a href="#specializations" className="php-nav-link">Specializations</a>
+              <a href="#specializations" className="php-nav-link" onClick={() => setMobileNavOpen(false)}>Specializations</a>
             </li>
             <li>
-              <a href="#doctors" className="php-nav-link">Find Doctors</a>
+              <a href="#doctors" className="php-nav-link" onClick={() => setMobileNavOpen(false)}>Find Doctors</a>
             </li>
             <li>
-              <a href="#hospitals" className="php-nav-link">Hospitals</a>
+              <a href="#hospitals" className="php-nav-link" onClick={() => setMobileNavOpen(false)}>Hospitals</a>
             </li>
           </ul>
 
@@ -747,8 +750,27 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             >
               Logout
             </button>
+
+            {/* Mobile Hamburger Menu Toggle (<= 768px) */}
+            <button
+              type="button"
+              className="php-mobile-nav-toggle"
+              onClick={() => setMobileNavOpen((prev) => !prev)}
+              aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
+            >
+              {mobileNavOpen ? <CloseIcon size={20} /> : <MenuIcon size={20} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Backdrop Overlay */}
+        {mobileNavOpen && (
+          <div
+            className="php-mobile-nav-backdrop"
+            onClick={() => setMobileNavOpen(false)}
+            aria-hidden="true"
+          />
+        )}
       </nav>
 
       {/* ========================================================

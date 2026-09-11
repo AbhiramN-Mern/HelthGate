@@ -117,3 +117,21 @@ p {
   outline: 2px solid var(--hg-primary);
   outline-offset: 2px;
 }
+
+/* Responsive Media Safeguards */
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Responsive Table Scroll Container */
+.table-scroll-container,
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+

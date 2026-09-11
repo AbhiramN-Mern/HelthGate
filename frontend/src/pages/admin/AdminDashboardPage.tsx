@@ -48,6 +48,7 @@ import {
   CloseIcon,
   ShieldCheckIcon,
   AlertCircleIcon,
+  MenuIcon,
 } from '../../components/common/Icons'
 import './AdminDashboardPage.css'
 
@@ -138,6 +139,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
   const [activeSection, setActiveSection] = useState<NavSection>(
     (initialSection as NavSection) || 'dashboard'
   )
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Loading & Global States
   const [loading, setLoading] = useState(true)
@@ -666,6 +668,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
 
   // Navigation handler
   const handleNavClick = (section: NavSection) => {
+    setSidebarOpen(false)
     setActiveSection(section)
     setSelectedPatient(null)
     setSelectedDoctor(null)
@@ -682,7 +685,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
       {/* ========================================================
           1. SIDEBAR
           ======================================================== */}
-      <aside className="admin-sidebar" aria-label="Admin Navigation Sidebar">
+      <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`} aria-label="Admin Navigation Sidebar">
         {/* Brand Header */}
         <div className="admin-sidebar-brand">
           <div className="admin-logo-mark">HG</div>
@@ -841,6 +844,15 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
         </div>
       </aside>
 
+      {/* Mobile Sidebar Backdrop */}
+      {sidebarOpen && (
+        <div
+          className="admin-sidebar-overlay"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ========================================================
           2. MAIN CONTENT VIEWPORT
           ======================================================== */}
@@ -848,6 +860,14 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
         {/* Top Header Bar */}
         <header className="admin-top-header">
           <div className="admin-header-left">
+            <button
+              type="button"
+              className="admin-mobile-menu-btn"
+              onClick={() => setSidebarOpen((prev) => !prev)}
+              aria-label={sidebarOpen ? 'Close navigation sidebar' : 'Open navigation sidebar'}
+            >
+              {sidebarOpen ? <CloseIcon size={20} /> : <MenuIcon size={20} />}
+            </button>
             <h1 className="admin-header-title">
               {activeSection === 'dashboard'
                 ? 'System Executive Dashboard'
@@ -3124,7 +3144,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+              <div className="admin-specs-grid">
                 {specializationsList.map((spec) => {
                   const docCount = doctors.filter(
                     (d) => d.specialization?.toLowerCase() === spec.toLowerCase()

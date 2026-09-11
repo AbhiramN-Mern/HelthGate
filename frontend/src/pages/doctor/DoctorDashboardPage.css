@@ -458,7 +458,7 @@
    ======================================================== */
 .dd-appointments-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 18px;
 }
 
@@ -1260,23 +1260,101 @@
   }
 }
 
+@media (max-width: 768px) {
+  .dd-welcome-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 22px 20px;
+    gap: 16px;
+  }
+
+  .dd-welcome-status-card {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
 @media (max-width: 640px) {
   .dd-header-inner {
     height: auto;
-    padding: 14px 16px;
+    padding: 12px 14px;
     flex-direction: column;
     align-items: flex-start;
+    gap: 10px;
+  }
+  .dd-header-profile {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .dd-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .dd-main {
+    padding: 20px 14px 48px;
+    gap: 24px;
   }
   .dd-stats-grid {
     grid-template-columns: 1fr;
   }
   .dd-avail-card {
     grid-template-columns: 1fr;
+    padding: 18px 16px;
+  }
+  .dd-avail-actions {
+    justify-content: flex-start;
+  }
+  .dd-btn-manage-avail {
+    width: 100%;
   }
   .dd-quick-actions-grid {
     grid-template-columns: 1fr;
   }
+  .dd-modal-card {
+    padding: 20px 16px;
+  }
 }
+
+@media (max-width: 480px) {
+  .dd-doc-chip {
+    padding: 3px 8px 3px 3px;
+  }
+  .dd-doc-sub {
+    display: none;
+  }
+  .dd-appt-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .dd-appt-details-row {
+    grid-template-columns: 1fr;
+  }
+  .dd-appt-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .dd-btn-consult,
+  .dd-btn-view-details,
+  .dd-btn-reschedule {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+  .dd-patient-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .dd-btn-view-patient {
+    width: 100%;
+    text-align: center;
+  }
+}
+
 
 /* ========================================================
    DOCTOR HOSPITAL AFFILIATION STYLES
@@ -1317,7 +1395,7 @@
 
 .dd-hosp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 16px;
 }
 

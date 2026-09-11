@@ -824,3 +824,92 @@
 @keyframes pfSpin {
   to { transform: rotate(360deg); }
 }
+
+/* ==========================================================================
+   RESPONSIVE BREAKPOINTS (Profile Page)
+   ========================================================================== */
+
+@media (max-width: 680px) {
+  .pf-header-inner {
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .pf-container {
+    padding: 16px 12px 40px;
+  }
+
+  .pf-hero-cover {
+    height: 80px;
+  }
+
+  .pf-hero-body {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-top: -40px;
+    padding: 0 16px 20px;
+    gap: 14px;
+  }
+
+  .pf-avatar-wrapper {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .pf-hero-name-row {
+    justify-content: center;
+  }
+
+  .pf-hero-meta {
+    justify-content: center;
+    gap: 10px;
+    font-size: 0.8rem;
+  }
+
+  .pf-hero-badges {
+    justify-content: center;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .pf-form-body {
+    padding: 18px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pf-brand-sub {
+    display: none;
+  }
+
+  .pf-back-btn,
+  .pf-logout-btn {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  .pf-stat-card {
+    min-width: 70px;
+    padding: 6px 10px;
+  }
+
+  .pf-form-footer {
+    flex-direction: column-reverse;
+    width: 100%;
+  }
+
+  .pf-btn-primary,
+  .pf-btn-secondary {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .pf-switch-card {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+}
+
