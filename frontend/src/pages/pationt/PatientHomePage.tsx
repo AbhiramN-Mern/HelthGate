@@ -2189,9 +2189,9 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                       {getSpecIcon(bookingSuccessModal.doctor.specialization || '')}
                       {bookingSuccessModal.doctor.specialization || 'Specialist'}
                     </span>
-                    {bookingSuccessModal.doctor.experience && (
+                    {(bookingSuccessModal.doctor.experienceYears ?? bookingSuccessModal.doctor.experience) && (
                       <span className="php-success-badge exp">
-                        {bookingSuccessModal.doctor.experience} yrs exp
+                        {bookingSuccessModal.doctor.experienceYears ?? bookingSuccessModal.doctor.experience} yrs exp
                       </span>
                     )}
                   </div>

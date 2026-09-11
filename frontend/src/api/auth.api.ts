@@ -50,6 +50,7 @@ export type DoctorProfile = {
   isFreelance?: boolean
   profileImage?: string
   experienceYears?: number
+  experience?: number | string
   licenseNumber?: string
   consultationFee?: number
   available?: boolean
