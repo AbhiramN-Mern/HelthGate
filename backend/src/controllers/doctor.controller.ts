@@ -141,9 +141,9 @@ export const updateAppointmentStatusForDoctor = async (
     }
 
     const appointmentId = String(req.params.appointmentId);
-    const { status } = req.body;
+    const { status, reason } = req.body;
 
-    const appointment = await doctorService.updateAppointmentStatusForDoctor(userId, appointmentId, status);
+    const appointment = await doctorService.updateAppointmentStatusForDoctor(userId, appointmentId, status, reason);
     return res.status(200).json({
       success: true,
       message: `Appointment ${status} successfully`,

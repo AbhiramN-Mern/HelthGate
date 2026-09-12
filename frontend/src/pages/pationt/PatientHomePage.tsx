@@ -398,7 +398,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 type: appt.type || 'In-Person Consultation',
                 paymentDetails: {
                   paymentId: verifiedPayment._id,
-                  providerPaymentId: verifiedPayment.providerPaymentId,
+                  providerPaymentId: verifiedPayment.providerPaymentId ?? undefined,
                   providerOrderId: verifiedPayment.providerOrderId,
                   amount: verifiedPayment.amount,
                   status: verifiedPayment.status,
@@ -694,7 +694,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             ...bookingSuccessDetails,
             paymentDetails: {
               paymentId: verifiedPayment._id,
-              providerPaymentId: verifiedPayment.providerPaymentId,
+              providerPaymentId: verifiedPayment.providerPaymentId ?? undefined,
               providerOrderId: verifiedPayment.providerOrderId,
               amount: verifiedPayment.amount,
               status: verifiedPayment.status,
@@ -2739,7 +2739,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 ...checkoutModal.bookingDetails,
                 paymentDetails: {
                   paymentId: verifiedPayment._id,
-                  providerPaymentId: verifiedPayment.providerPaymentId,
+                  providerPaymentId: verifiedPayment.providerPaymentId ?? undefined,
                   providerOrderId: verifiedPayment.providerOrderId,
                   amount: verifiedPayment.amount,
                   status: verifiedPayment.status,

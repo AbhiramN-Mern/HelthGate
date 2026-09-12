@@ -16,6 +16,9 @@ import { MongoPaymentRepository } from "./repositories/implementations/MongoPaym
 // Gateways & Infrastructure
 import { MockPaymentGateway } from "./infrastructure/payment/mock/MockPaymentGateway.js";
 import { RazorpayGateway } from "./infrastructure/payment/razorpay/RazorpayGateway.js";
+import { NodemailerEmailService } from "./infrastructure/email/NodemailerEmailService.js";
+import { MockEmailService } from "./infrastructure/email/MockEmailService.js";
+import type { IEmailService } from "./infrastructure/email/IEmailService.js";
 
 // Role Handlers (OCP)
 import { RoleHandlerRegistry } from "./core/auth/handlers/RoleHandlerRegistry.js";
@@ -31,17 +34,25 @@ import { HospitalService } from "./services/hospital.service.js";
 import { AppointmentService } from "./services/appointment.service.js";
 import { AdminService } from "./services/admin.service.js";
 import { PaymentService } from "./services/payment.service.js";
+import { NotificationService } from "./services/notification.service.js";
 
 // 1. Security & Core utilities
 export const passwordHasher = new BcryptPasswordHasher();
 export const tokenService = new JwtTokenService();
 
-// 2. Gateways
+// 2. Gateways & Outbound Messaging
 export const mockPaymentGateway = new MockPaymentGateway();
 export const razorpayGateway = new RazorpayGateway();
 // Active gateway selected based on environment (defaults to MOCK)
 export const activePaymentGateway =
   process.env.PAYMENT_GATEWAY === "RAZORPAY" ? razorpayGateway : mockPaymentGateway;
+
+export const nodemailerEmailService = new NodemailerEmailService();
+export const mockEmailService = new MockEmailService();
+export const emailService: IEmailService =
+  process.env.NODE_ENV === "test" && !process.env.EMAIL_HOST
+    ? mockEmailService
+    : nodemailerEmailService;
 
 // 3. Repositories
 export const userRepo = new MongoUserRepository();
@@ -62,6 +73,12 @@ roleRegistry.register("admin", new AdminRoleHandler(adminRepo));
 
 // 5. Services (Wired with Inverted Dependencies)
 export const authService = new AuthService(userRepo, passwordHasher, tokenService, roleRegistry);
+export const notificationService = new NotificationService(
+  notificationRepo,
+  emailService,
+  userRepo,
+  doctorRepo,
+);
 export const patientService = new PatientService(patientRepo, notificationRepo);
 export const hospitalService = new HospitalService(hospitalRepo, hospitalDoctorRepo);
 export const doctorService = new DoctorService(
@@ -72,6 +89,7 @@ export const doctorService = new DoctorService(
   hospitalDoctorRepo,
   userRepo,
   patientRepo,
+  notificationService,
 );
 export const appointmentService = new AppointmentService(
   appointmentRepo,
@@ -79,6 +97,7 @@ export const appointmentService = new AppointmentService(
   hospitalDoctorRepo,
   notificationRepo,
   userRepo,
+  notificationService,
 );
 export const adminService = new AdminService(
   userRepo,
@@ -98,5 +117,6 @@ export const paymentService = new PaymentService(
   notificationRepo,
   userRepo,
   activePaymentGateway,
+  notificationService,
 );
 

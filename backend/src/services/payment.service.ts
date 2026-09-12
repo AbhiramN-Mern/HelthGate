@@ -5,6 +5,7 @@ import { IDoctorRepository } from "../repositories/interfaces/IDoctorRepository.
 import { INotificationRepository } from "../repositories/interfaces/INotificationRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { IPaymentGateway, VerifyPaymentParams } from "../infrastructure/payment/IPaymentGateway.js";
+import { NotificationService } from "./notification.service.js";
 import {
   BadRequestError,
   ConflictError,
@@ -22,6 +23,7 @@ export class PaymentService {
     private notificationRepo: INotificationRepository,
     private userRepo: IUserRepository,
     private paymentGateway: IPaymentGateway,
+    private notificationService?: NotificationService,
   ) {}
 
   /**
@@ -204,35 +206,39 @@ export class PaymentService {
 
       // 3. Send notifications (Patient & Doctor)
       try {
-        const patientUser = await this.userRepo.findById(patientUserId);
-        const doctorUserId = (updatedAppointment?.doctor as any)?.user?._id || (updatedAppointment?.doctor as any)?.user;
+        if (this.notificationService) {
+          await this.notificationService.sendAppointmentConfirmation(updatedAppointment);
+        } else {
+          const patientUser = await this.userRepo.findById(patientUserId);
+          const doctorUserId = (updatedAppointment?.doctor as any)?.user?._id || (updatedAppointment?.doctor as any)?.user;
 
-        // Notification to patient
-        await this.notificationRepo.create({
-          recipient: patientUserId as any,
-          type: "payment_success",
-          title: "Payment Confirmed",
-          message: `Your payment of ₹${payment.amount} for appointment on ${
-            updatedAppointment?.appointmentDate
-              ? new Date(updatedAppointment.appointmentDate).toLocaleDateString()
-              : ""
-          } was successful. Your appointment is now confirmed.`,
-          appointment: bookingId,
-        });
-
-        // Notification to doctor
-        if (doctorUserId) {
+          // Notification to patient
           await this.notificationRepo.create({
-            recipient: doctorUserId as any,
-            type: "appointment_confirmed",
-            title: "Appointment Confirmed & Paid",
-            message: `Patient ${patientUser?.name || ""} confirmed appointment on ${
+            recipient: patientUserId as any,
+            type: "payment_success",
+            title: "Payment Confirmed",
+            message: `Your payment of ₹${payment.amount} for appointment on ${
               updatedAppointment?.appointmentDate
                 ? new Date(updatedAppointment.appointmentDate).toLocaleDateString()
                 : ""
-            } (₹${payment.amount} paid).`,
+            } was successful. Your appointment is now confirmed.`,
             appointment: bookingId,
           });
+
+          // Notification to doctor
+          if (doctorUserId) {
+            await this.notificationRepo.create({
+              recipient: doctorUserId as any,
+              type: "appointment_confirmed",
+              title: "Appointment Confirmed & Paid",
+              message: `Patient ${patientUser?.name || ""} confirmed appointment on ${
+                updatedAppointment?.appointmentDate
+                  ? new Date(updatedAppointment.appointmentDate).toLocaleDateString()
+                  : ""
+              } (₹${payment.amount} paid).`,
+              appointment: bookingId,
+            });
+          }
         }
       } catch (notifErr) {
         console.warn("Failed to send payment confirmation notification:", notifErr);
@@ -432,6 +438,16 @@ export class PaymentService {
 
           const bookingId = (payment.bookingId as any)?._id || payment.bookingId;
           await this.appointmentRepo.updateStatus(bookingId, "confirmed");
+          if (this.notificationService) {
+            try {
+              const updatedAppointment = await this.appointmentRepo.findById(bookingId, true);
+              if (updatedAppointment) {
+                await this.notificationService.sendAppointmentConfirmation(updatedAppointment);
+              }
+            } catch (notifErr) {
+              console.warn("Failed to send confirmation on webhook:", notifErr);
+            }
+          }
         }
       }
     }

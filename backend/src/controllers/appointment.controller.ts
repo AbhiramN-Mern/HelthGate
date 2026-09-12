@@ -164,3 +164,38 @@ export const getBookedSlots = async (
     });
   }
 };
+
+export const cancelAppointment = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const patientUserId = req.user?.id;
+    if (!patientUserId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const appointmentId = String(req.params.appointmentId);
+    const { reason } = req.body;
+
+    const appointment = await appointmentService.cancelAppointment({
+      patientUserId,
+      appointmentId,
+      reason,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Appointment cancelled successfully",
+      appointment,
+    });
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to cancel appointment",
+      error: error.message || "Unknown error",
+    });
+  }
+};
+

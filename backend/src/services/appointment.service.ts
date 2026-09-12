@@ -4,6 +4,7 @@ import { IDoctorRepository } from "../repositories/interfaces/IDoctorRepository.
 import { IHospitalDoctorRepository } from "../repositories/interfaces/IHospitalDoctorRepository.js";
 import { INotificationRepository } from "../repositories/interfaces/INotificationRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
+import { NotificationService } from "./notification.service.js";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../core/errors/AppError.js";
 
 export const MAX_BOOKING_DAYS_AHEAD = Number(process.env.MAX_BOOKING_DAYS_AHEAD) || 90;
@@ -15,6 +16,7 @@ export class AppointmentService {
     private hospitalDoctorRepo: IHospitalDoctorRepository,
     private notificationRepo: INotificationRepository,
     private userRepo: IUserRepository,
+    private notificationService?: NotificationService,
   ) { }
 
   async validateDoctorSlotAvailability({
@@ -690,5 +692,63 @@ export class AppointmentService {
       doctor,
       bookedSlotsByDate,
     };
+  }
+
+  async cancelAppointment(data: {
+    patientUserId: string;
+    appointmentId: string;
+    reason?: string;
+  }) {
+    const { patientUserId, appointmentId, reason } = data;
+
+    const appointment = await this.appointmentRepo.findOne(
+      {
+        _id: appointmentId,
+        patient: patientUserId,
+      },
+      false,
+    );
+
+    if (!appointment) {
+      throw new NotFoundError("Appointment not found for this patient");
+    }
+
+    if (appointment.status === "completed") {
+      throw new BadRequestError("Cannot cancel an appointment that is already completed.");
+    }
+
+    const previousStatus = appointment.status || "scheduled";
+
+    // Idempotent: avoid duplicate processing if already cancelled
+    if (previousStatus.toLowerCase() === "cancelled") {
+      const existingPopulated = await this.appointmentRepo.findById(appointmentId, true);
+      return existingPopulated || appointment;
+    }
+
+    await this.appointmentRepo.updateStatus(appointmentId, "cancelled");
+    const populated = await this.appointmentRepo.findById(appointmentId, true);
+
+    try {
+      if (this.notificationService) {
+        await this.notificationService.sendAppointmentCancellation(
+          populated || appointment,
+          previousStatus,
+          reason,
+          "patient",
+        );
+      } else {
+        await this.notificationRepo.create({
+          recipient: patientUserId,
+          type: "cancellation",
+          title: "Appointment Cancelled",
+          message: `Your appointment on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.timeSlot} was cancelled.${reason ? ` Reason: ${reason}` : ""}`,
+          appointment: appointment._id,
+        });
+      }
+    } catch (notifErr) {
+      console.warn("Failed to create cancellation notification:", notifErr);
+    }
+
+    return populated;
   }
 }

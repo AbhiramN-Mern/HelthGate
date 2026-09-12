@@ -5,6 +5,7 @@ import { IHospitalRepository } from "../repositories/interfaces/IHospitalReposit
 import { IHospitalDoctorRepository } from "../repositories/interfaces/IHospitalDoctorRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { IPatientRepository } from "../repositories/interfaces/IPatientRepository.js";
+import { NotificationService } from "./notification.service.js";
 import { BadRequestError, NotFoundError } from "../core/errors/AppError.js";
 
 const doctorUpdateFields = [
@@ -27,6 +28,7 @@ export class DoctorService {
     private hospitalDoctorRepo: IHospitalDoctorRepository,
     private userRepo: IUserRepository,
     private patientRepo: IPatientRepository,
+    private notificationService?: NotificationService,
   ) { }
 
   private pickDoctorUpdates(body: Record<string, unknown>) {
@@ -255,7 +257,12 @@ export class DoctorService {
     };
   }
 
-  async updateAppointmentStatusForDoctor(userId: string, appointmentId: string, status: string) {
+  async updateAppointmentStatusForDoctor(
+    userId: string,
+    appointmentId: string,
+    status: string,
+    reason?: string,
+  ) {
     if (!["completed", "cancelled", "confirmed"].includes(status)) {
       throw new BadRequestError("Invalid appointment status");
     }
@@ -274,21 +281,51 @@ export class DoctorService {
       throw new NotFoundError("Appointment not found");
     }
 
+    const previousStatus = appointment.status || "scheduled";
+
+    // Prevent duplicate processing or notifications if status did not actually change
+    if (previousStatus.toLowerCase() === status.toLowerCase()) {
+      return appointment;
+    }
+
     const updatedAppointment = await this.appointmentRepo.updateStatus(appointmentId, status);
+    const populated = await this.appointmentRepo.findById(appointmentId, true);
 
     try {
-      await this.notificationRepo.create({
-        recipient: appointment.patient,
-        type: status === "completed" ? "system" : "cancellation",
-        title: `Appointment ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-        message: `Your appointment on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.timeSlot} was marked as ${status}.`,
-        appointment: appointment._id,
-      });
+      if (this.notificationService) {
+        if (status === "cancelled") {
+          await this.notificationService.sendAppointmentCancellation(
+            populated || appointment,
+            previousStatus,
+            reason,
+            "doctor",
+          );
+        } else if (status === "confirmed") {
+          await this.notificationService.sendAppointmentConfirmation(
+            populated || appointment,
+          );
+        } else {
+          await this.notificationService.sendAppointmentStatusUpdate(
+            populated || appointment,
+            previousStatus,
+            status,
+            reason,
+          );
+        }
+      } else {
+        await this.notificationRepo.create({
+          recipient: appointment.patient,
+          type: status === "completed" ? "system" : "cancellation",
+          title: `Appointment ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+          message: `Your appointment on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.timeSlot} was marked as ${status}.`,
+          appointment: appointment._id,
+        });
+      }
     } catch (notifErr) {
       console.warn("Failed to create patient notification:", notifErr);
     }
 
-    return updatedAppointment;
+    return populated || updatedAppointment;
   }
 
   async getDoctorPatientDetails(userId: string, patientId: string) {
