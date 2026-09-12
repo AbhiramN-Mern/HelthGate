@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { loginUser } from '../api/auth.api'
+import { loginUser, getFriendlyErrorMessage } from '../api/auth.api'
 
 type LoginPageProps = {
   onSuccess: (user: { name?: string; email?: string; role?: string }, token?: string) => void
@@ -40,11 +40,7 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
 
       onSuccess(user, data.token)
     } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to sign in right now. Please try again.',
-      )
+      setMessage(getFriendlyErrorMessage(error, 'Invalid email or password. Please verify your credentials and try again.'))
     } finally {
       setIsLoading(false)
     }
@@ -113,8 +109,19 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
 
             {message ? <p className="status-message">{message}</p> : null}
 
-            <button type="submit" className="signin-button" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign in'}
+            <button
+              type="submit"
+              className={`signin-button ${isLoading ? 'btn-loading' : ''}`}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <span className="hg-spinner" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign in'
+              )}
             </button>
           </form>
 

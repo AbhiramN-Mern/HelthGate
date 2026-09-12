@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { registerUser } from '../api/auth.api'
+import { registerUser, getFriendlyErrorMessage } from '../api/auth.api'
 
 type RegisterPageProps = {
   onSuccess: (user: { name?: string; email?: string; role?: string }, token?: string) => void
@@ -23,12 +23,17 @@ function RegisterPage({ onSuccess, onSwitchToLogin }: RegisterPageProps) {
     event.preventDefault()
 
     if (!fullName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
-      setMessage('Please fill in all fields.')
+      setMessage('Please fill in all required fields.')
       return
     }
 
     if (password !== confirmPassword) {
-      setMessage('Passwords do not match.')
+      setMessage('Passwords do not match. Please verify and re-enter.')
+      return
+    }
+
+    if (password.length < 6) {
+      setMessage('Password must be at least 6 characters long.')
       return
     }
 
@@ -69,11 +74,7 @@ function RegisterPage({ onSuccess, onSwitchToLogin }: RegisterPageProps) {
       localStorage.setItem('helthgate_user', JSON.stringify(user))
       onSuccess(user, data.token)
     } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to connect to the server. Please try again.',
-      )
+      setMessage(getFriendlyErrorMessage(error, 'Unable to create your account. Please try again.'))
     } finally {
       setIsLoading(false)
     }
@@ -193,8 +194,19 @@ function RegisterPage({ onSuccess, onSwitchToLogin }: RegisterPageProps) {
 
             {message ? <p className="status-message">{message}</p> : null}
 
-            <button type="submit" className="signin-button" disabled={isLoading}>
-              {isLoading ? 'Creating account...' : 'Create account'}
+            <button
+              type="submit"
+              className={`signin-button ${isLoading ? 'btn-loading' : ''}`}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <span className="hg-spinner" />
+                  Creating account...
+                </>
+              ) : (
+                'Create account'
+              )}
             </button>
           </form>
 

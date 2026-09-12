@@ -11,6 +11,7 @@ import {
   getMyDoctorHospitalsApi,
   searchHospitalsForDoctorApi,
   requestJoinHospitalApi,
+  getFriendlyErrorMessage,
   type AuthUser,
   type DoctorProfile,
   type DoctorAvailability,
@@ -85,6 +86,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusUpdating, setStatusUpdating] = useState(false)
+  const [docFeedback, setDocFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // 5. Manage Availability Modal State
   const [showAvailModal, setShowAvailModal] = useState(false)
@@ -243,7 +245,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
         }))
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load dashboard.')
+      setError(getFriendlyErrorMessage(err, 'Unable to load doctor dashboard. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -406,8 +408,12 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
         completedAppointments: prev.completedAppointments + 1,
       }))
       setConsultingAppt(null)
+      setDocFeedback({ type: 'success', message: 'Consultation marked as completed successfully.' })
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update appointment status')
+      setDocFeedback({
+        type: 'error',
+        message: getFriendlyErrorMessage(err, 'Failed to update appointment status. Please try again.'),
+      })
     } finally {
       setConsultSubmitting(false)
     }
@@ -418,13 +424,17 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
     setPatientModalLoading(true)
     setSelectedPatient(null)
     setPatientAppointments([])
+    setDocFeedback(null)
 
     try {
       const data = await getDoctorPatientDetailsApi(patientId, token)
       if (data.patient) setSelectedPatient(data.patient)
       if (data.appointments) setPatientAppointments(data.appointments)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Unable to load patient details')
+      setDocFeedback({
+        type: 'error',
+        message: getFriendlyErrorMessage(err, 'Unable to load patient records. Please try again.'),
+      })
     } finally {
       setPatientModalLoading(false)
     }
@@ -623,6 +633,32 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
           MAIN DASHBOARD BODY
           ======================================================== */}
       <main className="dd-main">
+        {/* Doctor Feedback Banner */}
+        {docFeedback && (
+          <div
+            className={`ppp-feedback-banner ${docFeedback.type}`}
+            style={{ marginBottom: '16px' }}
+            role="alert"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {docFeedback.type === 'success' ? (
+                <CheckCircleIcon size={18} />
+              ) : (
+                <AlertCircleIcon size={18} />
+              )}
+              <span>{docFeedback.message}</span>
+            </div>
+            <button
+              type="button"
+              className="ppp-feedback-close"
+              onClick={() => setDocFeedback(null)}
+              aria-label="Dismiss message"
+            >
+              <CloseIcon size={14} />
+            </button>
+          </div>
+        )}
+
         {/* Welcome Doctor Banner */}
         <div className="dd-welcome-banner">
           <div className="dd-welcome-text">

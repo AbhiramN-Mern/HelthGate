@@ -11,6 +11,7 @@ import {
   getPatientNotificationsApi,
   markPatientNotificationReadApi,
   createPaymentOrderApi,
+  getFriendlyErrorMessage,
   type AuthUser,
   type PatientProfile,
   type DoctorProfile,
@@ -444,7 +445,10 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
         })
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to initialize payment gateway')
+      setPaymentNotice({
+        type: 'warning',
+        text: getFriendlyErrorMessage(err, 'Failed to initialize payment gateway. Please try again.'),
+      })
     } finally {
       setPayingApptId(null)
     }
@@ -468,7 +472,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
       )
       setDoctors(verifiedOnly)
     } catch (err) {
-      setDoctorsError(err instanceof Error ? err.message : 'Unable to load doctors from server.')
+      setDoctorsError(getFriendlyErrorMessage(err, 'Unable to load doctors from server. Please try again.'))
     } finally {
       setLoadingDoctors(false)
     }
@@ -739,7 +743,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
     } catch (err) {
       setBookingFeedback({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Booking failed. Please try again.',
+        text: getFriendlyErrorMessage(err, 'Booking could not be completed. Please choose another slot or try again.'),
       })
 
       // In case of conflict, refresh booked slots so patient sees latest blocked slots

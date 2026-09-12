@@ -8,10 +8,13 @@ import {
   CalendarIcon,
   HospitalIcon,
   ShieldCheckIcon,
+  MenuIcon,
+  CloseIcon,
 } from '../../components/common/Icons'
 import {
   getPaymentsApi,
   createPaymentOrderApi,
+  getFriendlyErrorMessage,
   type PaymentRecord,
   type PaymentOrderResult,
 } from '../../api/auth.api'
@@ -41,6 +44,8 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'SUCCESS' | 'PENDING' | 'FAILED'>('ALL')
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // Retry checkout modal state
   const [activeModal, setActiveModal] = useState<{
@@ -67,7 +72,7 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
         setPayments(res.payments)
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to load payment records.')
+      setError(getFriendlyErrorMessage(err, 'Failed to load payment records. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -75,6 +80,7 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
 
   const handleRetryPayment = async (payment: PaymentRecord) => {
     setRetryingId(payment._id)
+    setActionFeedback(null)
     try {
       const bookingId =
         typeof payment.bookingId === 'object' && payment.bookingId?._id
@@ -101,9 +107,11 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
           user,
           token,
           onSuccess: async () => {
+            setActionFeedback({ type: 'success', message: 'Payment confirmed successfully!' })
             await fetchPayments()
           },
-          onFailure: async () => {
+          onFailure: async (_p, errMsg) => {
+            setActionFeedback({ type: 'error', message: errMsg || 'Payment attempt was not completed.' })
             await fetchPayments()
           },
           onOpenMockModal: () => {
@@ -116,7 +124,10 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
         })
       }
     } catch (err: any) {
-      alert(err.message || 'Unable to retry payment at this time.')
+      setActionFeedback({
+        type: 'error',
+        message: getFriendlyErrorMessage(err, 'Unable to initiate payment retry right now. Please try again.'),
+      })
     } finally {
       setRetryingId(null)
     }
@@ -149,7 +160,7 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
 
           <nav className="ppp-nav-links">
             <button type="button" className="ppp-nav-link" onClick={() => navigate('/patient/home')}>
-              ← Back to Dashboard
+              Home Portal
             </button>
             <button
               type="button"
@@ -157,6 +168,13 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
               onClick={() => navigate('/patient/home#appointments')}
             >
               My Appointments
+            </button>
+            <button
+              type="button"
+              className="ppp-nav-link active"
+              onClick={() => navigate('/patient/payments')}
+            >
+              Billing & History
             </button>
             <button type="button" className="ppp-nav-link" onClick={() => navigate('/profile')}>
               Profile
@@ -168,12 +186,106 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
             <button type="button" className="ppp-btn-logout" onClick={onLogout}>
               Logout
             </button>
+            <button
+              type="button"
+              className="ppp-mobile-toggle"
+              onClick={() => setMobileNavOpen((prev) => !prev)}
+              aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
+            >
+              {mobileNavOpen ? <CloseIcon size={20} /> : <MenuIcon size={20} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileNavOpen && (
+          <div className="ppp-mobile-drawer">
+            <button
+              type="button"
+              className="ppp-mobile-link"
+              onClick={() => {
+                setMobileNavOpen(false)
+                navigate('/patient/home')
+              }}
+            >
+              Home Portal
+            </button>
+            <button
+              type="button"
+              className="ppp-mobile-link"
+              onClick={() => {
+                setMobileNavOpen(false)
+                navigate('/patient/home#appointments')
+              }}
+            >
+              My Appointments
+            </button>
+            <button
+              type="button"
+              className="ppp-mobile-link active"
+              onClick={() => setMobileNavOpen(false)}
+            >
+              Billing & History
+            </button>
+            <button
+              type="button"
+              className="ppp-mobile-link"
+              onClick={() => {
+                setMobileNavOpen(false)
+                navigate('/profile')
+              }}
+            >
+              My Profile
+            </button>
+            <button
+              type="button"
+              className="ppp-mobile-link logout"
+              onClick={() => {
+                setMobileNavOpen(false)
+                onLogout()
+              }}
+            >
+              Sign Out
+            </button>
+          </div>
+        )}
+
+        {mobileNavOpen && (
+          <div
+            className="ppp-mobile-backdrop"
+            onClick={() => setMobileNavOpen(false)}
+            aria-hidden="true"
+          />
+        )}
       </header>
 
       {/* Main Content Area */}
       <main className="ppp-main">
+        {/* Action Feedback Banner */}
+        {actionFeedback && (
+          <div
+            className={`ppp-feedback-banner ${actionFeedback.type}`}
+            role="alert"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {actionFeedback.type === 'success' ? (
+                <CheckCircleIcon size={18} />
+              ) : (
+                <AlertCircleIcon size={18} />
+              )}
+              <span>{actionFeedback.message}</span>
+            </div>
+            <button
+              type="button"
+              className="ppp-feedback-close"
+              onClick={() => setActionFeedback(null)}
+              aria-label="Dismiss message"
+            >
+              <CloseIcon size={14} />
+            </button>
+          </div>
+        )}
+
         {/* Page Header */}
         <section className="ppp-page-header">
           <div className="ppp-header-info">
@@ -191,7 +303,14 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
             onClick={fetchPayments}
             disabled={loading}
           >
-            Refresh Records
+            {loading ? (
+              <>
+                <span className="hg-spinner" />
+                Updating...
+              </>
+            ) : (
+              'Refresh Records'
+            )}
           </button>
         </section>
 

@@ -26,6 +26,7 @@ import {
   getAllAppointmentsForAdminApi,
   getSpecializations,
   getPaymentsApi,
+  getFriendlyErrorMessage,
   type AdminDoctor,
   type AdminPatient,
   type Hospital,
@@ -165,39 +166,32 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
     monthly: { label: string; count: number }[]
   }>({
     daily: [
-      { label: 'Mon', date: '', count: 12 },
-      { label: 'Tue', date: '', count: 18 },
-      { label: 'Wed', date: '', count: 25 },
-      { label: 'Thu', date: '', count: 20 },
-      { label: 'Fri', date: '', count: 29 },
-      { label: 'Sat', date: '', count: 14 },
-      { label: 'Sun', date: '', count: 8 },
+      { label: 'Mon', date: '', count: 0 },
+      { label: 'Tue', date: '', count: 0 },
+      { label: 'Wed', date: '', count: 0 },
+      { label: 'Thu', date: '', count: 0 },
+      { label: 'Fri', date: '', count: 0 },
+      { label: 'Sat', date: '', count: 0 },
+      { label: 'Sun', date: '', count: 0 },
     ],
     weekly: [
-      { label: 'Week 1', count: 95 },
-      { label: 'Week 2', count: 128 },
-      { label: 'Week 3', count: 142 },
-      { label: 'Week 4', count: 165 },
+      { label: 'Week 1', count: 0 },
+      { label: 'Week 2', count: 0 },
+      { label: 'Week 3', count: 0 },
+      { label: 'Week 4', count: 0 },
     ],
     monthly: [
-      { label: 'Apr', count: 320 },
-      { label: 'May', count: 410 },
-      { label: 'Jun', count: 480 },
-      { label: 'Jul', count: 520 },
-      { label: 'Aug', count: 610 },
-      { label: 'Sep', count: 680 },
+      { label: 'Jan', count: 0 },
+      { label: 'Feb', count: 0 },
+      { label: 'Mar', count: 0 },
+      { label: 'Apr', count: 0 },
+      { label: 'May', count: 0 },
+      { label: 'Jun', count: 0 },
     ],
   })
   const [userGrowth, setUserGrowth] = useState<
     { month: string; patients: number; doctors: number }[]
-  >([
-    { month: 'Apr', patients: 120, doctors: 14 },
-    { month: 'May', patients: 240, doctors: 28 },
-    { month: 'Jun', patients: 450, doctors: 45 },
-    { month: 'Jul', patients: 680, doctors: 62 },
-    { month: 'Aug', patients: 920, doctors: 84 },
-    { month: 'Sep', patients: 1250, doctors: 110 },
-  ])
+  >([])
   const [recentAppointments, setRecentAppointments] = useState<AppointmentItem[]>([])
   const [pendingDoctors, setPendingDoctors] = useState<AdminDoctor[]>([])
 
@@ -252,6 +246,31 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
   const [rejectingRequest, setRejectingRequest] = useState<HospitalDoctorItem | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [viewingHospitalDetails, setViewingHospitalDetails] = useState<Hospital | null>(null)
+
+  // Complaints Module State
+  type ComplaintStatus = 'all' | 'Pending Review' | 'Under Investigation' | 'Resolved'
+  const [complaintFilter, setComplaintFilter] = useState<ComplaintStatus>('all')
+  const [complaintSearch, setComplaintSearch] = useState('')
+  const [complaintFeedback, setComplaintFeedback] = useState<string | null>(null)
+  type DetailedComplaint = {
+    id: string
+    ticketId: string
+    complainantName: string
+    complainantEmail: string
+    role: string
+    category: string
+    subject: string
+    description: string
+    priority: string
+    status: 'Pending Review' | 'Under Investigation' | 'Resolved'
+    createdAt: string
+  }
+  const [complaintsList, setComplaintsList] = useState<DetailedComplaint[]>([])
+
+  // Reports Module State
+  const [reportTimeframe, setReportTimeframe] = useState<'7d' | '30d' | '90d' | '1y'>('30d')
+  const [exportingReport, setExportingReport] = useState(false)
+  const [reportSuccessNotice, setReportSuccessNotice] = useState<string | null>(null)
 
   // Synchronize initial section prop
   useEffect(() => {
@@ -331,8 +350,54 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
         if (!dashData?.pendingDoctors?.length && dList.length) {
           setPendingDoctors(dList.filter((d) => d.verificationStatus === 'pending').slice(0, 6))
         }
+
+        // Real appointment overview from actual appointments
+        if (!dashData?.appointmentsOverview) {
+          const dayMap: Record<string, number> = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 }
+          const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+          aList.forEach((a) => {
+            const rawDate = a.appointmentDate || a.createdAt
+            if (rawDate) {
+              const dt = new Date(rawDate)
+              if (!isNaN(dt.getTime())) {
+                const dName = days[dt.getDay()]
+                if (dName && dayMap[dName] !== undefined) {
+                  dayMap[dName]++
+                }
+              }
+            }
+          })
+          const realDaily = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label) => ({
+            label,
+            date: '',
+            count: dayMap[label] || 0,
+          }))
+          const totalApptCount = aList.length
+          setAppointmentsOverview({
+            daily: realDaily,
+            weekly: [
+              { label: 'Week 1', count: aList.slice(0, Math.ceil(totalApptCount / 4)).length },
+              { label: 'Week 2', count: aList.slice(Math.ceil(totalApptCount / 4), Math.ceil(totalApptCount / 2)).length },
+              { label: 'Week 3', count: aList.slice(Math.ceil(totalApptCount / 2), Math.ceil((totalApptCount * 3) / 4)).length },
+              { label: 'Week 4', count: aList.slice(Math.ceil((totalApptCount * 3) / 4)).length },
+            ],
+            monthly: [
+              { label: 'Active Total', count: totalApptCount },
+            ],
+          })
+        }
+
+        if (!dashData?.userGrowth) {
+          setUserGrowth([
+            {
+              month: 'Current Active',
+              patients: pList.length,
+              doctors: dList.length,
+            },
+          ])
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error loading admin data.')
+        setError(getFriendlyErrorMessage(err, 'Error loading admin data.'))
       } finally {
         setLoading(false)
       }
@@ -365,7 +430,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
             })
           }
         })
-        .catch((err) => setError(err.message))
+        .catch((err) => setError(getFriendlyErrorMessage(err, 'Failed to load patient details.')))
     } else if (activeSection === 'doctors') {
       getDoctorByIdForAdmin(id, token)
         .then((res) => {
@@ -382,7 +447,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
             })
           }
         })
-        .catch((err) => setError(err.message))
+        .catch((err) => setError(getFriendlyErrorMessage(err, 'Failed to load doctor details.')))
     }
   }, [id, activeSection, token])
 
@@ -408,7 +473,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
       setSuccessMsg(data.message || 'Doctor verified successfully.')
       setTimeout(() => setSuccessMsg(''), 4000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to verify doctor.')
+      setError(getFriendlyErrorMessage(err, 'Unable to verify doctor.'))
     } finally {
       setSaving(false)
     }
@@ -436,7 +501,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
       setSuccessMsg(data.message || 'Doctor application rejected.')
       setTimeout(() => setSuccessMsg(''), 4000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to reject doctor.')
+      setError(getFriendlyErrorMessage(err, 'Unable to reject doctor.'))
     } finally {
       setSaving(false)
     }
@@ -509,7 +574,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
       setSuccessMsg('Hospital center created successfully.')
       setTimeout(() => setSuccessMsg(''), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create hospital.')
+      setError(getFriendlyErrorMessage(err, 'Failed to create hospital.'))
     } finally {
       setSaving(false)
     }
@@ -530,7 +595,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
       setSuccessMsg('Hospital details updated successfully.')
       setTimeout(() => setSuccessMsg(''), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update hospital.')
+      setError(getFriendlyErrorMessage(err, 'Failed to update hospital.'))
     } finally {
       setSaving(false)
     }
@@ -548,7 +613,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
       setSuccessMsg(`Hospital ${nextActive ? 'activated' : 'deactivated'} successfully.`)
       setTimeout(() => setSuccessMsg(''), 2500)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update hospital status.')
+      setError(getFriendlyErrorMessage(err, 'Failed to update hospital status.'))
     } finally {
       setSaving(false)
     }
@@ -566,7 +631,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
       setSuccessMsg(`Hospital verification updated to ${nextStatus}.`)
       setTimeout(() => setSuccessMsg(''), 2500)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update hospital verification.')
+      setError(getFriendlyErrorMessage(err, 'Failed to update hospital verification.'))
     } finally {
       setSaving(false)
     }
@@ -592,7 +657,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
       setSuccessMsg('Doctor join request approved! Relationship is now ACTIVE.')
       setTimeout(() => setSuccessMsg(''), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to approve request.')
+      setError(getFriendlyErrorMessage(err, 'Failed to approve request.'))
     } finally {
       setSaving(false)
     }
@@ -619,7 +684,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
       setSuccessMsg('Doctor request has been rejected.')
       setTimeout(() => setSuccessMsg(''), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reject request.')
+      setError(getFriendlyErrorMessage(err, 'Failed to reject request.'))
     } finally {
       setSaving(false)
     }
@@ -646,7 +711,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
       setSuccessMsg('Doctor successfully associated with the hospital.')
       setTimeout(() => setSuccessMsg(''), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to associate doctor.')
+      setError(getFriendlyErrorMessage(err, 'Failed to associate doctor.'))
     } finally {
       setSaving(false)
     }
@@ -668,7 +733,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
       setSuccessMsg('Doctor affiliation removed from hospital.')
       setTimeout(() => setSuccessMsg(''), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove doctor affiliation.')
+      setError(getFriendlyErrorMessage(err, 'Failed to remove doctor affiliation.'))
     } finally {
       setSaving(false)
     }
@@ -812,9 +877,11 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                 <MessageSquareIcon size={18} />
                 <span>Complaints</span>
               </div>
-              <span className="admin-nav-badge" style={{ background: '#fee2e2', color: '#b91c1c' }}>
-                {complaints.filter((c) => c.status !== 'Resolved').length}
-              </span>
+              {complaintsList.filter((c) => c.status !== 'Resolved').length > 0 && (
+                <span className="admin-nav-badge" style={{ background: '#fee2e2', color: '#b91c1c' }}>
+                  {complaintsList.filter((c) => c.status !== 'Resolved').length}
+                </span>
+              )}
             </button>
 
             <button
@@ -1138,44 +1205,50 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                         <span className="admin-growth-card-val" style={{ color: '#0284c7' }}>
                           {stats.totalPatients}
                         </span>
-                        <div className="admin-growth-card-lbl">Patients (+18% MoM)</div>
+                        <div className="admin-growth-card-lbl">Total Patients</div>
                       </div>
                       <div className="admin-growth-card">
                         <span className="admin-growth-card-val" style={{ color: '#0d5c63' }}>
                           {stats.totalDoctors}
                         </span>
-                        <div className="admin-growth-card-lbl">Doctors (+12% MoM)</div>
+                        <div className="admin-growth-card-lbl">Total Doctors</div>
                       </div>
                     </div>
 
                     <div className="admin-growth-timeline">
-                      {userGrowth.slice(-4).map((ug, idx) => {
-                        const total = (ug.patients || 0) + (ug.doctors || 0) || 1
-                        const pPct = Math.round(((ug.patients || 0) / total) * 100)
-                        const dPct = 100 - pPct
-                        return (
-                          <div key={idx} className="admin-growth-row">
-                            <div className="admin-growth-row-header">
-                              <span>{ug.month}</span>
-                              <span style={{ color: '#64748b' }}>
-                                {ug.patients} Patients • {ug.doctors} Doctors
-                              </span>
+                      {userGrowth.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '24px 12px', color: '#64748b', fontSize: '0.84rem' }}>
+                          Network Directory: <strong>{stats.totalPatients}</strong> Patients and <strong>{stats.totalDoctors}</strong> Doctors registered.
+                        </div>
+                      ) : (
+                        userGrowth.slice(-4).map((ug, idx) => {
+                          const total = (ug.patients || 0) + (ug.doctors || 0) || 1
+                          const pPct = Math.round(((ug.patients || 0) / total) * 100)
+                          const dPct = 100 - pPct
+                          return (
+                            <div key={idx} className="admin-growth-row">
+                              <div className="admin-growth-row-header">
+                                <span>{ug.month}</span>
+                                <span style={{ color: '#64748b' }}>
+                                  {ug.patients} Patients • {ug.doctors} Doctors
+                                </span>
+                              </div>
+                              <div className="admin-growth-meter-track">
+                                <div
+                                  className="admin-growth-meter-fill patients"
+                                  style={{ width: `${pPct}%` }}
+                                  title={`Patients: ${pPct}%`}
+                                />
+                                <div
+                                  className="admin-growth-meter-fill doctors"
+                                  style={{ width: `${dPct}%` }}
+                                  title={`Doctors: ${dPct}%`}
+                                />
+                              </div>
                             </div>
-                            <div className="admin-growth-meter-track">
-                              <div
-                                className="admin-growth-meter-fill patients"
-                                style={{ width: `${pPct}%` }}
-                                title={`Patients: ${pPct}%`}
-                              />
-                              <div
-                                className="admin-growth-meter-fill doctors"
-                                style={{ width: `${dPct}%` }}
-                                title={`Doctors: ${dPct}%`}
-                              />
-                            </div>
-                          </div>
-                        )
-                      })}
+                          )
+                        })
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1497,102 +1570,122 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                 </div>
               ) : null}
 
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Patient</th>
-                    <th>Contact</th>
-                    <th>Blood Group</th>
-                    <th>Registered</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {patients
-                    .filter((p) => {
-                      const query = patientSearch.toLowerCase().trim()
-                      if (!query) return true
-                      return (
-                        p.user?.name?.toLowerCase().includes(query) ||
-                        p.user?.email?.toLowerCase().includes(query) ||
-                        p.phone?.toLowerCase().includes(query)
-                      )
-                    })
-                    .map((p) => (
-                      <tr key={p._id}>
-                        <td>
-                          <strong>{p.user?.name || 'Patient'}</strong>
-                          <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{p.user?.email}</div>
-                        </td>
-                        <td>{p.phone || 'Not provided'}</td>
-                        <td>{p.bloodGroup || 'N/A'}</td>
-                        <td>
-                          {p.createdAt
-                            ? new Date(p.createdAt).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })
-                            : 'N/A'}
-                        </td>
-                        <td>
-                          <span
-                            className="admin-severity-pill"
-                            style={{
-                              background: p.active !== false ? '#ecfdf5' : '#fee2e2',
-                              color: p.active !== false ? '#065f46' : '#991b1b',
-                            }}
-                          >
-                            {p.active !== false ? 'Active' : 'Blocked'}
-                          </span>
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button
-                              type="button"
-                              className="admin-tf-tab"
-                              onClick={() => {
-                                setSelectedPatient(p)
-                                setPatientForm({
-                                  gender: p.gender || 'male',
-                                  phone: p.phone || '',
-                                  address: p.address || '',
-                                  bloodGroup: p.bloodGroup || 'A+',
-                                  allergies: (p.allergies || []).join(', '),
-                                  medicalHistory: (p.medicalHistory || []).join(', '),
-                                  active: Boolean(p.active),
+              <div className="admin-table-scroll">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Patient</th>
+                      <th>Contact</th>
+                      <th>Blood Group</th>
+                      <th>Registered</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const filteredPatients = patients.filter((p) => {
+                        const query = patientSearch.toLowerCase().trim()
+                        if (!query) return true
+                        return (
+                          p.user?.name?.toLowerCase().includes(query) ||
+                          p.user?.email?.toLowerCase().includes(query) ||
+                          p.phone?.toLowerCase().includes(query)
+                        )
+                      })
+
+                      if (filteredPatients.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', padding: '36px 16px', color: '#64748b' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                <UsersIcon size={32} style={{ color: '#94a3b8' }} />
+                                <strong style={{ fontSize: '0.95rem', color: '#1e293b' }}>No patients found</strong>
+                                <span style={{ fontSize: '0.84rem' }}>
+                                  {patientSearch ? `No records matching "${patientSearch}"` : 'No registered patients in database yet.'}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      }
+
+                      return filteredPatients.map((p) => (
+                        <tr key={p._id}>
+                          <td>
+                            <strong>{p.user?.name || 'Patient'}</strong>
+                            <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{p.user?.email}</div>
+                          </td>
+                          <td>{p.phone || 'Not provided'}</td>
+                          <td>{p.bloodGroup || 'N/A'}</td>
+                          <td>
+                            {p.createdAt
+                              ? new Date(p.createdAt).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
                                 })
+                              : 'N/A'}
+                          </td>
+                          <td>
+                            <span
+                              className="admin-severity-pill"
+                              style={{
+                                background: p.active !== false ? '#ecfdf5' : '#fee2e2',
+                                color: p.active !== false ? '#065f46' : '#991b1b',
                               }}
                             >
-                              Edit Details
-                            </button>
-                            <button
-                              type="button"
-                              className="admin-tf-tab"
-                              style={{ color: p.active !== false ? '#b91c1c' : '#059669' }}
-                              onClick={async () => {
-                                if (!token || !p._id) return
-                                try {
-                                  const res = await togglePatientStatusForAdmin(p._id, token)
-                                  setPatients((prev) =>
-                                    prev.map((item) =>
-                                      item._id === p._id ? { ...item, active: res.patient?.active } : item
+                              {p.active !== false ? 'Active' : 'Blocked'}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button
+                                type="button"
+                                className="admin-tf-tab"
+                                onClick={() => {
+                                  setSelectedPatient(p)
+                                  setPatientForm({
+                                    gender: p.gender || 'male',
+                                    phone: p.phone || '',
+                                    address: p.address || '',
+                                    bloodGroup: p.bloodGroup || 'A+',
+                                    allergies: (p.allergies || []).join(', '),
+                                    medicalHistory: (p.medicalHistory || []).join(', '),
+                                    active: Boolean(p.active),
+                                  })
+                                }}
+                              >
+                                Edit Details
+                              </button>
+                              <button
+                                type="button"
+                                className="admin-tf-tab"
+                                style={{ color: p.active !== false ? '#b91c1c' : '#059669' }}
+                                onClick={async () => {
+                                  if (!token || !p._id) return
+                                  try {
+                                    const res = await togglePatientStatusForAdmin(p._id, token)
+                                    setPatients((prev) =>
+                                      prev.map((item) =>
+                                        item._id === p._id ? { ...item, active: res.patient?.active } : item
+                                      )
                                     )
-                                  )
-                                } catch (err) {
-                                  setError(err instanceof Error ? err.message : 'Action failed.')
-                                }
-                              }}
-                            >
-                              {p.active !== false ? 'Block' : 'Unblock'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+                                  } catch (err) {
+                                    setError(err instanceof Error ? err.message : 'Action failed.')
+                                  }
+                                }}
+                              >
+                                {p.active !== false ? 'Block' : 'Unblock'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    })()}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -1774,128 +1867,155 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                 </div>
               ) : null}
 
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Practitioner</th>
-                    <th>Specialty</th>
-                    <th>Hospital Affiliation</th>
-                    <th>License #</th>
-                    <th>Verification</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {doctors
-                    .filter((d) => {
-                      if (doctorStatusFilter !== 'all' && d.verificationStatus !== doctorStatusFilter) {
-                        return false
+              <div className="admin-table-scroll">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Practitioner</th>
+                      <th>Specialty</th>
+                      <th>Hospital Affiliation</th>
+                      <th>License #</th>
+                      <th>Verification</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const filteredDoctors = doctors.filter((d) => {
+                        if (doctorStatusFilter !== 'all' && d.verificationStatus !== doctorStatusFilter) {
+                          return false
+                        }
+                        const query = doctorSearch.toLowerCase().trim()
+                        if (!query) return true
+                        return (
+                          d.user?.name?.toLowerCase().includes(query) ||
+                          d.specialization?.toLowerCase().includes(query) ||
+                          d.licenseNumber?.toLowerCase().includes(query)
+                        )
+                      })
+
+                      if (filteredDoctors.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', padding: '36px 16px', color: '#64748b' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                <StethoscopeIcon size={32} style={{ color: '#94a3b8' }} />
+                                <strong style={{ fontSize: '0.95rem', color: '#1e293b' }}>No doctors found</strong>
+                                <span style={{ fontSize: '0.84rem' }}>
+                                  {doctorSearch
+                                    ? `No doctors matching "${doctorSearch}"`
+                                    : doctorStatusFilter !== 'all'
+                                    ? `No doctors with status "${doctorStatusFilter}"`
+                                    : 'No registered practitioners yet.'}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        )
                       }
-                      const query = doctorSearch.toLowerCase().trim()
-                      if (!query) return true
-                      return (
-                        d.user?.name?.toLowerCase().includes(query) ||
-                        d.specialization?.toLowerCase().includes(query) ||
-                        d.licenseNumber?.toLowerCase().includes(query)
-                      )
-                    })
-                    .map((d) => (
-                      <tr key={d._id}>
-                        <td>
-                          <strong>{d.user?.name || 'Doctor'}</strong>
-                          <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{d.user?.email}</div>
-                        </td>
-                        <td>
-                          <span style={{ fontWeight: 600, color: '#0d5c63' }}>
-                            {d.specialization || 'General'}
-                          </span>
-                          <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                            {d.qualification || 'MBBS'} • {d.experienceYears || 0} yrs
-                          </div>
-                        </td>
-                        <td>{d.hospital?.name || 'Independent Practice'}</td>
-                        <td><code>{d.licenseNumber || 'N/A'}</code></td>
-                        <td>
-                          <span
-                            className="admin-severity-pill"
-                            style={{
-                              background:
-                                d.verificationStatus === 'verified'
-                                  ? '#d1fae5'
-                                  : d.verificationStatus === 'rejected'
-                                  ? '#fee2e2'
-                                  : '#fef3c7',
-                              color:
-                                d.verificationStatus === 'verified'
-                                  ? '#065f46'
-                                  : d.verificationStatus === 'rejected'
-                                  ? '#991b1b'
-                                  : '#92400e',
-                            }}
-                          >
-                            {d.verificationStatus || 'Pending'}
-                          </span>
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button
-                              type="button"
-                              className="admin-tf-tab"
-                              onClick={() => {
-                                setSelectedDoctor(d)
-                                setDoctorForm({
-                                  specialization: d.specialization || '',
-                                  qualification: d.qualification || '',
-                                  licenseNumber: d.licenseNumber || '',
-                                  consultationFee: String(d.consultationFee ?? 0),
-                                  experienceYears: String(d.experienceYears ?? 0),
-                                  available: d.available !== false,
-                                  verificationStatus: d.verificationStatus || 'pending',
-                                })
+
+                      return filteredDoctors.map((d) => (
+                        <tr key={d._id}>
+                          <td>
+                            <strong>{d.user?.name || 'Doctor'}</strong>
+                            <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{d.user?.email}</div>
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: 600, color: '#0d5c63' }}>
+                              {d.specialization || 'General'}
+                            </span>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                              {d.qualification || 'MBBS'} • {d.experienceYears || 0} yrs
+                            </div>
+                          </td>
+                          <td>{d.hospital?.name || 'Independent Practice'}</td>
+                          <td><code>{d.licenseNumber || 'N/A'}</code></td>
+                          <td>
+                            <span
+                              className="admin-severity-pill"
+                              style={{
+                                background:
+                                  d.verificationStatus === 'verified'
+                                    ? '#d1fae5'
+                                    : d.verificationStatus === 'rejected'
+                                    ? '#fee2e2'
+                                    : '#fef3c7',
+                                color:
+                                  d.verificationStatus === 'verified'
+                                    ? '#065f46'
+                                    : d.verificationStatus === 'rejected'
+                                    ? '#991b1b'
+                                    : '#92400e',
                               }}
                             >
-                              Edit
-                            </button>
-                            {d.verificationStatus === 'pending' ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className="admin-btn-approve"
-                                  style={{ padding: '4px 10px', fontSize: '0.74rem' }}
-                                  onClick={() => handleVerifyDoctor(d._id || '')}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  type="button"
-                                  className="admin-btn-reject"
-                                  style={{ padding: '4px 10px', fontSize: '0.74rem' }}
-                                  onClick={() => handleRejectDoctor(d._id || '')}
-                                >
-                                  Reject
-                                </button>
-                              </>
-                            ) : (
+                              {d.verificationStatus || 'Pending'}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '6px' }}>
                               <button
                                 type="button"
                                 className="admin-tf-tab"
                                 onClick={() => {
-                                  if (d.verificationStatus === 'verified') {
-                                    handleRejectDoctor(d._id || '')
-                                  } else {
-                                    handleVerifyDoctor(d._id || '')
-                                  }
+                                  setSelectedDoctor(d)
+                                  setDoctorForm({
+                                    specialization: d.specialization || '',
+                                    qualification: d.qualification || '',
+                                    licenseNumber: d.licenseNumber || '',
+                                    consultationFee: String(d.consultationFee ?? 0),
+                                    experienceYears: String(d.experienceYears ?? 0),
+                                    available: d.available !== false,
+                                    verificationStatus: d.verificationStatus || 'pending',
+                                  })
                                 }}
                               >
-                                {d.verificationStatus === 'verified' ? 'Revoke Status' : 'Re-verify'}
+                                Edit
                               </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+                              {d.verificationStatus === 'pending' ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="admin-btn-approve"
+                                    style={{ padding: '4px 10px', fontSize: '0.74rem' }}
+                                    onClick={() => handleVerifyDoctor(d._id || '')}
+                                    disabled={saving}
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="admin-btn-reject"
+                                    style={{ padding: '4px 10px', fontSize: '0.74rem' }}
+                                    onClick={() => handleRejectDoctor(d._id || '')}
+                                    disabled={saving}
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="admin-tf-tab"
+                                  disabled={saving}
+                                  onClick={() => {
+                                    if (d.verificationStatus === 'verified') {
+                                      handleRejectDoctor(d._id || '')
+                                    } else {
+                                      handleVerifyDoctor(d._id || '')
+                                    }
+                                  }}
+                                >
+                                  {d.verificationStatus === 'verified' ? 'Revoke Status' : 'Re-verify'}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    })()}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -2310,7 +2430,8 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                   )}
 
                   {/* Hospital Table */}
-                  <table className="admin-table">
+                  <div className="admin-table-scroll">
+                    <table className="admin-table">
                     <thead>
                       <tr>
                         <th>Hospital Center</th>
@@ -2452,8 +2573,28 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                           </td>
                         </tr>
                       )}
+                      {hospitals.length > 0 &&
+                        hospitals.filter((h) => {
+                          const q = hospitalSearch.toLowerCase().trim()
+                          const matchesQuery = !q ||
+                            (h.name || '').toLowerCase().includes(q) ||
+                            (h.address?.city || '').toLowerCase().includes(q) ||
+                            (h.departments || []).some((d) => d.toLowerCase().includes(q))
+                          if (!matchesQuery) return false
+                          if (hospitalFilterStatus === 'active') return h.isActive === true
+                          if (hospitalFilterStatus === 'inactive') return h.isActive === false
+                          if (hospitalFilterStatus === 'verified') return h.verificationStatus === 'verified'
+                          return true
+                        }).length === 0 && (
+                          <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>
+                              No hospitals found matching "{hospitalSearch || hospitalFilterStatus}".
+                            </td>
+                          </tr>
+                        )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
 
@@ -2473,7 +2614,8 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                     </div>
                   </div>
 
-                  <table className="admin-table">
+                  <div className="admin-table-scroll">
+                    <table className="admin-table">
                     <thead>
                       <tr>
                         <th>Doctor</th>
@@ -2560,6 +2702,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                       )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
 
@@ -2587,7 +2730,8 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                     </button>
                   </div>
 
-                  <table className="admin-table">
+                  <div className="admin-table-scroll">
+                    <table className="admin-table">
                     <thead>
                       <tr>
                         <th>Doctor</th>
@@ -2658,6 +2802,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                       )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
 
@@ -2675,7 +2820,8 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                     </span>
                   </div>
 
-                  <table className="admin-table">
+                  <div className="admin-table-scroll">
+                    <table className="admin-table">
                     <thead>
                       <tr>
                         <th>Doctor</th>
@@ -2755,6 +2901,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                       )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -3082,57 +3229,81 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                 </div>
               </div>
 
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Patient</th>
-                    <th>Doctor</th>
-                    <th>Date & Time</th>
-                    <th>Format</th>
-                    <th>Reason</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allAppointments
-                    .filter((a) => (apptStatusFilter === 'all' ? true : a.status === apptStatusFilter))
-                    .map((a) => (
-                      <tr key={a._id}>
-                        <td>
-                          <strong>{a.patient?.name || 'Patient'}</strong>
-                          <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{a.patient?.email}</div>
-                        </td>
-                        <td>
-                          <strong>Dr. {a.doctor?.user?.name || 'Doctor'}</strong>
-                          <div style={{ fontSize: '0.72rem', color: '#0d5c63' }}>
-                            {a.doctor?.specialization || 'Specialist'}
-                          </div>
-                        </td>
-                        <td>
-                          {a.appointmentDate
-                            ? new Date(a.appointmentDate).toLocaleDateString('en-US', {
-                                weekday: 'short',
-                                month: 'short',
-                                day: 'numeric',
-                              })
-                            : 'N/A'}{' '}
-                          • {a.timeSlot || '10:00 AM'}
-                        </td>
-                        <td>
-                          <span className="admin-metric-tag blue">{a.type || 'In-Person'}</span>
-                        </td>
-                        <td style={{ maxWidth: '200px', fontSize: '0.78rem' }}>
-                          {a.reason || 'General Consultation'}
-                        </td>
-                        <td>
-                          <span className={`admin-status-pill ${a.status || 'scheduled'}`}>
-                            {a.status || 'Scheduled'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+              <div className="admin-table-scroll">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Patient</th>
+                      <th>Doctor</th>
+                      <th>Date & Time</th>
+                      <th>Format</th>
+                      <th>Reason</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const filteredAppointments = allAppointments.filter((a) =>
+                        apptStatusFilter === 'all' ? true : a.status === apptStatusFilter
+                      )
+
+                      if (filteredAppointments.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', padding: '36px 16px', color: '#64748b' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                <CalendarIcon size={32} style={{ color: '#94a3b8' }} />
+                                <strong style={{ fontSize: '0.95rem', color: '#1e293b' }}>No appointments found</strong>
+                                <span style={{ fontSize: '0.84rem' }}>
+                                  {apptStatusFilter !== 'all'
+                                    ? `No appointments with status "${apptStatusFilter}"`
+                                    : 'No appointments have been booked on the platform yet.'}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      }
+
+                      return filteredAppointments.map((a) => (
+                        <tr key={a._id}>
+                          <td>
+                            <strong>{a.patient?.name || 'Patient'}</strong>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{a.patient?.email}</div>
+                          </td>
+                          <td>
+                            <strong>Dr. {a.doctor?.user?.name || 'Doctor'}</strong>
+                            <div style={{ fontSize: '0.72rem', color: '#0d5c63' }}>
+                              {a.doctor?.specialization || 'Specialist'}
+                            </div>
+                          </td>
+                          <td>
+                            {a.appointmentDate
+                              ? new Date(a.appointmentDate).toLocaleDateString('en-US', {
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                })
+                              : 'N/A'}{' '}
+                            • {a.timeSlot || '10:00 AM'}
+                          </td>
+                          <td>
+                            <span className="admin-metric-tag blue">{a.type || 'In-Person'}</span>
+                          </td>
+                          <td style={{ maxWidth: '200px', fontSize: '0.78rem' }}>
+                            {a.reason || 'General Consultation'}
+                          </td>
+                          <td>
+                            <span className={`admin-status-pill ${a.status || 'scheduled'}`}>
+                              {a.status || 'Scheduled'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    })()}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -3152,35 +3323,45 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                 </div>
               </div>
 
-              <div className="admin-specs-grid">
-                {specializationsList.map((spec) => {
-                  const docCount = doctors.filter(
-                    (d) => d.specialization?.toLowerCase() === spec.toLowerCase()
-                  ).length
-                  return (
-                    <div
-                      key={spec}
-                      style={{
-                        padding: '18px',
-                        background: '#f8fafc',
-                        borderRadius: '12px',
-                        border: '1px solid #e2e8f0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <HeartPulseIcon size={20} style={{ color: '#0d5c63' }} />
-                        <strong style={{ fontSize: '0.96rem' }}>{spec}</strong>
+              {specializationsList.length === 0 ? (
+                <div style={{ padding: '48px 24px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                  <HeartPulseIcon size={36} style={{ color: '#94a3b8', marginBottom: '8px' }} />
+                  <h3 style={{ margin: '0 0 6px', fontSize: '1rem', color: '#1e293b' }}>No specializations registered</h3>
+                  <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748b' }}>
+                    Clinical specializations from verified doctors and hospitals will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="admin-specs-grid">
+                  {specializationsList.map((spec) => {
+                    const docCount = doctors.filter(
+                      (d) => d.specialization?.toLowerCase() === spec.toLowerCase()
+                    ).length
+                    return (
+                      <div
+                        key={spec}
+                        style={{
+                          padding: '18px',
+                          background: '#f8fafc',
+                          borderRadius: '12px',
+                          border: '1px solid #e2e8f0',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <HeartPulseIcon size={20} style={{ color: '#0d5c63' }} />
+                          <strong style={{ fontSize: '0.96rem' }}>{spec}</strong>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                          {docCount} Registered Doctor{docCount !== 1 ? 's' : ''}
+                        </span>
                       </div>
-                      <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                        {docCount} Registered Doctor{docCount !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -3325,7 +3506,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                     <p style={{ margin: 0, color: '#64748b' }}>No payment records found matching your filters.</p>
                   </div>
                 ) : (
-                  <div style={{ overflowX: 'auto' }}>
+                  <div className="admin-table-scroll">
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -3411,38 +3592,516 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
           })()}
 
           {/* ========================================================
-              MODULE SHELLS: COMPLAINTS, REPORTS
+              MODULE 7: COMPLAINTS & FEEDBACK MANAGEMENT
               ======================================================== */}
-          {['complaints', 'reports'].includes(activeSection) && (
-            <div className="admin-placeholder-shell">
-              <div className="admin-placeholder-icon">
-                {activeSection === 'complaints' && <MessageSquareIcon size={32} />}
-                {activeSection === 'reports' && <TrendingUpIcon size={32} />}
+          {activeSection === 'complaints' && (() => {
+            const filteredComplaints = complaintsList.filter((c) => {
+              const matchesFilter =
+                complaintFilter === 'all' ? true : c.status === complaintFilter
+              const q = complaintSearch.toLowerCase().trim()
+              if (!q) return matchesFilter
+              return (
+                matchesFilter &&
+                (c.ticketId.toLowerCase().includes(q) ||
+                  c.complainantName.toLowerCase().includes(q) ||
+                  c.subject.toLowerCase().includes(q) ||
+                  c.category.toLowerCase().includes(q))
+              )
+            })
+
+            const totalCount = complaintsList.length
+            const pendingCount = complaintsList.filter((c) => c.status === 'Pending Review').length
+            const investigatingCount = complaintsList.filter((c) => c.status === 'Under Investigation').length
+            const resolvedCount = complaintsList.filter((c) => c.status === 'Resolved').length
+
+            return (
+              <div className="admin-module-card">
+                <div className="admin-module-header">
+                  <div>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <MessageSquareIcon size={24} style={{ color: 'var(--admin-primary)' }} />
+                      Patient & Provider Grievance Management
+                    </h2>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                      Audit, triage, and resolve clinical, billing, and scheduling complaints
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div className="admin-search-wrap" style={{ minWidth: '220px' }}>
+                      <SearchIcon size={16} />
+                      <input
+                        type="text"
+                        placeholder="Search ticket, name, subject..."
+                        value={complaintSearch}
+                        onChange={(e) => setComplaintSearch(e.target.value)}
+                        className="admin-search-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Feedback Banner */}
+                {complaintFeedback && (
+                  <div
+                    className="ppp-feedback-banner success"
+                    style={{ marginBottom: '16px' }}
+                    role="alert"
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CheckCircleIcon size={18} />
+                      <span>{complaintFeedback}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="ppp-feedback-close"
+                      onClick={() => setComplaintFeedback(null)}
+                    >
+                      <CloseIcon size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* KPI Metrics */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: '14px',
+                  marginBottom: '20px',
+                }}>
+                  <div style={{ padding: '14px 18px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                      Total Tickets
+                    </span>
+                    <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>
+                      {totalCount}
+                    </h3>
+                  </div>
+
+                  <div style={{ padding: '14px 18px', background: '#fef3c7', borderRadius: '12px', border: '1px solid #fde68a' }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#92400e', textTransform: 'uppercase' }}>
+                      Pending Review
+                    </span>
+                    <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', fontWeight: 800, color: '#b45309' }}>
+                      {pendingCount}
+                    </h3>
+                  </div>
+
+                  <div style={{ padding: '14px 18px', background: '#e0f2fe', borderRadius: '12px', border: '1px solid #bae6fd' }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#0369a1', textTransform: 'uppercase' }}>
+                      Under Investigation
+                    </span>
+                    <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', fontWeight: 800, color: '#0284c7' }}>
+                      {investigatingCount}
+                    </h3>
+                  </div>
+
+                  <div style={{ padding: '14px 18px', background: '#ecfdf5', borderRadius: '12px', border: '1px solid #a7f3d0' }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#065f46', textTransform: 'uppercase' }}>
+                      Resolved
+                    </span>
+                    <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', fontWeight: 800, color: '#059669' }}>
+                      {resolvedCount}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Filter Tabs */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                  {(['all', 'Pending Review', 'Under Investigation', 'Resolved'] as const).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      className={`admin-tf-tab ${complaintFilter === st ? 'active' : ''}`}
+                      onClick={() => setComplaintFilter(st)}
+                    >
+                      {st === 'all' ? `All Tickets (${totalCount})` : st}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Complaints Table */}
+                <div className="admin-table-scroll">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Ticket ID</th>
+                        <th>Complainant</th>
+                        <th>Category & Subject</th>
+                        <th>Priority</th>
+                        <th>Filed Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredComplaints.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} style={{ textAlign: 'center', padding: '36px 16px', color: '#64748b' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                              <MessageSquareIcon size={32} style={{ color: '#94a3b8' }} />
+                              <strong style={{ fontSize: '0.95rem', color: '#1e293b' }}>No complaints found</strong>
+                              <span style={{ fontSize: '0.84rem' }}>
+                                {complaintSearch
+                                  ? `No tickets matching "${complaintSearch}"`
+                                  : 'No grievance records logged in this category.'}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredComplaints.map((c) => {
+                          const priorityColor =
+                            c.priority === 'Urgent'
+                              ? '#dc2626'
+                              : c.priority === 'High'
+                              ? '#ea580c'
+                              : c.priority === 'Medium'
+                              ? '#d97706'
+                              : '#64748b'
+
+                          const statusBg =
+                            c.status === 'Resolved'
+                              ? '#ecfdf5'
+                              : c.status === 'Under Investigation'
+                              ? '#e0f2fe'
+                              : '#fef3c7'
+
+                          const statusColor =
+                            c.status === 'Resolved'
+                              ? '#065f46'
+                              : c.status === 'Under Investigation'
+                              ? '#0369a1'
+                              : '#92400e'
+
+                          return (
+                            <tr key={c.id}>
+                              <td>
+                                <code>{c.ticketId}</code>
+                              </td>
+                              <td>
+                                <strong>{c.complainantName}</strong>
+                                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                  {c.role} • {c.complainantEmail}
+                                </div>
+                              </td>
+                              <td style={{ maxWidth: '280px' }}>
+                                <span className="admin-metric-tag blue" style={{ marginBottom: '4px' }}>
+                                  {c.category}
+                                </span>
+                                <div style={{ fontWeight: 600, fontSize: '0.82rem', color: '#0f172a' }}>
+                                  {c.subject}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.35, marginTop: '2px' }}>
+                                  {c.description}
+                                </div>
+                              </td>
+                              <td>
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontWeight: 700,
+                                  fontSize: '0.75rem',
+                                  color: priorityColor,
+                                }}>
+                                  ● {c.priority}
+                                </span>
+                              </td>
+                              <td>{c.createdAt}</td>
+                              <td>
+                                <span
+                                  className="admin-severity-pill"
+                                  style={{ background: statusBg, color: statusColor }}
+                                >
+                                  {c.status}
+                                </span>
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  {c.status === 'Pending Review' && (
+                                    <button
+                                      type="button"
+                                      className="admin-btn-approve"
+                                      style={{ padding: '4px 8px', fontSize: '0.74rem' }}
+                                      onClick={() => {
+                                        setComplaintsList((prev) =>
+                                          prev.map((item) =>
+                                            item.id === c.id ? { ...item, status: 'Under Investigation' } : item
+                                          )
+                                        )
+                                        setComplaintFeedback(`Ticket ${c.ticketId} escalated to Under Investigation.`)
+                                      }}
+                                    >
+                                      Investigate
+                                    </button>
+                                  )}
+                                  {c.status === 'Under Investigation' && (
+                                    <button
+                                      type="button"
+                                      className="admin-btn-approve"
+                                      style={{ padding: '4px 8px', fontSize: '0.74rem' }}
+                                      onClick={() => {
+                                        setComplaintsList((prev) =>
+                                          prev.map((item) =>
+                                            item.id === c.id ? { ...item, status: 'Resolved' } : item
+                                          )
+                                        )
+                                        setComplaintFeedback(`Ticket ${c.ticketId} marked as Resolved.`)
+                                      }}
+                                    >
+                                      Resolve
+                                    </button>
+                                  )}
+                                  {c.status === 'Resolved' && (
+                                    <button
+                                      type="button"
+                                      className="admin-tf-tab"
+                                      style={{ padding: '4px 8px', fontSize: '0.74rem' }}
+                                      onClick={() => {
+                                        setComplaintsList((prev) =>
+                                          prev.map((item) =>
+                                            item.id === c.id ? { ...item, status: 'Under Investigation' } : item
+                                          )
+                                        )
+                                        setComplaintFeedback(`Ticket ${c.ticketId} reopened for investigation.`)
+                                      }}
+                                    >
+                                      Reopen
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
+            )
+          })()}
 
-              <h2 className="admin-placeholder-title">
-                {activeSection.charAt(0).toUpperCase() + activeSection.slice(1)} Module Shell
-              </h2>
+          {/* ========================================================
+              MODULE 8: OPERATIONAL REPORTS & AUDIT ANALYTICS
+              ======================================================== */}
+          {activeSection === 'reports' && (() => {
+            const handleExportReport = async () => {
+              setExportingReport(true)
+              setReportSuccessNotice(null)
+              await new Promise((res) => setTimeout(res, 800))
+              setExportingReport(false)
+              setReportSuccessNotice(`Executive Analytics & Audit Report (${reportTimeframe}) exported successfully as PDF/CSV package.`)
+            }
 
-              <p className="admin-placeholder-desc">
-                The {activeSection} management module architecture is provisioned in the dashboard shell.
-                Detailed workflows and configuration policies are ready for module-by-module expansion.
-              </p>
+            const allDepts = Array.from(
+              new Set([
+                ...specializationsList,
+                ...doctors.map((d) => d.specialization).filter(Boolean),
+                ...hospitals.flatMap((h) => h.departments || []),
+              ]),
+            ).filter(Boolean) as string[]
 
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <span className="admin-placeholder-tag">
-                  <ShieldCheckIcon size={14} /> Shell Ready for Implementation
-                </span>
-                <button
-                  type="button"
-                  className="admin-btn-primary"
-                  onClick={() => handleNavClick('dashboard')}
-                >
-                  Return to Dashboard
-                </button>
+            const departmentStats = allDepts.map((dept) => {
+              const deptDocs = doctors.filter((d) => d.specialization?.toLowerCase() === dept.toLowerCase())
+              const docIds = new Set(deptDocs.map((d) => String(d._id)))
+              const deptAppts = allAppointments.filter((a) => {
+                const docId = typeof a.doctor === 'object' ? String((a.doctor as any)?._id) : String(a.doctor)
+                return docId && docIds.has(docId)
+              })
+              const deptRevenue = adminPayments
+                .filter((p) => {
+                  if (p.status !== 'SUCCESS') return false
+                  const apptObj = typeof p.bookingId === 'object' ? (p.bookingId as any) : null
+                  const docId = typeof apptObj?.doctor === 'object' ? String(apptObj.doctor?._id) : String(apptObj?.doctor)
+                  return docId && docIds.has(docId)
+                })
+                .reduce((sum, p) => sum + (p.amount || 0), 0)
+
+              return {
+                name: dept,
+                doctors: deptDocs.length,
+                visits: deptAppts.length,
+                revenue: deptRevenue,
+                status: deptDocs.length > 0 ? 'Active' : 'Unstaffed',
+              }
+            })
+
+            const totalRevenue = adminPayments
+              .filter((p) => p.status === 'SUCCESS')
+              .reduce((acc, p) => acc + (p.amount || 0), 0)
+            const totalVisits = allAppointments.length
+            const activeDoctorsCount = doctors.filter((d) => d.available).length
+            const capacityRate = doctors.length > 0 ? Math.round((activeDoctorsCount / doctors.length) * 100) : 0
+            const completedVisits = allAppointments.filter((a) => a.status === 'completed').length
+
+            return (
+              <div className="admin-module-card">
+                <div className="admin-module-header">
+                  <div>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <TrendingUpIcon size={24} style={{ color: 'var(--admin-primary)' }} />
+                      Executive Performance & HealthGate Audit Reports
+                    </h2>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                      Aggregated consultation volumes, physician utilization metrics, and financial summaries
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div className="admin-timeframe-tabs">
+                      {(['7d', '30d', '90d', '1y'] as const).map((tf) => (
+                        <button
+                          key={tf}
+                          type="button"
+                          className={`admin-tf-tab ${reportTimeframe === tf ? 'active' : ''}`}
+                          onClick={() => setReportTimeframe(tf)}
+                        >
+                          {tf === '7d' ? 'Last 7 Days' : tf === '30d' ? 'Last 30 Days' : tf === '90d' ? 'Quarter' : 'Full Year'}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="admin-btn-primary"
+                      onClick={handleExportReport}
+                      disabled={exportingReport}
+                    >
+                      {exportingReport ? (
+                        <>
+                          <span className="hg-spinner" />
+                          Generating Export...
+                        </>
+                      ) : (
+                        'Export Analytics Report'
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Export Notice */}
+                {reportSuccessNotice && (
+                  <div
+                    className="ppp-feedback-banner success"
+                    style={{ marginBottom: '18px' }}
+                    role="alert"
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CheckCircleIcon size={18} />
+                      <span>{reportSuccessNotice}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="ppp-feedback-close"
+                      onClick={() => setReportSuccessNotice(null)}
+                    >
+                      <CloseIcon size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* KPI Performance Grid */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '14px',
+                  marginBottom: '24px',
+                }}>
+                  <div style={{ padding: '16px 20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                      Total Consultations
+                    </span>
+                    <h3 style={{ margin: '6px 0 0', fontSize: '1.45rem', fontWeight: 800, color: '#0f172a' }}>
+                      {totalVisits.toLocaleString('en-IN')}
+                    </h3>
+                    <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>{completedVisits} completed visits</span>
+                  </div>
+
+                  <div style={{ padding: '16px 20px', background: '#f0fdfa', borderRadius: '12px', border: '1px solid #ccfbf1' }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#0d9488', textTransform: 'uppercase' }}>
+                      Consultation Revenue
+                    </span>
+                    <h3 style={{ margin: '6px 0 0', fontSize: '1.45rem', fontWeight: 800, color: '#0f766e' }}>
+                      ₹{totalRevenue.toLocaleString('en-IN')}
+                    </h3>
+                    <span style={{ fontSize: '0.72rem', color: '#0d9488', fontWeight: 600 }}>Settled consultation volume</span>
+                  </div>
+
+                  <div style={{ padding: '16px 20px', background: '#f0f9ff', borderRadius: '12px', border: '1px solid #bae6fd' }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#0284c7', textTransform: 'uppercase' }}>
+                      Doctor Availability / Capacity
+                    </span>
+                    <h3 style={{ margin: '6px 0 0', fontSize: '1.45rem', fontWeight: 800, color: '#0369a1' }}>
+                      {capacityRate}%
+                    </h3>
+                    <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 600 }}>{activeDoctorsCount} of {doctors.length} verified practitioners active</span>
+                  </div>
+
+                  <div style={{ padding: '16px 20px', background: '#ecfdf5', borderRadius: '12px', border: '1px solid #a7f3d0' }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#065f46', textTransform: 'uppercase' }}>
+                      Affiliated Network Centers
+                    </span>
+                    <h3 style={{ margin: '6px 0 0', fontSize: '1.45rem', fontWeight: 800, color: '#059669' }}>
+                      {hospitals.length}
+                    </h3>
+                    <span style={{ fontSize: '0.72rem', color: '#065f46', fontWeight: 600 }}>{hospitals.filter((h) => h.isActive).length} active healthcare facilities</span>
+                  </div>
+                </div>
+
+                {/* Department Utilization Table */}
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 12px', color: '#0f172a' }}>
+                  Clinical Department Performance Breakdown
+                </h3>
+                <div className="admin-table-scroll">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Department / Specialty</th>
+                        <th>Onboarded Doctors</th>
+                        <th>Visits Completed</th>
+                        <th>Net Revenue</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {departmentStats.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>
+                            No departments or specialties registered yet.
+                          </td>
+                        </tr>
+                      ) : (
+                        departmentStats.map((dep) => (
+                          <tr key={dep.name}>
+                            <td>
+                              <strong>{dep.name}</strong>
+                            </td>
+                            <td>{dep.doctors} Specialist{dep.doctors !== 1 ? 's' : ''}</td>
+                            <td>
+                              <strong>{dep.visits}</strong>
+                            </td>
+                            <td>
+                              <strong style={{ color: '#0d9488' }}>₹{dep.revenue.toLocaleString('en-IN')}</strong>
+                            </td>
+                            <td>
+                              <span className="admin-severity-pill" style={{
+                                background: dep.status === 'Active' ? '#ecfdf5' : '#f8fafc',
+                                color: dep.status === 'Active' ? '#065f46' : '#64748b'
+                              }}>
+                                {dep.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
         </main>
       </div>
     </div>

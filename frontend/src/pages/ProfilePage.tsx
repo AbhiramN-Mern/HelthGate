@@ -8,6 +8,7 @@ import {
   type PatientProfile,
   updateDoctorProfile,
   updatePatientProfile,
+  getFriendlyErrorMessage,
 } from '../api/auth.api'
 import {
   UserIcon,
@@ -150,7 +151,7 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
         }
       } catch (error) {
         setErrorMessage(
-          error instanceof Error ? error.message : 'Unable to load profile data.',
+          getFriendlyErrorMessage(error, 'Unable to load profile data. Please verify your connection.'),
         )
       } finally {
         setLoading(false)
@@ -243,7 +244,7 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
       setTimeout(() => setSuccessMessage(''), 4000)
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to update patient profile.',
+        getFriendlyErrorMessage(error, 'Unable to update patient profile. Please try again.'),
       )
     } finally {
       setSaving(false)
@@ -285,7 +286,7 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
       setTimeout(() => setSuccessMessage(''), 4000)
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to update doctor profile.',
+        getFriendlyErrorMessage(error, 'Unable to update doctor profile. Please try again.'),
       )
     } finally {
       setSaving(false)

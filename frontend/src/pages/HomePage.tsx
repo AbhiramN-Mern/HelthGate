@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -9,6 +10,8 @@ import {
   SearchIcon,
   UserIcon,
   MedicalCrossIcon,
+  MenuIcon,
+  CloseIcon,
 } from '../components/common/Icons'
 import './HomePage.css'
 
@@ -72,9 +75,14 @@ const whyItems: WhyItem[] = [
 
 function HomePage({ isLoggedIn }: HomePageProps) {
   const navigate = useNavigate()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
-  const goToLogin = () => navigate('/login')
+  const goToLogin = () => {
+    setMobileNavOpen(false)
+    navigate('/login')
+  }
   const goToDashboard = () => {
+    setMobileNavOpen(false)
     const role = JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role
     if (role === 'admin') navigate('/admin')
     else if (role === 'doctor') navigate('/doctor/dashboard')
@@ -116,8 +124,54 @@ function HomePage({ isLoggedIn }: HomePageProps) {
                 </button>
               </>
             )}
+
+            {/* Mobile menu toggle */}
+            <button
+              type="button"
+              className="hp-mobile-toggle"
+              onClick={() => setMobileNavOpen((prev) => !prev)}
+              aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
+            >
+              {mobileNavOpen ? <CloseIcon size={22} /> : <MenuIcon size={22} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileNavOpen && (
+          <div className="hp-mobile-drawer">
+            <ul className="hp-mobile-links">
+              <li><a href="#how-it-works" onClick={() => setMobileNavOpen(false)}>How It Works</a></li>
+              <li><a href="#specializations" onClick={() => setMobileNavOpen(false)}>Specializations</a></li>
+              <li><a href="#hospitals" onClick={() => setMobileNavOpen(false)}>Hospitals</a></li>
+              <li><a href="#why" onClick={() => setMobileNavOpen(false)}>Why Us</a></li>
+            </ul>
+            <div className="hp-mobile-ctas">
+              {isLoggedIn ? (
+                <button className="hp-btn-primary" style={{ width: '100%' }} onClick={goToDashboard}>
+                  Go to Dashboard
+                </button>
+              ) : (
+                <>
+                  <button className="hp-btn-ghost" style={{ width: '100%' }} onClick={goToLogin}>
+                    Sign In
+                  </button>
+                  <button className="hp-btn-primary" style={{ width: '100%' }} onClick={() => { setMobileNavOpen(false); navigate('/register') }}>
+                    Get Started
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {mobileNavOpen && (
+          <div
+            className="hp-mobile-backdrop"
+            onClick={() => setMobileNavOpen(false)}
+            aria-hidden="true"
+          />
+        )}
       </nav>
 
       {/* ===== HERO ===== */}

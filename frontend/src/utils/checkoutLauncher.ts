@@ -72,7 +72,10 @@ export const launchPaymentCheckout = async ({
   if (orderInfo.provider === 'RAZORPAY' && orderInfo.keyId) {
     const isLoaded = await loadRazorpayScript()
     if (!isLoaded || !window.Razorpay) {
-      alert('Failed to load Razorpay payment gateway SDK. Falling back to test checkout.')
+      console.warn('Failed to load Razorpay payment gateway SDK. Falling back to test checkout.')
+      if (onFailure) {
+        onFailure(paymentRecord, 'Failed to load Razorpay payment gateway SDK. Falling back to test checkout.')
+      }
       if (onOpenMockModal) onOpenMockModal()
       return
     }
@@ -108,14 +111,22 @@ export const launchPaymentCheckout = async ({
           if (verifyResult.success && verifyResult.payment) {
             onSuccess(verifyResult.payment, verifyResult.appointment)
           } else {
+            const errMsg = verifyResult.message || 'Payment verification failed.'
             if (onFailure && verifyResult.payment) {
-              onFailure(verifyResult.payment, verifyResult.message)
+              onFailure(verifyResult.payment, errMsg)
+            } else if (onFailure) {
+              onFailure(paymentRecord, errMsg)
             } else {
-              alert(verifyResult.message || 'Payment verification failed.')
+              console.error(errMsg)
             }
           }
         } catch (err: any) {
-          alert(err.message || 'Error communicating with server during payment verification.')
+          const errMsg = err?.message || 'Error communicating with server during payment verification.'
+          if (onFailure) {
+            onFailure(paymentRecord, errMsg)
+          } else {
+            console.error(errMsg)
+          }
         }
       },
       prefill: {

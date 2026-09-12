@@ -70,11 +70,13 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
     if (token) {
       if (role === 'admin') {
         navigate('/admin')
+      } else if (role === 'doctor') {
+        navigate('/doctor/dashboard')
       } else {
-        navigate('/profile')
+        navigate('/patient/home')
       }
     } else {
-      navigate('/login')
+      navigate('/home')
     }
   }
 

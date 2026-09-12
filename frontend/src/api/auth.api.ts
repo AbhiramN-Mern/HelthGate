@@ -58,6 +58,50 @@ export type DoctorProfile = {
   verificationStatus?: 'pending' | 'verified' | 'rejected'
 }
 
+export const getFriendlyErrorMessage = (error: unknown, fallbackMessage = 'An unexpected error occurred. Please try again.'): string => {
+  if (!error) return fallbackMessage
+
+  const message = typeof error === 'string'
+    ? error
+    : error instanceof Error
+    ? error.message
+    : (error as any)?.message || fallbackMessage
+
+  const lower = message.toLowerCase()
+
+  if (
+    lower.includes('failed to fetch') ||
+    lower.includes('networkerror') ||
+    lower.includes('network request failed') ||
+    lower.includes('load failed') ||
+    lower.includes('connection refused') ||
+    lower.includes('err_connection_refused')
+  ) {
+    return 'Unable to connect to the HealthGate server. Please check your internet connection or verify the server is running.'
+  }
+
+  if (
+    lower.includes('jwt expired') ||
+    lower.includes('token expired') ||
+    lower.includes('unauthorized') ||
+    lower.includes('invalid token')
+  ) {
+    return 'Your session has expired. Please sign in again to continue.'
+  }
+
+  if (
+    lower.includes('unexpected token') ||
+    lower.includes('syntaxerror') ||
+    lower.includes('bad gateway') ||
+    lower.includes('gateway timeout') ||
+    lower.includes('service unavailable')
+  ) {
+    return 'The server encountered an unexpected error or is temporarily unavailable. Please try again shortly.'
+  }
+
+  return message
+}
+
 const request = async <T>(endpoint: string, options: RequestInit, token?: string): Promise<T> => {
   const headers = new Headers(options.headers || {})
 
@@ -69,18 +113,45 @@ const request = async <T>(endpoint: string, options: RequestInit, token?: string
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  })
-
-  const data = (await response.json()) as T & { message?: string }
-
-  if (!response.ok) {
-    throw new Error(data?.message || 'Request failed')
+  let response: Response
+  try {
+    response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+    })
+  } catch (err: unknown) {
+    throw new Error(getFriendlyErrorMessage(err))
   }
 
-  return data
+  let data: any
+  const contentType = response.headers.get('content-type') || ''
+
+  if (contentType.includes('application/json')) {
+    try {
+      data = await response.json()
+    } catch {
+      data = null
+    }
+  } else {
+    try {
+      const text = await response.text()
+      data = { message: text }
+    } catch {
+      data = null
+    }
+  }
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const msg = data?.message || 'Your session has expired. Please sign in again.'
+      throw new Error(msg)
+    }
+
+    const serverMsg = data?.message || data?.error || `Request failed with status ${response.status}`
+    throw new Error(getFriendlyErrorMessage(serverMsg))
+  }
+
+  return (data || {}) as T
 }
 
 export const registerUser = async (payload: {
