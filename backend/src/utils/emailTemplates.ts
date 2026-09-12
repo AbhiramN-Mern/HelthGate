@@ -13,6 +13,11 @@ export interface AppointmentEmailData {
   cancellationReason?: string;
   previousStatus?: string;
   newStatus?: string;
+  proposedDate?: string;
+  proposedTime?: string;
+  originalDate?: string;
+  originalTime?: string;
+  rescheduleReason?: string;
 }
 
 const baseStyles = `
@@ -486,3 +491,229 @@ HealthGate Medical Team
 
   return { subject, html, text };
 }
+
+/**
+ * Render Appointment Reschedule Request Email
+ */
+export function renderAppointmentRescheduleRequestEmail(data: AppointmentEmailData): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const subject = `Action Required: Reschedule Request for Dr. ${data.doctorName} - HealthGate [Ref: ${data.appointmentId.slice(-6).toUpperCase()}]`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${subject}</title>
+  <style>${baseStyles}</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+      <h1>HealthGate</h1>
+      <p>Appointment Reschedule Request</p>
+    </div>
+    <div class="content">
+      <p class="intro">
+        Dear <strong>${data.patientName}</strong>,<br><br>
+        Dr. <strong>${data.doctorName}</strong> has requested to reschedule your upcoming appointment. Please review the proposed date and time below.
+      </p>
+
+      <div class="instructions" style="background-color: #fffbeb; border-left-color: #f59e0b; color: #b45309;">
+        <strong>Action Needed:</strong> Please log in to your HealthGate patient dashboard to <strong>Accept</strong> or <strong>Decline</strong> this new schedule. Your current appointment remains reserved until you decide.
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Reschedule Comparison</h3>
+        <table class="data-table">
+          <tr>
+            <td class="data-label">Appointment ID:</td>
+            <td class="data-value"><code>${data.appointmentId}</code></td>
+          </tr>
+          <tr>
+            <td class="data-label">Doctor:</td>
+            <td class="data-value">Dr. ${data.doctorName} ${data.doctorSpecialization ? `(${data.doctorSpecialization})` : ""}</td>
+          </tr>
+          <tr>
+            <td class="data-label">Original Schedule:</td>
+            <td class="data-value" style="color: #64748b; text-decoration: line-through;">${data.originalDate || data.appointmentDate} at ${data.originalTime || data.appointmentTime}</td>
+          </tr>
+          <tr>
+            <td class="data-label">Proposed New Schedule:</td>
+            <td class="data-value" style="color: #0284c7; font-size: 15px; font-weight: 700;">
+              ${data.proposedDate} at ${data.proposedTime}
+            </td>
+          </tr>
+          ${
+            data.rescheduleReason
+              ? `<tr>
+            <td class="data-label">Doctor's Note / Reason:</td>
+            <td class="data-value">${data.rescheduleReason}</td>
+          </tr>`
+              : ""
+          }
+          <tr>
+            <td class="data-label">Request Status:</td>
+            <td class="data-value"><span class="badge badge-update">Pending Your Approval</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="font-size: 14px; color: #64748b; line-height: 1.5;">
+        You can accept or decline this reschedule proposal with a single click from the <strong>Appointments</strong> section of your HealthGate portal.
+      </p>
+    </div>
+    <div class="footer">
+      <p>HealthGate Hospital Management System &bull; Dedicated to Patient Care</p>
+      <p>This is an automated notification. Please do not reply directly to this email.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  const text = `
+HealthGate - Appointment Reschedule Request
+
+Dear ${data.patientName},
+
+Dr. ${data.doctorName} has requested to reschedule your appointment.
+
+Details:
+- Appointment ID: ${data.appointmentId}
+- Doctor: Dr. ${data.doctorName}
+- Original Schedule: ${data.originalDate || data.appointmentDate} at ${data.originalTime || data.appointmentTime}
+- Proposed New Schedule: ${data.proposedDate} at ${data.proposedTime}
+${data.rescheduleReason ? `- Reason: ${data.rescheduleReason}\n` : ""}- Status: Reschedule Pending Approval
+
+Please log in to your HealthGate patient portal to Accept or Decline this request.
+
+HealthGate Medical Team
+  `.trim();
+
+  return { subject, html, text };
+}
+
+/**
+ * Render Appointment Reschedule Confirmed Email
+ */
+export function renderAppointmentRescheduleConfirmedEmail(data: AppointmentEmailData): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const subject = `Rescheduled Appointment Confirmed with Dr. ${data.doctorName} - HealthGate [Ref: ${data.appointmentId.slice(-6).toUpperCase()}]`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${subject}</title>
+  <style>${baseStyles}</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header" style="background: linear-gradient(135deg, #059669 0%, #047857 100%);">
+      <h1>HealthGate</h1>
+      <p>Rescheduled Appointment Confirmed</p>
+    </div>
+    <div class="content">
+      <p class="intro">
+        Dear <strong>${data.patientName}</strong>,<br><br>
+        Your appointment with Dr. <strong>${data.doctorName}</strong> has been successfully rescheduled and confirmed.
+      </p>
+
+      <div class="instructions">
+        <strong>✓ Status: Confirmed for New Date & Time</strong><br>
+        Please note the updated appointment date and time below and arrive 10 minutes prior to your consultation.
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Updated Appointment Details</h3>
+        <table class="data-table">
+          <tr>
+            <td class="data-label">Appointment ID:</td>
+            <td class="data-value"><code>${data.appointmentId}</code></td>
+          </tr>
+          <tr>
+            <td class="data-label">Doctor:</td>
+            <td class="data-value">Dr. ${data.doctorName} ${data.doctorSpecialization ? `(${data.doctorSpecialization})` : ""}</td>
+          </tr>
+          ${
+            data.originalDate && data.originalTime
+              ? `<tr>
+            <td class="data-label">Previous Schedule:</td>
+            <td class="data-value" style="color: #64748b; text-decoration: line-through;">${data.originalDate} at ${data.originalTime}</td>
+          </tr>`
+              : ""
+          }
+          <tr>
+            <td class="data-label">New Confirmed Date:</td>
+            <td class="data-value" style="color: #047857; font-weight: 700;">${data.appointmentDate}</td>
+          </tr>
+          <tr>
+            <td class="data-label">New Confirmed Time:</td>
+            <td class="data-value" style="color: #047857; font-weight: 700;">${data.appointmentTime}</td>
+          </tr>
+          ${
+            data.hospitalName
+              ? `<tr>
+            <td class="data-label">Facility / Hospital:</td>
+            <td class="data-value">${data.hospitalName}</td>
+          </tr>`
+              : ""
+          }
+          ${
+            data.department
+              ? `<tr>
+            <td class="data-label">Department:</td>
+            <td class="data-value">${data.department}</td>
+          </tr>`
+              : ""
+          }
+          <tr>
+            <td class="data-label">Current Status:</td>
+            <td class="data-value"><span class="badge badge-confirmed">Confirmed (Rescheduled)</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="font-size: 14px; color: #64748b; line-height: 1.5;">
+        You can view your appointment details, join video consultations, or view prescriptions on your HealthGate portal.
+      </p>
+    </div>
+    <div class="footer">
+      <p>HealthGate Hospital Management System &bull; Dedicated to Patient Care</p>
+      <p>This is an automated notification. Please do not reply directly to this email.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  const text = `
+HealthGate - Rescheduled Appointment Confirmed
+
+Dear ${data.patientName},
+
+Your appointment with Dr. ${data.doctorName} has been successfully rescheduled and confirmed.
+
+Updated Details:
+- Appointment ID: ${data.appointmentId}
+- Doctor: Dr. ${data.doctorName}
+${data.originalDate && data.originalTime ? `- Previous Schedule: ${data.originalDate} at ${data.originalTime}\n` : ""}- New Confirmed Date: ${data.appointmentDate}
+- New Confirmed Time: ${data.appointmentTime}
+- Status: Confirmed (Rescheduled)
+
+Please arrive 10 minutes prior to your scheduled consultation.
+
+HealthGate Medical Team
+  `.trim();
+
+  return { subject, html, text };
+}
+

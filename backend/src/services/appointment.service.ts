@@ -377,30 +377,39 @@ export class AppointmentService {
     const populated = await this.appointmentRepo.findById(appointment._id, true);
 
     try {
-      const patientUserId = (appointment.patient as any)?._id || appointment.patient;
-      const doctorName = (populated?.doctor as any)?.user?.name || "Your Doctor";
-      const formattedProposedDate = proposedDateObj.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-      const originalDateStr = appointment.appointmentDate
-        ? new Date(appointment.appointmentDate).toLocaleDateString("en-US", {
+      if (this.notificationService) {
+        await this.notificationService.sendAppointmentRescheduleRequest(
+          populated || appointment,
+          proposedDateObj,
+          cleanTimeSlot,
+          reason?.trim(),
+        );
+      } else {
+        const patientUserId = (appointment.patient as any)?._id || appointment.patient;
+        const doctorName = (populated?.doctor as any)?.user?.name || "Your Doctor";
+        const formattedProposedDate = proposedDateObj.toLocaleDateString("en-US", {
           weekday: "short",
           month: "short",
           day: "numeric",
           year: "numeric",
-        })
-        : "Current date";
+        });
+        const originalDateStr = appointment.appointmentDate
+          ? new Date(appointment.appointmentDate).toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
+          : "Current date";
 
-      await this.notificationRepo.create({
-        recipient: patientUserId,
-        type: "reschedule_request",
-        title: "Appointment Reschedule Requested",
-        message: `${doctorName} has requested to reschedule your appointment from ${originalDateStr} at ${appointment.timeSlot} to ${formattedProposedDate} at ${cleanTimeSlot}.${reason ? ` Reason: ${reason.trim()}` : ""}`,
-        appointment: appointment._id,
-      });
+        await this.notificationRepo.create({
+          recipient: patientUserId,
+          type: "reschedule_request",
+          title: "Appointment Reschedule Requested",
+          message: `${doctorName} has requested to reschedule your appointment from ${originalDateStr} at ${appointment.timeSlot} to ${formattedProposedDate} at ${cleanTimeSlot}.${reason ? ` Reason: ${reason.trim()}` : ""}`,
+          appointment: appointment._id,
+        });
+      }
     } catch (notifErr) {
       console.warn("Failed to create reschedule notification for patient:", notifErr);
     }
@@ -455,6 +464,9 @@ export class AppointmentService {
         );
       }
 
+      const previousDate = appointment.appointmentDate;
+      const previousTimeSlot = appointment.timeSlot;
+
       await this.appointmentRepo.applyReschedule(
         appointment._id,
         appointment.rescheduleRequest.proposedDate,
@@ -466,8 +478,16 @@ export class AppointmentService {
         },
       );
 
+      const populated = await this.appointmentRepo.findById(appointment._id, true);
+
       try {
-        if (doctorDoc?.user) {
+        if (this.notificationService) {
+          await this.notificationService.sendAppointmentRescheduleConfirmed(
+            populated || appointment,
+            previousDate,
+            previousTimeSlot,
+          );
+        } else if (doctorDoc?.user) {
           const formattedDate = new Date(appointment.rescheduleRequest.proposedDate).toLocaleDateString("en-US", {
             weekday: "short",
             month: "short",
@@ -485,8 +505,6 @@ export class AppointmentService {
       } catch (nErr) {
         console.warn("Failed to notify doctor of reschedule acceptance:", nErr);
       }
-
-      const populated = await this.appointmentRepo.findById(appointment._id, true);
       return {
         message: "Reschedule accepted. Your appointment has been successfully updated to the new date and time.",
         appointment: populated,

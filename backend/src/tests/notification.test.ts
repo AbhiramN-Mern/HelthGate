@@ -64,6 +64,27 @@ class TestAppointmentRepository implements Partial<IAppointmentRepository> {
     a.updatedAt = new Date();
     return a;
   }
+
+  async updateRescheduleRequest(id: any, rescheduleRequest: any) {
+    const a = await this.findById(id);
+    if (!a) return null;
+    a.rescheduleRequest = rescheduleRequest;
+    return a;
+  }
+
+  async applyReschedule(id: any, appointmentDate: Date, timeSlot: string, rescheduleRequest: any) {
+    const a = await this.findById(id);
+    if (!a) return null;
+    a.appointmentDate = appointmentDate;
+    a.timeSlot = timeSlot;
+    a.status = "confirmed";
+    a.rescheduleRequest = rescheduleRequest;
+    return a;
+  }
+
+  async find(filter: any = {}) {
+    return [];
+  }
 }
 
 class TestDoctorRepository implements Partial<IDoctorRepository> {
@@ -446,5 +467,64 @@ describe("Appointment Notification & Nodemailer Email Service Tests", () => {
     assert.equal(sent.to, "alice@example.com");
     assert.match(sent.subject, /Appointment Confirmed/);
     assert.match(sent.html, /Alice Smith/);
+  });
+
+  it("9. Reschedule requested by doctor → reschedule request email sent with proposed new schedule", async () => {
+    const appt = await apptRepo.create({
+      patient: patientUserId,
+      doctor: doctorId,
+      appointmentDate: new Date("2026-10-15"),
+      timeSlot: "10:00 AM",
+      status: "confirmed",
+    });
+
+    const result = await appointmentService.requestAppointmentReschedule({
+      doctorUserId,
+      appointmentId: appt._id,
+      newDate: "2026-10-18",
+      newTimeSlot: "02:00 PM",
+      reason: "Conference attendance",
+    });
+
+    assert.equal(result?.rescheduleRequest?.status, "pending");
+    assert.equal(mockEmailService.sentEmails.length, 1);
+
+    const sent = mockEmailService.sentEmails[0];
+    assert.equal(sent.to, "alice@example.com");
+    assert.match(sent.subject, /Reschedule Request/);
+    assert.match(sent.html, /Conference attendance/);
+    assert.match(sent.html, /02:00 PM/);
+  });
+
+  it("10. Reschedule accepted by patient → reschedule confirmation email sent with updated schedule", async () => {
+    const appt = await apptRepo.create({
+      patient: patientUserId,
+      doctor: doctorId,
+      appointmentDate: new Date("2026-10-15"),
+      timeSlot: "10:00 AM",
+      status: "confirmed",
+      rescheduleRequest: {
+        status: "pending",
+        proposedDate: new Date("2026-10-18"),
+        proposedTimeSlot: "02:00 PM",
+        reason: "Doctor schedule adjustment",
+        requestedBy: "doctor",
+      },
+    });
+
+    const response = await appointmentService.respondAppointmentReschedule({
+      patientUserId,
+      appointmentId: appt._id,
+      action: "accept",
+    });
+
+    assert.equal(response.appointment?.status, "confirmed");
+    assert.equal(response.appointment?.timeSlot, "02:00 PM");
+    assert.equal(mockEmailService.sentEmails.length, 1);
+
+    const sent = mockEmailService.sentEmails[0];
+    assert.equal(sent.to, "alice@example.com");
+    assert.match(sent.subject, /Rescheduled Appointment Confirmed/);
+    assert.match(sent.html, /02:00 PM/);
   });
 });

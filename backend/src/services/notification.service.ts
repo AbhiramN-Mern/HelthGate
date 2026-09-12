@@ -7,6 +7,8 @@ import {
   renderAppointmentConfirmationEmail,
   renderAppointmentCancellationEmail,
   renderAppointmentStatusUpdateEmail,
+  renderAppointmentRescheduleRequestEmail,
+  renderAppointmentRescheduleConfirmedEmail,
   type AppointmentEmailData,
 } from "../utils/emailTemplates.js";
 
@@ -416,6 +418,190 @@ export class NotificationService {
       }
     } catch (err) {
       console.error("[NotificationService] Unexpected error in sendAppointmentStatusUpdate:", err);
+    }
+
+    return { inAppSuccess, emailResult };
+  }
+
+  /**
+   * 4. Send Appointment Reschedule Request Notification (In-App + Email)
+   */
+  async sendAppointmentRescheduleRequest(
+    appointment: any,
+    proposedDate: Date | string,
+    proposedTimeSlot: string,
+    reason?: string,
+  ): Promise<{
+    emailResult?: { success: boolean; messageId?: string; error?: string };
+    inAppSuccess: boolean;
+  }> {
+    let inAppSuccess = false;
+    let emailResult: { success: boolean; messageId?: string; error?: string } | undefined;
+
+    try {
+      const details = await this.resolveAppointmentDetails(appointment);
+
+      const proposedDateStr = new Date(proposedDate).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+
+      // In-App Notification to Patient
+      try {
+        if (details.patientId) {
+          await this.notificationRepo.create({
+            recipient: details.patientId,
+            type: "reschedule_request",
+            title: "Appointment Reschedule Requested",
+            message: `Dr. ${details.doctorName} requested to reschedule your appointment to ${proposedDateStr} at ${proposedTimeSlot}.${reason ? ` Reason: ${reason}` : ""}`,
+            appointment: details.appointmentIdStr,
+          });
+        }
+        inAppSuccess = true;
+      } catch (inAppErr) {
+        console.warn("[NotificationService] Failed to create reschedule in-app notification:", inAppErr);
+      }
+
+      // Email Notification to Patient
+      if (details.patientEmail) {
+        try {
+          const emailData: AppointmentEmailData = {
+            patientName: details.patientName,
+            patientEmail: details.patientEmail,
+            doctorName: details.doctorName,
+            doctorSpecialization: details.doctorSpecialization,
+            hospitalName: details.hospitalName,
+            department: details.department,
+            appointmentDate: details.appointmentDateStr,
+            appointmentTime: details.appointmentTimeStr,
+            originalDate: details.appointmentDateStr,
+            originalTime: details.appointmentTimeStr,
+            proposedDate: proposedDateStr,
+            proposedTime: proposedTimeSlot,
+            rescheduleReason: reason || "Doctor schedule adjustment",
+            appointmentId: details.appointmentIdStr,
+            appointmentType: details.appointmentType,
+            newStatus: "reschedule_pending",
+          };
+
+          const rendered = renderAppointmentRescheduleRequestEmail(emailData);
+          emailResult = await this.emailService.sendEmail({
+            to: details.patientEmail,
+            subject: rendered.subject,
+            html: rendered.html,
+            text: rendered.text,
+          });
+        } catch (emailErr: any) {
+          console.error("[NotificationService] Error sending reschedule request email:", emailErr);
+          emailResult = { success: false, error: emailErr.message || "Email send failure" };
+        }
+      } else {
+        console.warn(`[NotificationService] No email address for patient ID ${details.patientId}. Skipping email.`);
+        emailResult = { success: false, error: "Patient email not available" };
+      }
+    } catch (err) {
+      console.error("[NotificationService] Unexpected error in sendAppointmentRescheduleRequest:", err);
+    }
+
+    return { inAppSuccess, emailResult };
+  }
+
+  /**
+   * 5. Send Appointment Reschedule Confirmed Notification (In-App + Email)
+   */
+  async sendAppointmentRescheduleConfirmed(
+    appointment: any,
+    previousDate?: Date | string,
+    previousTimeSlot?: string,
+  ): Promise<{
+    emailResult?: { success: boolean; messageId?: string; error?: string };
+    inAppSuccess: boolean;
+  }> {
+    let inAppSuccess = false;
+    let emailResult: { success: boolean; messageId?: string; error?: string } | undefined;
+
+    try {
+      const details = await this.resolveAppointmentDetails(appointment);
+
+      let prevDateStr: string | undefined;
+      if (previousDate) {
+        try {
+          prevDateStr = new Date(previousDate).toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+        } catch {
+          prevDateStr = String(previousDate);
+        }
+      }
+
+      // In-App Notification to Patient
+      try {
+        if (details.patientId) {
+          await this.notificationRepo.create({
+            recipient: details.patientId,
+            type: "reschedule_response",
+            title: "Rescheduled Appointment Confirmed",
+            message: `Your appointment with Dr. ${details.doctorName} is confirmed for ${details.appointmentDateStr} at ${details.appointmentTimeStr}.`,
+            appointment: details.appointmentIdStr,
+          });
+        }
+
+        // In-App Notification to Doctor
+        if (details.doctorUserId) {
+          await this.notificationRepo.create({
+            recipient: details.doctorUserId,
+            type: "reschedule_response",
+            title: "Reschedule Request Accepted",
+            message: `Patient ${details.patientName} accepted the reschedule for ${details.appointmentDateStr} at ${details.appointmentTimeStr}.`,
+            appointment: details.appointmentIdStr,
+          });
+        }
+        inAppSuccess = true;
+      } catch (inAppErr) {
+        console.warn("[NotificationService] Failed to create reschedule confirmation in-app notification:", inAppErr);
+      }
+
+      // Email Notification to Patient
+      if (details.patientEmail) {
+        try {
+          const emailData: AppointmentEmailData = {
+            patientName: details.patientName,
+            patientEmail: details.patientEmail,
+            doctorName: details.doctorName,
+            doctorSpecialization: details.doctorSpecialization,
+            hospitalName: details.hospitalName,
+            department: details.department,
+            appointmentDate: details.appointmentDateStr,
+            appointmentTime: details.appointmentTimeStr,
+            originalDate: prevDateStr,
+            originalTime: previousTimeSlot,
+            appointmentId: details.appointmentIdStr,
+            appointmentType: details.appointmentType,
+            newStatus: "confirmed",
+          };
+
+          const rendered = renderAppointmentRescheduleConfirmedEmail(emailData);
+          emailResult = await this.emailService.sendEmail({
+            to: details.patientEmail,
+            subject: rendered.subject,
+            html: rendered.html,
+            text: rendered.text,
+          });
+        } catch (emailErr: any) {
+          console.error("[NotificationService] Error sending reschedule confirmation email:", emailErr);
+          emailResult = { success: false, error: emailErr.message || "Email send failure" };
+        }
+      } else {
+        console.warn(`[NotificationService] No email address for patient ID ${details.patientId}. Skipping email.`);
+        emailResult = { success: false, error: "Patient email not available" };
+      }
+    } catch (err) {
+      console.error("[NotificationService] Unexpected error in sendAppointmentRescheduleConfirmed:", err);
     }
 
     return { inAppSuccess, emailResult };
