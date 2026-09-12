@@ -181,18 +181,28 @@ export const cancelAppointment = async (
   res: Response,
 ) => {
   try {
-    const patientUserId = req.user?.id;
-    if (!patientUserId) {
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+    if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    if (userRole === "doctor") {
+      return res.status(403).json({
+        success: false,
+        message: "Doctors are not permitted to cancel appointments. Only patients and administrators can cancel appointments.",
+      });
     }
 
     const appointmentId = String(req.params.appointmentId);
     const { reason } = req.body;
 
     const appointment = await appointmentService.cancelAppointment({
-      patientUserId,
+      patientUserId: userRole === "patient" ? userId : undefined,
       appointmentId,
       reason,
+      cancelledByRole: userRole === "admin" ? "admin" : "patient",
+      cancelledByUserId: userId,
     });
 
     return res.status(200).json({
@@ -209,4 +219,5 @@ export const cancelAppointment = async (
     });
   }
 };
+
 

@@ -85,17 +85,19 @@ export class AppointmentService {
 
     const cleanTimeSlot = (timeSlot || "10:00 AM").trim();
 
-    const configuredSlots = doctorDoc.availability?.availableSlots || [];
-    if (configuredSlots.length > 0) {
-      const isSlotConfigured = configuredSlots.some(
-        (s: string) => s.trim().toLowerCase() === cleanTimeSlot.toLowerCase(),
-      );
-      if (!isSlotConfigured) {
-        return {
-          available: false,
-          message: `Selected slot "${cleanTimeSlot}" is not in the doctor's available slots schedule.`,
-        };
-      }
+    const configuredSlots =
+      doctorDoc.availability?.availableSlots && doctorDoc.availability.availableSlots.length > 0
+        ? doctorDoc.availability.availableSlots
+        : ["09:00 AM", "10:00 AM", "11:30 AM", "02:00 PM", "03:30 PM", "05:00 PM"];
+
+    const isSlotConfigured = configuredSlots.some(
+      (s: string) => s.trim().toLowerCase() === cleanTimeSlot.toLowerCase(),
+    );
+    if (!isSlotConfigured) {
+      return {
+        available: false,
+        message: `Selected slot "${cleanTimeSlot}" is not in the doctor's added time slots. The appointment time slot must be one of the doctor's added slots (${configuredSlots.join(", ")}).`,
+      };
     }
 
     const now = new Date();
@@ -382,15 +384,40 @@ export class AppointmentService {
 
     const proposedDateObj = new Date(newDate);
 
-    await this.appointmentRepo.updateRescheduleRequest(appointment._id, {
+    const actionHistoryItem = {
+      action: "reschedule_requested_by_doctor",
+      initiatedBy: doctorUserId,
+      initiatedByRole: "doctor",
+      approvalStatus: "pending_patient_approval",
+      timestamp: new Date(),
+      details: {
+        proposedDate: proposedDateObj,
+        proposedTimeSlot: cleanTimeSlot,
+        reason: reason?.trim() || "Doctor requested a schedule adjustment",
+      },
+    };
+
+    const rescheduleData = {
       status: "pending",
+      approvalStatus: "pending_patient_approval",
       proposedDate: proposedDateObj,
       proposedTimeSlot: cleanTimeSlot,
       reason: reason?.trim() || "Doctor requested a schedule adjustment",
       requestedBy: "doctor",
+      requestedByRole: "doctor",
+      requestedByUser: doctorUserId,
       requestedAt: new Date(),
       respondedAt: null,
-    });
+    };
+
+    await this.appointmentRepo.updateRescheduleRequest(appointment._id, rescheduleData);
+
+    if (this.appointmentRepo.findByIdAndUpdate) {
+      await this.appointmentRepo.findByIdAndUpdate(appointment._id, {
+        $push: { actionHistory: actionHistoryItem },
+      });
+    }
+
 
     const populated = await this.appointmentRepo.findById(appointment._id, true);
 
@@ -423,8 +450,8 @@ export class AppointmentService {
         await this.notificationRepo.create({
           recipient: patientUserId,
           type: "reschedule_request",
-          title: "Appointment Reschedule Requested",
-          message: `${doctorName} has requested to reschedule your appointment from ${originalDateStr} at ${appointment.timeSlot} to ${formattedProposedDate} at ${cleanTimeSlot}.${reason ? ` Reason: ${reason.trim()}` : ""}`,
+          title: "Appointment Reschedule Requested (Pending Your Approval)",
+          message: `Dr. ${doctorName} requested to reschedule your appointment from ${originalDateStr} at ${appointment.timeSlot} to ${formattedProposedDate} at ${cleanTimeSlot}.${reason ? ` Reason: ${reason.trim()}` : ""} Please log in to accept or decline.`,
           appointment: appointment._id,
         });
       }
@@ -485,6 +512,20 @@ export class AppointmentService {
       const previousDate = appointment.appointmentDate;
       const previousTimeSlot = appointment.timeSlot;
 
+      const actionHistoryItem = {
+        action: "reschedule_accepted_by_patient",
+        initiatedBy: patientUserId,
+        initiatedByRole: "patient",
+        approvalStatus: "approved",
+        timestamp: new Date(),
+        details: {
+          previousDate,
+          previousTimeSlot,
+          newDate: appointment.rescheduleRequest.proposedDate,
+          newTimeSlot: appointment.rescheduleRequest.proposedTimeSlot,
+        },
+      };
+
       await this.appointmentRepo.applyReschedule(
         appointment._id,
         appointment.rescheduleRequest.proposedDate,
@@ -492,8 +533,10 @@ export class AppointmentService {
         {
           ...appointment.rescheduleRequest,
           status: "accepted",
+          approvalStatus: "approved",
           respondedAt: new Date(),
         },
+        actionHistoryItem,
       );
 
       const populated = await this.appointmentRepo.findById(appointment._id, true);
@@ -528,11 +571,33 @@ export class AppointmentService {
         appointment: populated,
       };
     } else {
-      await this.appointmentRepo.updateRescheduleRequest(appointment._id, {
+      const actionHistoryItem = {
+        action: "reschedule_declined_by_patient",
+        initiatedBy: patientUserId,
+        initiatedByRole: "patient",
+        approvalStatus: "rejected",
+        timestamp: new Date(),
+        details: {
+          originalDate: appointment.appointmentDate,
+          originalTimeSlot: appointment.timeSlot,
+        },
+      };
+
+      const updatedReschedule = {
         ...appointment.rescheduleRequest,
         status: "declined",
+        approvalStatus: "rejected",
         respondedAt: new Date(),
-      });
+      };
+
+      await this.appointmentRepo.updateRescheduleRequest(appointment._id, updatedReschedule);
+
+      if (this.appointmentRepo.findByIdAndUpdate) {
+        await this.appointmentRepo.findByIdAndUpdate(appointment._id, {
+          $push: { actionHistory: actionHistoryItem },
+        });
+      }
+
 
       try {
         if (doctorDoc?.user) {
@@ -630,10 +695,23 @@ export class AppointmentService {
         }
       });
 
+      let doctorAddedSlots: string[] = [];
+      try {
+        const docRecord = await this.doctorRepo.findById(doctor, false);
+        if (docRecord?.availability?.availableSlots && docRecord.availability.availableSlots.length > 0) {
+          doctorAddedSlots = docRecord.availability.availableSlots;
+        } else {
+          doctorAddedSlots = ["09:00 AM", "10:00 AM", "11:30 AM", "02:00 PM", "03:30 PM", "05:00 PM"];
+        }
+      } catch {
+        doctorAddedSlots = ["09:00 AM", "10:00 AM", "11:30 AM", "02:00 PM", "03:30 PM", "05:00 PM"];
+      }
+
       return {
         doctor,
         date: dateOnly,
         bookedSlots: Array.from(bookedSet),
+        availableSlots: doctorAddedSlots,
       };
     }
 
@@ -731,22 +809,30 @@ export class AppointmentService {
   }
 
   async cancelAppointment(data: {
-    patientUserId: string;
+    patientUserId?: string;
     appointmentId: string;
     reason?: string;
+    cancelledByRole?: "patient" | "admin";
+    cancelledByUserId?: string;
   }) {
-    const { patientUserId, appointmentId, reason } = data;
+    const { patientUserId, appointmentId, reason, cancelledByRole = "patient", cancelledByUserId } = data;
 
-    const appointment = await this.appointmentRepo.findOne(
-      {
-        _id: appointmentId,
-        patient: patientUserId,
-      },
-      false,
-    );
+    const query: Record<string, unknown> = { _id: appointmentId };
+    if (cancelledByRole === "patient") {
+      if (!patientUserId) {
+        throw new BadRequestError("Patient user ID is required for patient cancellation.");
+      }
+      query.patient = patientUserId;
+    }
+
+    const appointment = await this.appointmentRepo.findOne(query, false);
 
     if (!appointment) {
-      throw new NotFoundError("Appointment not found for this patient");
+      throw new NotFoundError(
+        cancelledByRole === "patient"
+          ? "Appointment not found for this patient"
+          : "Appointment not found",
+      );
     }
 
     if (appointment.status === "completed") {
@@ -761,7 +847,29 @@ export class AppointmentService {
       return existingPopulated || appointment;
     }
 
-    await this.appointmentRepo.updateStatus(appointmentId, "cancelled");
+    const initiatorId = cancelledByUserId || patientUserId;
+    const actionHistoryItem = {
+      action: cancelledByRole === "admin" ? "cancelled_by_admin" : "cancelled_by_patient",
+      initiatedBy: initiatorId,
+      initiatedByRole: cancelledByRole,
+      approvalStatus: "not_required",
+      timestamp: new Date(),
+      details: { reason: reason?.trim() },
+    };
+
+    if (this.appointmentRepo.cancelWithAudit) {
+      await this.appointmentRepo.cancelWithAudit(appointmentId, {
+        cancelledBy: cancelledByRole,
+        cancelledByUser: initiatorId,
+        cancelledAt: new Date(),
+        cancellationReason: reason?.trim() || (cancelledByRole === "admin" ? "Administrative cancellation" : "Patient requested cancellation"),
+        actionHistoryItem,
+      });
+    } else {
+      await this.appointmentRepo.updateStatus(appointmentId, "cancelled");
+    }
+
+
     const populated = await this.appointmentRepo.findById(appointmentId, true);
 
     try {
@@ -770,16 +878,34 @@ export class AppointmentService {
           populated || appointment,
           previousStatus,
           reason,
-          "patient",
+          cancelledByRole,
         );
       } else {
+        const patientId = (appointment.patient as any)?._id || appointment.patient;
+        const apptDateStr = appointment.appointmentDate
+          ? new Date(appointment.appointmentDate).toLocaleDateString()
+          : "Scheduled date";
+
         await this.notificationRepo.create({
-          recipient: patientUserId,
+          recipient: patientId,
           type: "cancellation",
-          title: "Appointment Cancelled",
-          message: `Your appointment on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.timeSlot} was cancelled.${reason ? ` Reason: ${reason}` : ""}`,
+          title: cancelledByRole === "admin" ? "Appointment Cancelled by Administrator" : "Appointment Cancelled",
+          message: `Your appointment on ${apptDateStr} at ${appointment.timeSlot} was cancelled.${reason ? ` Reason: ${reason}` : ""}`,
           appointment: appointment._id,
         });
+
+        if (cancelledByRole === "admin") {
+          const doctorDoc = await this.doctorRepo.findById(appointment.doctor, true);
+          if (doctorDoc?.user) {
+            await this.notificationRepo.create({
+              recipient: (doctorDoc.user as any)._id || doctorDoc.user,
+              type: "cancellation",
+              title: "Appointment Cancelled by Administrator",
+              message: `An administrator has cancelled the appointment on ${apptDateStr} at ${appointment.timeSlot}.${reason ? ` Reason: ${reason}` : ""}`,
+              appointment: appointment._id,
+            });
+          }
+        }
       }
     } catch (notifErr) {
       console.warn("Failed to create cancellation notification:", notifErr);
@@ -787,4 +913,138 @@ export class AppointmentService {
 
     return populated;
   }
+
+  async adminRescheduleAppointment(data: {
+    adminUserId: string;
+    appointmentId: string;
+    newDate: string | Date;
+    newTimeSlot: string;
+    reason?: string;
+  }) {
+    const { adminUserId, appointmentId, newDate, newTimeSlot, reason } = data;
+
+    if (!newDate || !newTimeSlot) {
+      throw new BadRequestError("New date and time slot are required for rescheduling.");
+    }
+
+    const appointment = await this.appointmentRepo.findById(appointmentId, false);
+    if (!appointment) {
+      throw new NotFoundError("Appointment not found.");
+    }
+
+    if (appointment.status === "completed" || appointment.status === "cancelled") {
+      throw new BadRequestError(`Cannot reschedule an appointment that is already ${appointment.status}.`);
+    }
+
+    const cleanTimeSlot = newTimeSlot.trim();
+    const doctorId = (appointment.doctor as any)?._id || appointment.doctor;
+
+    const validation = await this.validateDoctorSlotAvailability({
+      doctorId,
+      date: newDate,
+      timeSlot: cleanTimeSlot,
+      excludeAppointmentId: appointment._id,
+    });
+
+    if (!validation.available) {
+      throw new BadRequestError(validation.message || "The requested slot is not available.");
+    }
+
+    const proposedDateObj = new Date(newDate);
+    const previousDate = appointment.appointmentDate;
+    const previousTimeSlot = appointment.timeSlot;
+
+    const rescheduleRequestData = {
+      status: "accepted",
+      approvalStatus: "not_required",
+      proposedDate: proposedDateObj,
+      proposedTimeSlot: cleanTimeSlot,
+      reason: reason?.trim() || "Administrator rescheduled this consultation",
+      requestedBy: "admin",
+      requestedByRole: "admin",
+      requestedByUser: adminUserId,
+      requestedAt: new Date(),
+      respondedAt: new Date(),
+    };
+
+    const actionHistoryItem = {
+      action: "rescheduled_by_admin",
+      initiatedBy: adminUserId,
+      initiatedByRole: "admin",
+      approvalStatus: "not_required",
+      timestamp: new Date(),
+      details: {
+        previousDate,
+        previousTimeSlot,
+        newDate: proposedDateObj,
+        newTimeSlot: cleanTimeSlot,
+        reason: reason?.trim(),
+      },
+    };
+
+    await this.appointmentRepo.adminReschedule(
+      appointment._id,
+      proposedDateObj,
+      cleanTimeSlot,
+      rescheduleRequestData,
+      actionHistoryItem,
+    );
+
+    const populated = await this.appointmentRepo.findById(appointment._id, true);
+
+    try {
+      if (this.notificationService) {
+        await this.notificationService.sendAppointmentRescheduleConfirmed(
+          populated || appointment,
+          previousDate,
+          previousTimeSlot,
+        );
+      } else {
+        const patientUserId = (appointment.patient as any)?._id || appointment.patient;
+        const formattedDate = proposedDateObj.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+
+        await this.notificationRepo.create({
+          recipient: patientUserId,
+          type: "rescheduled",
+          title: "Appointment Rescheduled by Administrator",
+          message: `An administrator has rescheduled your appointment to ${formattedDate} at ${cleanTimeSlot}.${reason ? ` Reason: ${reason.trim()}` : ""}`,
+          appointment: appointment._id,
+        });
+
+        const doctorDoc = await this.doctorRepo.findById(doctorId, true);
+        if (doctorDoc?.user) {
+          await this.notificationRepo.create({
+            recipient: (doctorDoc.user as any)._id || doctorDoc.user,
+            type: "rescheduled",
+            title: "Appointment Rescheduled by Administrator",
+            message: `An administrator has rescheduled an appointment to ${formattedDate} at ${cleanTimeSlot}.${reason ? ` Reason: ${reason.trim()}` : ""}`,
+            appointment: appointment._id,
+          });
+        }
+      }
+    } catch (nErr) {
+      console.warn("Failed to notify parties of admin reschedule:", nErr);
+    }
+
+    return populated;
+  }
+
+  async adminCancelAppointment(data: {
+    adminUserId: string;
+    appointmentId: string;
+    reason?: string;
+  }) {
+    return this.cancelAppointment({
+      appointmentId: data.appointmentId,
+      reason: data.reason,
+      cancelledByRole: "admin",
+      cancelledByUserId: data.adminUserId,
+    });
+  }
 }
+

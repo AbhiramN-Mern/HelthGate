@@ -17,6 +17,8 @@ import {
   verifyDoctor,
   getAdminDashboard,
   getAllAppointmentsForAdmin,
+  adminRescheduleAppointment,
+  adminCancelAppointment,
   getAllHospitalDoctorsForAdmin,
   approveDoctorHospitalRequest,
   rejectDoctorHospitalRequest,
@@ -30,6 +32,8 @@ const router = Router();
 
 router.get("/dashboard", protect, adminOnly, getAdminDashboard);
 router.get("/appointments", protect, adminOnly, getAllAppointmentsForAdmin);
+router.post("/appointments/:appointmentId/reschedule", protect, adminOnly, adminRescheduleAppointment);
+router.patch("/appointments/:appointmentId/cancel", protect, adminOnly, adminCancelAppointment);
 router.get("/users", protect, adminOnly, getAllUsers);
 router.get("/patients", protect, adminOnly, getAllPatients);
 router.get("/patients/:id", protect, adminOnly, getPatientById);

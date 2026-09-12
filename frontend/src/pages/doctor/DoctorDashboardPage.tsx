@@ -527,12 +527,13 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
       }
 
       setRescheduleSuccess(
-        'Reschedule request sent to patient. The current confirmed schedule remains active until the patient accepts the new time.',
+        'Reschedule request submitted: Pending Patient Approval. The current confirmed appointment remains unchanged until the patient approves.',
       )
       setTimeout(() => {
         setRescheduleModalAppt(null)
         setRescheduleSuccess(null)
-      }, 2200)
+      }, 2500)
+
     } catch (err) {
       setRescheduleError(err instanceof Error ? err.message : 'Failed to request reschedule')
     } finally {
@@ -1324,8 +1325,8 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
 
                     {appt.rescheduleRequest?.status === 'pending' && (
                       <div className="dd-reschedule-banner">
-                        <span className="dd-reschedule-tag">
-                          <ClockIcon size={12} /> Reschedule Pending Confirmation
+                        <span className="dd-reschedule-tag" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+                          <ClockIcon size={12} /> Pending Patient Approval
                         </span>
                         <span className="dd-reschedule-desc">
                           Proposed: {appt.rescheduleRequest.proposedDate ? new Date(appt.rescheduleRequest.proposedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''} at {appt.rescheduleRequest.proposedTimeSlot}
@@ -1454,8 +1455,8 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
 
                     {appt.rescheduleRequest?.status === 'pending' && (
                       <div className="dd-reschedule-banner">
-                        <span className="dd-reschedule-tag">
-                          <ClockIcon size={12} /> Reschedule Pending Confirmation
+                        <span className="dd-reschedule-tag" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+                          <ClockIcon size={12} /> Pending Patient Approval
                         </span>
                         <span className="dd-reschedule-desc">
                           Proposed: {appt.rescheduleRequest.proposedDate ? new Date(appt.rescheduleRequest.proposedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''} at {appt.rescheduleRequest.proposedTimeSlot}
@@ -2044,11 +2045,14 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               {viewingAppt.rescheduleRequest?.status === 'pending' && (
                 <div style={{ padding: '12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px' }}>
                   <div style={{ fontWeight: 800, color: '#92400e', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <AlertCircleIcon size={16} /> Reschedule Pending Patient Confirmation
+                    <AlertCircleIcon size={16} /> Pending Patient Approval
                   </div>
                   <div style={{ fontSize: '0.82rem', color: '#b45309', marginTop: '4px' }}>
                     Proposed: {viewingAppt.rescheduleRequest.proposedDate ? new Date(viewingAppt.rescheduleRequest.proposedDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : ''} at {viewingAppt.rescheduleRequest.proposedTimeSlot}
                     {viewingAppt.rescheduleRequest.reason && ` • "${viewingAppt.rescheduleRequest.reason}"`}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#78350f', marginTop: '4px', fontStyle: 'italic' }}>
+                    Awaiting patient confirmation. The original confirmed schedule remains active until accepted.
                   </div>
                 </div>
               )}
@@ -2246,16 +2250,18 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                   fontSize: '0.74rem',
                   color: '#0369a1',
                   background: '#e0f2fe',
-                  padding: '4px 8px',
+                  padding: '5px 10px',
                   borderRadius: '6px',
                   marginTop: '4px',
                   width: 'fit-content',
                   fontWeight: 600,
+                  lineHeight: 1.4,
                 }}
               >
-                ● Current appointment stays confirmed until patient accepts the new schedule
+                ● Every doctor-initiated reschedule requires patient approval. The request will show as "Pending Patient Approval" and the current schedule remains active until accepted.
               </div>
             </div>
+
 
             {/* Error or Success message */}
             {rescheduleError && (

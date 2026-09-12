@@ -24,6 +24,9 @@ import {
   getHospitalDoctorHistoryApi,
   getAdminDashboardApi,
   getAllAppointmentsForAdminApi,
+  adminRescheduleAppointmentApi,
+  adminCancelAppointmentApi,
+  getDoctorBookedSlotsApi,
   getSpecializations,
   getPaymentsApi,
   getFriendlyErrorMessage,
@@ -247,6 +250,23 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
   const [selectedDoctor, setSelectedDoctor] = useState<AdminDoctor | null>(null)
   const [patientForm, setPatientForm] = useState<PatientFormState>(defaultPatientForm())
   const [doctorForm, setDoctorForm] = useState<DoctorFormState>(defaultDoctorForm())
+
+  // Admin Appointment Actions (Reschedule & Cancel Override)
+  const [adminRescheduleAppt, setAdminRescheduleAppt] = useState<AppointmentItem | null>(null)
+  const [adminRescheduleDate, setAdminRescheduleDate] = useState<string>('')
+  const [adminRescheduleTimeSlot, setAdminRescheduleTimeSlot] = useState<string>('')
+  const [adminRescheduleReason, setAdminRescheduleReason] = useState<string>('')
+  const [adminRescheduleBookedSlots, setAdminRescheduleBookedSlots] = useState<string[]>([])
+  const [adminRescheduleDoctorSlots, setAdminRescheduleDoctorSlots] = useState<string[]>([])
+  const [adminRescheduleLoadingSlots, setAdminRescheduleLoadingSlots] = useState<boolean>(false)
+  const [adminRescheduleSubmitting, setAdminRescheduleSubmitting] = useState<boolean>(false)
+  const [adminRescheduleError, setAdminRescheduleError] = useState<string | null>(null)
+
+  const [adminCancelAppt, setAdminCancelAppt] = useState<AppointmentItem | null>(null)
+  const [adminCancelReason, setAdminCancelReason] = useState<string>('')
+  const [adminCancelSubmitting, setAdminCancelSubmitting] = useState<boolean>(false)
+  const [adminCancelError, setAdminCancelError] = useState<string | null>(null)
+
 
   // Hospital & Doctor-Hospital Affiliations State
   const [hospitalTab, setHospitalTab] = useState<'directory' | 'requests' | 'associations' | 'history'>('directory')
@@ -496,6 +516,184 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
       console.warn('Failed to load paginated appointments:', err)
     } finally {
       setApptLoading(false)
+    }
+  }
+
+  // Fetch booked slots and doctor's added slots for admin reschedule modal
+  const fetchDoctorSlotsForAdminReschedule = async (
+    doctorId: string,
+    dateStr: string,
+    initialDoctorSlots?: string[],
+  ) => {
+    if (!doctorId || !dateStr) return
+    setAdminRescheduleLoadingSlots(true)
+    setAdminRescheduleError(null)
+    try {
+      const res = await getDoctorBookedSlotsApi(doctorId, { date: dateStr }, token)
+      setAdminRescheduleBookedSlots(res.bookedSlots || [])
+      if (res.availableSlots && res.availableSlots.length > 0) {
+        setAdminRescheduleDoctorSlots(res.availableSlots)
+      } else if (initialDoctorSlots && initialDoctorSlots.length > 0) {
+        setAdminRescheduleDoctorSlots(initialDoctorSlots)
+      } else {
+        try {
+          const docData = await getDoctorByIdForAdmin(doctorId, token)
+          const doc = (docData as any).doctor || docData
+          if (doc?.availability?.availableSlots?.length) {
+            setAdminRescheduleDoctorSlots(doc.availability.availableSlots)
+          } else {
+            setAdminRescheduleDoctorSlots(['09:00 AM', '10:00 AM', '11:30 AM', '02:00 PM', '03:30 PM', '05:00 PM'])
+          }
+        } catch {
+          setAdminRescheduleDoctorSlots(['09:00 AM', '10:00 AM', '11:30 AM', '02:00 PM', '03:30 PM', '05:00 PM'])
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load doctor booked slots:', err)
+      if (initialDoctorSlots && initialDoctorSlots.length > 0) {
+        setAdminRescheduleDoctorSlots(initialDoctorSlots)
+      }
+    } finally {
+      setAdminRescheduleLoadingSlots(false)
+    }
+  }
+
+  // Open Admin Reschedule Modal
+  const handleOpenAdminReschedule = (appt: AppointmentItem) => {
+    setAdminRescheduleAppt(appt)
+    setAdminRescheduleError(null)
+    setAdminRescheduleReason('')
+    setAdminRescheduleTimeSlot(appt.timeSlot || '')
+
+    const docObj = appt.doctor as any
+    const docSlots = docObj?.availability?.availableSlots || []
+    setAdminRescheduleDoctorSlots(docSlots)
+
+    const targetDate = appt.appointmentDate
+      ? new Date(appt.appointmentDate).toISOString().split('T')[0]
+      : (() => {
+          const d = new Date()
+          d.setDate(d.getDate() + 1)
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        })()
+
+    setAdminRescheduleDate(targetDate)
+    const docId = (appt.doctor as any)?._id || (typeof appt.doctor === 'string' ? appt.doctor : '')
+    if (docId) {
+      fetchDoctorSlotsForAdminReschedule(docId, targetDate, docSlots)
+    }
+  }
+
+  // Submit Admin Reschedule (Immediate)
+  const handleSubmitAdminReschedule = async () => {
+    if (!adminRescheduleAppt?._id || !token) return
+    if (!adminRescheduleDate) {
+      setAdminRescheduleError('Please select a valid reschedule date.')
+      return
+    }
+    if (!adminRescheduleTimeSlot) {
+      setAdminRescheduleError('Please select a valid time slot.')
+      return
+    }
+
+    // Check that selected slot is in doctor's added time slots
+    if (
+      adminRescheduleDoctorSlots.length > 0 &&
+      !adminRescheduleDoctorSlots.some(
+        (s) => s.trim().toLowerCase() === adminRescheduleTimeSlot.trim().toLowerCase(),
+      )
+    ) {
+      setAdminRescheduleError(
+        `Selected slot "${adminRescheduleTimeSlot}" is not in the doctor's added time slots. Please select from: ${adminRescheduleDoctorSlots.join(', ')}.`,
+      )
+      return
+    }
+
+    setAdminRescheduleSubmitting(true)
+    setAdminRescheduleError(null)
+
+    try {
+      const res = await adminRescheduleAppointmentApi(
+        adminRescheduleAppt._id,
+        {
+          newDate: adminRescheduleDate,
+          newTimeSlot: adminRescheduleTimeSlot,
+          reason: adminRescheduleReason.trim() || 'Administrative reschedule',
+        },
+        token,
+      )
+
+      if (res.appointment) {
+        const updated = res.appointment
+        setAllAppointments((prev) => prev.map((a) => (a._id === updated._id ? updated : a)))
+        setRecentAppointments((prev) => prev.map((a) => (a._id === updated._id ? updated : a)))
+      } else {
+        setAllAppointments((prev) =>
+          prev.map((a) =>
+            a._id === adminRescheduleAppt._id
+              ? {
+                  ...a,
+                  appointmentDate: adminRescheduleDate,
+                  timeSlot: adminRescheduleTimeSlot,
+                  rescheduleRequest: { status: 'none', approvalStatus: 'not_required' },
+                }
+              : a,
+          ),
+        )
+      }
+
+      setSuccessMsg('Appointment rescheduled successfully. The new date and time took effect immediately and parties were notified.')
+      setAdminRescheduleAppt(null)
+      setTimeout(() => setSuccessMsg(''), 4000)
+    } catch (err) {
+      setAdminRescheduleError(err instanceof Error ? err.message : 'Failed to reschedule appointment')
+    } finally {
+      setAdminRescheduleSubmitting(false)
+    }
+  }
+
+  // Open Admin Cancel Modal
+  const handleOpenAdminCancel = (appt: AppointmentItem) => {
+    setAdminCancelAppt(appt)
+    setAdminCancelError(null)
+    setAdminCancelReason('')
+  }
+
+  // Submit Admin Cancel (Immediate)
+  const handleSubmitAdminCancel = async () => {
+    if (!adminCancelAppt?._id || !token) return
+    setAdminCancelSubmitting(true)
+    setAdminCancelError(null)
+
+    try {
+      const res = await adminCancelAppointmentApi(
+        adminCancelAppt._id,
+        {
+          reason: adminCancelReason.trim() || 'Administrative cancellation',
+        },
+        token,
+      )
+
+      const updated = res.appointment
+      if (updated) {
+        setAllAppointments((prev) => prev.map((a) => (a._id === updated._id ? updated : a)))
+        setRecentAppointments((prev) => prev.map((a) => (a._id === updated._id ? updated : a)))
+      } else {
+        setAllAppointments((prev) =>
+          prev.map((a) => (a._id === adminCancelAppt._id ? { ...a, status: 'cancelled' } : a)),
+        )
+        setRecentAppointments((prev) =>
+          prev.map((a) => (a._id === adminCancelAppt._id ? { ...a, status: 'cancelled' } : a)),
+        )
+      }
+
+      setSuccessMsg('Appointment cancelled successfully by Administrator. The patient and doctor were notified.')
+      setAdminCancelAppt(null)
+      setTimeout(() => setSuccessMsg(''), 4000)
+    } catch (err) {
+      setAdminCancelError(err instanceof Error ? err.message : 'Failed to cancel appointment')
+    } finally {
+      setAdminCancelSubmitting(false)
     }
   }
 
@@ -3468,6 +3666,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                       <th>Format</th>
                       <th>Reason</th>
                       <th>Status</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -3479,7 +3678,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                       if (filteredAppointments.length === 0) {
                         return (
                           <tr>
-                            <td colSpan={6} style={{ textAlign: 'center', padding: '36px 16px', color: '#64748b' }}>
+                            <td colSpan={7} style={{ textAlign: 'center', padding: '36px 16px', color: '#64748b' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                                 <CalendarIcon size={32} style={{ color: '#94a3b8' }} />
                                 <strong style={{ fontSize: '0.95rem', color: '#1e293b' }}>No appointments found</strong>
@@ -3523,9 +3722,55 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                             {a.reason || 'General Consultation'}
                           </td>
                           <td>
-                            <span className={`admin-status-pill ${a.status || 'scheduled'}`}>
-                              {a.status || 'Scheduled'}
-                            </span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                              <span className={`admin-status-pill ${a.status || 'scheduled'}`}>
+                                {a.status || 'Scheduled'}
+                              </span>
+                              {a.rescheduleRequest?.status === 'pending' && (
+                                <span
+                                  style={{
+                                    fontSize: '0.68rem',
+                                    fontWeight: 700,
+                                    background: '#fef3c7',
+                                    color: '#92400e',
+                                    border: '1px solid #fde68a',
+                                    padding: '2px 6px',
+                                    borderRadius: '6px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  <ClockIcon size={10} />
+                                  Pending Patient Approval
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            {a.status !== 'completed' && a.status !== 'cancelled' ? (
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <button
+                                  type="button"
+                                  className="admin-btn-action-reschedule"
+                                  onClick={() => handleOpenAdminReschedule(a)}
+                                  title="Admin Reschedule (Takes effect immediately)"
+                                >
+                                  Reschedule
+                                </button>
+                                <button
+                                  type="button"
+                                  className="admin-btn-action-cancel"
+                                  onClick={() => handleOpenAdminCancel(a)}
+                                  title="Admin Cancel (Immediate cancellation)"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>None</span>
+                            )}
                           </td>
                         </tr>
                       ))
@@ -3547,6 +3792,388 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                     }}
                     loading={apptLoading}
                   />
+                </div>
+              )}
+
+              {/* Admin Reschedule Modal */}
+              {adminRescheduleAppt && (
+                <div
+                  className="admin-modal-overlay"
+                  onClick={() => !adminRescheduleSubmitting && setAdminRescheduleAppt(null)}
+                >
+                  <div className="admin-modal-card" onClick={(e) => e.stopPropagation()}>
+                    <div className="admin-modal-header">
+                      <div>
+                        <h3>Admin Reschedule Appointment</h3>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                          Override schedule for <strong>{adminRescheduleAppt.patient?.name || 'Patient'}</strong> with{' '}
+                          <strong>Dr. {adminRescheduleAppt.doctor?.user?.name || 'Doctor'}</strong>
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAdminRescheduleAppt(null)}
+                        disabled={adminRescheduleSubmitting}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                      >
+                        <CloseIcon size={20} />
+                      </button>
+                    </div>
+
+                    <div
+                      style={{
+                        background: '#eff6ff',
+                        border: '1px solid #bfdbfe',
+                        borderRadius: '8px',
+                        padding: '10px 14px',
+                        margin: '16px 0',
+                        fontSize: '0.82rem',
+                        color: '#1e40af',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <ShieldCheckIcon size={18} />
+                      <div>
+                        <strong>Administrative Authority:</strong> This reschedule takes effect <strong>immediately</strong> without requiring patient approval. Both parties will be notified automatically.
+                      </div>
+                    </div>
+
+                    {adminRescheduleError && (
+                      <div
+                        style={{
+                          background: '#fef2f2',
+                          border: '1px solid #fecaca',
+                          color: '#991b1b',
+                          borderRadius: '8px',
+                          padding: '10px 14px',
+                          marginBottom: '16px',
+                          fontSize: '0.82rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                        }}
+                      >
+                        <AlertCircleIcon size={16} />
+                        <span>{adminRescheduleError}</span>
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                          Current Appointment
+                        </label>
+                        <div style={{ fontSize: '0.85rem', color: '#475569', background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          {adminRescheduleAppt.appointmentDate
+                            ? new Date(adminRescheduleAppt.appointmentDate).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })
+                            : 'N/A'}{' '}
+                          at {adminRescheduleAppt.timeSlot}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                          Select New Date
+                        </label>
+                        <input
+                          type="date"
+                          min={new Date().toISOString().split('T')[0]}
+                          value={adminRescheduleDate}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setAdminRescheduleDate(val)
+                            const docId = (adminRescheduleAppt.doctor as any)?._id || (typeof adminRescheduleAppt.doctor === 'string' ? adminRescheduleAppt.doctor : '')
+                            if (docId && val) {
+                              fetchDoctorSlotsForAdminReschedule(docId, val, adminRescheduleDoctorSlots)
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #cbd5e1',
+                            fontSize: '0.88rem',
+                            outline: 'none',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>
+                            Select New Time Slot <span style={{ color: '#0d5c63' }}>(Doctor Added Slots)</span>
+                          </label>
+                          {adminRescheduleDoctorSlots.length > 0 && (
+                            <span style={{ fontSize: '0.74rem', color: '#0d5c63', fontWeight: 600, background: '#e6f7f8', padding: '2px 8px', borderRadius: '6px' }}>
+                              {adminRescheduleDoctorSlots.length} doctor slots
+                            </span>
+                          )}
+                        </div>
+
+                        {adminRescheduleLoadingSlots ? (
+                          <div style={{ fontSize: '0.8rem', color: '#64748b', padding: '14px 0', textAlign: 'center' }}>
+                            Loading doctor's added slots...
+                          </div>
+                        ) : adminRescheduleDoctorSlots.length === 0 ? (
+                          <div style={{ fontSize: '0.82rem', color: '#b45309', background: '#fffbeb', padding: '12px', borderRadius: '8px', border: '1px solid #fde68a' }}>
+                            No added time slots configured for this doctor. Please ensure doctor has configured slots.
+                          </div>
+                        ) : (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', maxHeight: '180px', overflowY: 'auto', padding: '2px' }}>
+                            {adminRescheduleDoctorSlots.map((slot) => {
+                              const isBooked = adminRescheduleBookedSlots.includes(slot)
+                              const isSelected = adminRescheduleTimeSlot.trim().toLowerCase() === slot.trim().toLowerCase()
+                              return (
+                                <button
+                                  key={slot}
+                                  type="button"
+                                  disabled={isBooked}
+                                  onClick={() => setAdminRescheduleTimeSlot(slot)}
+                                  style={{
+                                    padding: '9px 8px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600,
+                                    borderRadius: '6px',
+                                    border: isSelected ? '2px solid #0d5c63' : '1.5px solid #cbd5e1',
+                                    background: isSelected ? '#0d5c63' : isBooked ? '#f1f5f9' : '#ffffff',
+                                    color: isSelected ? '#ffffff' : isBooked ? '#94a3b8' : '#1e293b',
+                                    cursor: isBooked ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '2px',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  title={isBooked ? 'Already booked by another patient' : `Doctor added slot: ${slot}`}
+                                >
+                                  <span>{slot}</span>
+                                  <span style={{ fontSize: '0.65rem', fontWeight: 500, color: isSelected ? '#e6f7f8' : isBooked ? '#94a3b8' : '#0d5c63' }}>
+                                    {isBooked ? 'Booked' : 'Doctor Slot'}
+                                  </span>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                          Reason for Administrative Reschedule (Optional)
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={adminRescheduleReason}
+                          onChange={(e) => setAdminRescheduleReason(e.target.value)}
+                          placeholder="e.g. Schedule adjustment per doctor's request or platform emergency"
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #cbd5e1',
+                            fontSize: '0.85rem',
+                            resize: 'vertical',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setAdminRescheduleAppt(null)}
+                        disabled={adminRescheduleSubmitting}
+                        style={{
+                          padding: '10px 18px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          background: '#ffffff',
+                          color: '#475569',
+                          fontWeight: 600,
+                          fontSize: '0.88rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSubmitAdminReschedule}
+                        disabled={adminRescheduleSubmitting || !adminRescheduleDate || !adminRescheduleTimeSlot}
+                        style={{
+                          padding: '10px 20px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: '#0d5c63',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: '0.88rem',
+                          cursor: adminRescheduleSubmitting || !adminRescheduleDate || !adminRescheduleTimeSlot ? 'not-allowed' : 'pointer',
+                          opacity: adminRescheduleSubmitting || !adminRescheduleDate || !adminRescheduleTimeSlot ? 0.7 : 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                        }}
+                      >
+                        {adminRescheduleSubmitting ? 'Rescheduling...' : 'Confirm Reschedule'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Admin Cancel Modal */}
+              {adminCancelAppt && (
+                <div
+                  className="admin-modal-overlay"
+                  onClick={() => !adminCancelSubmitting && setAdminCancelAppt(null)}
+                >
+                  <div className="admin-modal-card" onClick={(e) => e.stopPropagation()}>
+                    <div className="admin-modal-header">
+                      <div>
+                        <h3 style={{ color: '#991b1b' }}>Admin Cancel Appointment</h3>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                          Appointment for <strong>{adminCancelAppt.patient?.name || 'Patient'}</strong> with{' '}
+                          <strong>Dr. {adminCancelAppt.doctor?.user?.name || 'Doctor'}</strong>
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAdminCancelAppt(null)}
+                        disabled={adminCancelSubmitting}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                      >
+                        <CloseIcon size={20} />
+                      </button>
+                    </div>
+
+                    <div
+                      style={{
+                        background: '#fef2f2',
+                        border: '1px solid #fecaca',
+                        borderRadius: '8px',
+                        padding: '10px 14px',
+                        margin: '16px 0',
+                        fontSize: '0.82rem',
+                        color: '#991b1b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <AlertCircleIcon size={18} />
+                      <div>
+                        <strong>Warning:</strong> This action takes effect <strong>immediately</strong>. The appointment status will be changed to cancelled, and both the patient and doctor will be notified.
+                      </div>
+                    </div>
+
+                    {adminCancelError && (
+                      <div
+                        style={{
+                          background: '#fff1f2',
+                          border: '1px solid #fda4af',
+                          color: '#be123c',
+                          borderRadius: '8px',
+                          padding: '10px 14px',
+                          marginBottom: '16px',
+                          fontSize: '0.82rem',
+                        }}
+                      >
+                        {adminCancelError}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                          Appointment Schedule
+                        </label>
+                        <div style={{ fontSize: '0.85rem', color: '#475569', background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          {adminCancelAppt.appointmentDate
+                            ? new Date(adminCancelAppt.appointmentDate).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })
+                            : 'N/A'}{' '}
+                          at {adminCancelAppt.timeSlot}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                          Cancellation Reason <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={adminCancelReason}
+                          onChange={(e) => setAdminCancelReason(e.target.value)}
+                          placeholder="Please specify why this appointment is being cancelled (e.g. Doctor emergency leave, administrative closure)..."
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #cbd5e1',
+                            fontSize: '0.85rem',
+                            resize: 'vertical',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setAdminCancelAppt(null)}
+                        disabled={adminCancelSubmitting}
+                        style={{
+                          padding: '10px 18px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          background: '#ffffff',
+                          color: '#475569',
+                          fontWeight: 600,
+                          fontSize: '0.88rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Keep Appointment
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSubmitAdminCancel}
+                        disabled={adminCancelSubmitting || !adminCancelReason.trim()}
+                        style={{
+                          padding: '10px 20px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: '#dc2626',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: '0.88rem',
+                          cursor: adminCancelSubmitting || !adminCancelReason.trim() ? 'not-allowed' : 'pointer',
+                          opacity: adminCancelSubmitting || !adminCancelReason.trim() ? 0.7 : 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                        }}
+                      >
+                        {adminCancelSubmitting ? 'Cancelling...' : 'Confirm Cancellation'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

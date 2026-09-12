@@ -399,17 +399,17 @@ describe("Appointment Notification & Nodemailer Email Service Tests", () => {
       status: "scheduled",
     });
 
-    // Doctor marks appointment as cancelled
-    const result = await doctorService.updateAppointmentStatusForDoctor(
-      doctorUserId,
-      appt._id,
-      "cancelled",
-      "Doctor sick leave",
-    );
+    // Patient cancels appointment during SMTP outage
+    const result = await appointmentService.cancelAppointment({
+      patientUserId,
+      appointmentId: appt._id,
+      reason: "Patient emergency",
+    });
 
     // Appointment status must STILL be updated to cancelled
     assert.equal(result.status, "cancelled");
     assert.equal(mockEmailService.sentEmails.length, 0);
+
   });
 
   it("7. Patient cancels appointment → cancellation email sent and status updated to cancelled", async () => {

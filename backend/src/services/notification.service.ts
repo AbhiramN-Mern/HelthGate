@@ -255,17 +255,32 @@ export class NotificationService {
       // In-App Notification to Patient
       try {
         if (details.patientId) {
+          const patientTitle = cancelledBy === "admin"
+            ? "Appointment Cancelled by Administrator"
+            : "Appointment Cancelled";
+          const patientMsg = cancelledBy === "admin"
+            ? `Your appointment with Dr. ${details.doctorName} on ${details.appointmentDateStr} at ${details.appointmentTimeStr} was cancelled by an administrator.${reason ? ` Reason: ${reason}` : ""}`
+            : `Your appointment with Dr. ${details.doctorName} on ${details.appointmentDateStr} at ${details.appointmentTimeStr} was cancelled.${reason ? ` Reason: ${reason}` : ""}`;
+
           await this.notificationRepo.create({
             recipient: details.patientId,
             type: "cancellation",
-            title: "Appointment Cancelled",
-            message: `Your appointment with Dr. ${details.doctorName} on ${details.appointmentDateStr} at ${details.appointmentTimeStr} was cancelled.${reason ? ` Reason: ${reason}` : ""}`,
+            title: patientTitle,
+            message: patientMsg,
             appointment: details.appointmentIdStr,
           });
         }
 
-        // In-App Notification to Doctor (if doctor user available and patient cancelled)
-        if (details.doctorUserId && cancelledBy !== "doctor") {
+        // In-App Notification to Doctor
+        if (details.doctorUserId && cancelledBy === "admin") {
+          await this.notificationRepo.create({
+            recipient: details.doctorUserId,
+            type: "cancellation",
+            title: "Appointment Cancelled by Administrator",
+            message: `Patient ${details.patientName}'s appointment on ${details.appointmentDateStr} at ${details.appointmentTimeStr} was cancelled by an administrator.${reason ? ` Reason: ${reason}` : ""}`,
+            appointment: details.appointmentIdStr,
+          });
+        } else if (details.doctorUserId && cancelledBy !== "doctor") {
           await this.notificationRepo.create({
             recipient: details.doctorUserId,
             type: "cancellation",
@@ -278,6 +293,7 @@ export class NotificationService {
       } catch (inAppErr) {
         console.warn("[NotificationService] Failed to create cancellation in-app notification:", inAppErr);
       }
+
 
       // Email Notification to Patient
       if (details.patientEmail) {
@@ -454,8 +470,8 @@ export class NotificationService {
           await this.notificationRepo.create({
             recipient: details.patientId,
             type: "reschedule_request",
-            title: "Appointment Reschedule Requested",
-            message: `Dr. ${details.doctorName} requested to reschedule your appointment to ${proposedDateStr} at ${proposedTimeSlot}.${reason ? ` Reason: ${reason}` : ""}`,
+            title: "Appointment Reschedule Requested (Pending Your Approval)",
+            message: `Dr. ${details.doctorName} requested to reschedule your appointment to ${proposedDateStr} at ${proposedTimeSlot} (Pending Your Approval).${reason ? ` Reason: ${reason}` : ""}`,
             appointment: details.appointmentIdStr,
           });
         }
@@ -541,12 +557,15 @@ export class NotificationService {
 
       // In-App Notification to Patient
       try {
+        const isAdminAction = appointment.rescheduleRequest?.requestedBy === "admin" || appointment.rescheduleRequest?.requestedByRole === "admin";
         if (details.patientId) {
           await this.notificationRepo.create({
             recipient: details.patientId,
             type: "reschedule_response",
-            title: "Rescheduled Appointment Confirmed",
-            message: `Your appointment with Dr. ${details.doctorName} is confirmed for ${details.appointmentDateStr} at ${details.appointmentTimeStr}.`,
+            title: isAdminAction ? "Appointment Rescheduled by Administrator" : "Rescheduled Appointment Confirmed",
+            message: isAdminAction
+              ? `Your appointment with Dr. ${details.doctorName} was rescheduled by an administrator to ${details.appointmentDateStr} at ${details.appointmentTimeStr}.`
+              : `Your appointment with Dr. ${details.doctorName} is confirmed for ${details.appointmentDateStr} at ${details.appointmentTimeStr}.`,
             appointment: details.appointmentIdStr,
           });
         }
@@ -556,8 +575,10 @@ export class NotificationService {
           await this.notificationRepo.create({
             recipient: details.doctorUserId,
             type: "reschedule_response",
-            title: "Reschedule Request Accepted",
-            message: `Patient ${details.patientName} accepted the reschedule for ${details.appointmentDateStr} at ${details.appointmentTimeStr}.`,
+            title: isAdminAction ? "Appointment Rescheduled by Administrator" : "Reschedule Request Accepted",
+            message: isAdminAction
+              ? `An administrator rescheduled the appointment with ${details.patientName} to ${details.appointmentDateStr} at ${details.appointmentTimeStr}.`
+              : `Patient ${details.patientName} accepted the reschedule for ${details.appointmentDateStr} at ${details.appointmentTimeStr}.`,
             appointment: details.appointmentIdStr,
           });
         }
@@ -565,6 +586,7 @@ export class NotificationService {
       } catch (inAppErr) {
         console.warn("[NotificationService] Failed to create reschedule confirmation in-app notification:", inAppErr);
       }
+
 
       // Email Notification to Patient
       if (details.patientEmail) {

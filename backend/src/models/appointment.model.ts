@@ -91,6 +91,11 @@ const appointmentSchema = new Schema(
         enum: ["pending", "accepted", "declined", "none"],
         default: "none",
       },
+      approvalStatus: {
+        type: String,
+        enum: ["pending_patient_approval", "approved", "rejected", "not_required", "none"],
+        default: "none",
+      },
       proposedDate: {
         type: Date,
         default: null,
@@ -107,8 +112,18 @@ const appointmentSchema = new Schema(
       },
       requestedBy: {
         type: String,
-        enum: ["doctor", "patient"],
+        enum: ["doctor", "patient", "admin"],
         default: "doctor",
+      },
+      requestedByRole: {
+        type: String,
+        enum: ["doctor", "patient", "admin"],
+        default: "doctor",
+      },
+      requestedByUser: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
       },
       requestedAt: {
         type: Date,
@@ -119,6 +134,56 @@ const appointmentSchema = new Schema(
         default: null,
       },
     },
+    cancellationReason: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    cancelledBy: {
+      type: String,
+      enum: ["doctor", "patient", "admin", "system"],
+      default: null,
+    },
+    cancelledByUser: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
+    actionHistory: [
+      {
+        action: {
+          type: String,
+          required: true,
+        },
+        initiatedBy: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          default: null,
+        },
+        initiatedByRole: {
+          type: String,
+          enum: ["doctor", "admin", "patient", "system"],
+          required: true,
+        },
+        approvalStatus: {
+          type: String,
+          enum: ["pending_patient_approval", "approved", "rejected", "not_required", "none"],
+          default: "none",
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+        details: {
+          type: Schema.Types.Mixed,
+          default: {},
+        },
+      },
+    ],
   },
   {
     timestamps: true,
@@ -137,3 +202,4 @@ export type Appointment = InferSchemaType<typeof appointmentSchema> & {
 const AppointmentModel = model<Appointment>("Appointment", appointmentSchema);
 
 export default AppointmentModel;
+

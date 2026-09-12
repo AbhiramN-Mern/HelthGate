@@ -656,10 +656,13 @@ export const getHospitalDoctorHistoryApi = async (
 
 export type RescheduleRequest = {
   status: 'pending' | 'accepted' | 'declined' | 'none'
+  approvalStatus?: 'pending_patient_approval' | 'approved' | 'rejected' | 'not_required' | 'none'
   proposedDate?: string
   proposedTimeSlot?: string
   reason?: string
-  requestedBy?: 'doctor' | 'patient'
+  requestedBy?: 'doctor' | 'patient' | 'admin'
+  requestedByRole?: 'doctor' | 'patient' | 'admin'
+  requestedByUser?: string
   requestedAt?: string
   respondedAt?: string
 }
@@ -679,7 +682,11 @@ export type AppointmentItem = {
   type?: string
   createdAt?: string
   rescheduleRequest?: RescheduleRequest
+  cancellationReason?: string
+  cancelledBy?: 'doctor' | 'patient' | 'admin' | 'system'
+  cancelledAt?: string
 }
+
 
 export const getSpecializations = async (): Promise<{ success: boolean; specializations?: string[] }> => {
   return request<{ success: boolean; specializations?: string[] }>('/api/specializations', { method: 'GET' })
@@ -844,6 +851,7 @@ export const getDoctorBookedSlotsApi = async (
   month?: string
   bookedSlots?: string[]
   bookedSlotsByDate?: Record<string, string[]>
+  availableSlots?: string[]
 }> => {
   const query = new URLSearchParams({ doctor: doctorId })
   if (params?.date) query.set('date', params.date)
@@ -856,6 +864,7 @@ export const getDoctorBookedSlotsApi = async (
     month?: string
     bookedSlots?: string[]
     bookedSlotsByDate?: Record<string, string[]>
+    availableSlots?: string[]
   }>(`/api/appointments/booked-slots?${query.toString()}`, { method: 'GET' }, token || undefined)
 }
 
@@ -888,6 +897,52 @@ export const respondAppointmentRescheduleApi = async (
     token,
   )
 }
+
+export const adminRescheduleAppointmentApi = async (
+  appointmentId: string,
+  payload: { newDate: string; newTimeSlot: string; reason?: string },
+  token: string,
+): Promise<{ success: boolean; message?: string; appointment?: AppointmentItem }> => {
+  return request<{ success: boolean; message?: string; appointment?: AppointmentItem }>(
+    `/api/admin/appointments/${appointmentId}/reschedule`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+    token,
+  )
+}
+
+export const adminCancelAppointmentApi = async (
+  appointmentId: string,
+  payload: { reason?: string },
+  token: string,
+): Promise<{ success: boolean; message?: string; appointment?: AppointmentItem }> => {
+  return request<{ success: boolean; message?: string; appointment?: AppointmentItem }>(
+    `/api/admin/appointments/${appointmentId}/cancel`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    },
+    token,
+  )
+}
+
+export const cancelAppointmentApi = async (
+  appointmentId: string,
+  reason: string | undefined,
+  token: string,
+): Promise<{ success: boolean; message?: string; appointment?: AppointmentItem }> => {
+  return request<{ success: boolean; message?: string; appointment?: AppointmentItem }>(
+    `/api/appointments/${appointmentId}/cancel`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
+    },
+    token,
+  )
+}
+
 
 export const getPatientNotificationsApi = async (
   token: string,

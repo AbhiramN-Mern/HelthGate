@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
-import { adminService } from "../container.js";
+import type { AuthenticatedRequest } from "../types/auth.js";
+import { adminService, appointmentService } from "../container.js";
 import { parsePagination } from "../utils/pagination.js";
 
 export const getAllUsers = async (req: Request, res: Response) => {
@@ -422,3 +423,74 @@ export const removeDoctorFromHospital = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const adminRescheduleAppointment = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const adminUserId = req.user?.id;
+    if (!adminUserId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const appointmentId = String(req.params.appointmentId || req.params.id);
+    const { newDate, newTimeSlot, reason } = req.body;
+
+    const appointment = await appointmentService.adminRescheduleAppointment({
+      adminUserId,
+      appointmentId,
+      newDate,
+      newTimeSlot,
+      reason,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Appointment rescheduled successfully by Administrator. New schedule took effect immediately.",
+      appointment,
+    });
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to reschedule appointment",
+      error: error.message || "Unknown error",
+    });
+  }
+};
+
+export const adminCancelAppointment = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const adminUserId = req.user?.id;
+    if (!adminUserId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const appointmentId = String(req.params.appointmentId || req.params.id);
+    const { reason } = req.body;
+
+    const appointment = await appointmentService.adminCancelAppointment({
+      adminUserId,
+      appointmentId,
+      reason,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Appointment cancelled successfully by Administrator.",
+      appointment,
+    });
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to cancel appointment",
+      error: error.message || "Unknown error",
+    });
+  }
+};
+

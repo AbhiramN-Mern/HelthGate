@@ -1416,8 +1416,8 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                     {appt.rescheduleRequest?.status === 'pending' && (
                       <div className="php-reschedule-action-box">
                         <div className="php-reschedule-header">
-                          <span className="php-reschedule-badge">
-                            <ClockIcon size={13} /> Doctor Requested Reschedule
+                          <span className="php-reschedule-badge" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+                            <ClockIcon size={13} /> Pending Patient Approval: Doctor Requested Reschedule
                           </span>
                         </div>
 

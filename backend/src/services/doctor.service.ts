@@ -4,9 +4,8 @@ import { INotificationRepository } from "../repositories/interfaces/INotificatio
 import { IHospitalRepository } from "../repositories/interfaces/IHospitalRepository.js";
 import { IHospitalDoctorRepository } from "../repositories/interfaces/IHospitalDoctorRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
-import { IPatientRepository } from "../repositories/interfaces/IPatientRepository.js";
 import { NotificationService } from "./notification.service.js";
-import { BadRequestError, NotFoundError } from "../core/errors/AppError.js";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../core/errors/AppError.js";
 import { createPaginatedResponse } from "../utils/pagination.js";
 
 const doctorUpdateFields = [
@@ -288,8 +287,14 @@ export class DoctorService {
     status: string,
     reason?: string,
   ) {
-    if (!["completed", "cancelled", "confirmed"].includes(status)) {
-      throw new BadRequestError("Invalid appointment status");
+    if (status === "cancelled") {
+      throw new ForbiddenError(
+        "Doctors are not permitted to cancel appointments. Only patients and administrators can cancel appointments.",
+      );
+    }
+
+    if (!["completed", "confirmed"].includes(status)) {
+      throw new BadRequestError("Invalid appointment status. Doctors can only mark appointments as completed or confirmed.");
     }
 
     const doctor = await this.doctorRepo.findByUserId(userId, false);
@@ -318,14 +323,7 @@ export class DoctorService {
 
     try {
       if (this.notificationService) {
-        if (status === "cancelled") {
-          await this.notificationService.sendAppointmentCancellation(
-            populated || appointment,
-            previousStatus,
-            reason,
-            "doctor",
-          );
-        } else if (status === "confirmed") {
+        if (status === "confirmed") {
           await this.notificationService.sendAppointmentConfirmation(
             populated || appointment,
           );
@@ -340,13 +338,14 @@ export class DoctorService {
       } else {
         await this.notificationRepo.create({
           recipient: appointment.patient,
-          type: status === "completed" ? "system" : "cancellation",
+          type: status === "completed" ? "system" : "status_update",
           title: `Appointment ${status.charAt(0).toUpperCase() + status.slice(1)}`,
           message: `Your appointment on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.timeSlot} was marked as ${status}.`,
           appointment: appointment._id,
         });
       }
     } catch (notifErr) {
+
       console.warn("Failed to create patient notification:", notifErr);
     }
 

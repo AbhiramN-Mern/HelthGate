@@ -22,6 +22,24 @@ export interface IAppointmentRepository {
     timeSlot: string,
     rescheduleRequest: Record<string, unknown>,
   ): Promise<any | null>;
+  cancelWithAudit(
+    id: string | Types.ObjectId,
+    data: {
+      cancelledBy: string;
+      cancelledByUser?: string | Types.ObjectId | null;
+      cancelledAt: Date;
+      cancellationReason?: string | null;
+      actionHistoryItem?: Record<string, unknown>;
+    },
+  ): Promise<any | null>;
+  adminReschedule(
+    id: string | Types.ObjectId,
+    appointmentDate: Date,
+    timeSlot: string,
+    rescheduleRequest: Record<string, unknown>,
+    actionHistoryItem?: Record<string, unknown>,
+  ): Promise<any | null>;
   count(filter?: Record<string, unknown>): Promise<number>;
   aggregate(pipeline: any[]): Promise<any[]>;
 }
+

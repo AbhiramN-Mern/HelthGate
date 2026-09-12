@@ -85,19 +85,66 @@ export class MongoAppointmentRepository implements IAppointmentRepository {
     appointmentDate: Date,
     timeSlot: string,
     rescheduleRequest: Record<string, unknown>,
+    actionHistoryItem?: Record<string, unknown>,
   ): Promise<any | null> {
-    return AppointmentModel.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          appointmentDate,
-          timeSlot,
-          status: "confirmed",
-          rescheduleRequest,
-        },
+    const updateObj: Record<string, unknown> = {
+      $set: {
+        appointmentDate,
+        timeSlot,
+        status: "confirmed",
+        rescheduleRequest,
       },
-      { new: true },
-    ).exec();
+    };
+    if (actionHistoryItem) {
+      updateObj.$push = { actionHistory: actionHistoryItem };
+    }
+    return AppointmentModel.findByIdAndUpdate(id, updateObj, { new: true }).exec();
+  }
+
+  async cancelWithAudit(
+    id: string | Types.ObjectId,
+    data: {
+      cancelledBy: string;
+      cancelledByUser?: string | Types.ObjectId | null;
+      cancelledAt: Date;
+      cancellationReason?: string | null;
+      actionHistoryItem?: Record<string, unknown>;
+    },
+  ): Promise<any | null> {
+    const updateObj: Record<string, unknown> = {
+      $set: {
+        status: "cancelled",
+        cancelledBy: data.cancelledBy,
+        cancelledByUser: data.cancelledByUser || null,
+        cancelledAt: data.cancelledAt,
+        cancellationReason: data.cancellationReason || null,
+      },
+    };
+    if (data.actionHistoryItem) {
+      updateObj.$push = { actionHistory: data.actionHistoryItem };
+    }
+    return AppointmentModel.findByIdAndUpdate(id, updateObj, { new: true }).exec();
+  }
+
+  async adminReschedule(
+    id: string | Types.ObjectId,
+    appointmentDate: Date,
+    timeSlot: string,
+    rescheduleRequest: Record<string, unknown>,
+    actionHistoryItem?: Record<string, unknown>,
+  ): Promise<any | null> {
+    const updateObj: Record<string, unknown> = {
+      $set: {
+        appointmentDate,
+        timeSlot,
+        status: "confirmed",
+        rescheduleRequest,
+      },
+    };
+    if (actionHistoryItem) {
+      updateObj.$push = { actionHistory: actionHistoryItem };
+    }
+    return AppointmentModel.findByIdAndUpdate(id, updateObj, { new: true }).exec();
   }
 
   async count(filter: Record<string, unknown> = {}): Promise<number> {
@@ -108,3 +155,4 @@ export class MongoAppointmentRepository implements IAppointmentRepository {
     return AppointmentModel.aggregate(pipeline).exec();
   }
 }
+
