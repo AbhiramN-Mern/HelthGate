@@ -21,6 +21,7 @@ export interface IAppointmentRepository {
     appointmentDate: Date,
     timeSlot: string,
     rescheduleRequest: Record<string, unknown>,
+    actionHistoryItem?: Record<string, unknown>,
   ): Promise<any | null>;
   cancelWithAudit(
     id: string | Types.ObjectId,

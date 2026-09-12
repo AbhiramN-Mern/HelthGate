@@ -4,6 +4,7 @@ import { INotificationRepository } from "../repositories/interfaces/INotificatio
 import { IHospitalRepository } from "../repositories/interfaces/IHospitalRepository.js";
 import { IHospitalDoctorRepository } from "../repositories/interfaces/IHospitalDoctorRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
+import { IPatientRepository } from "../repositories/interfaces/IPatientRepository.js";
 import { NotificationService } from "./notification.service.js";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../core/errors/AppError.js";
 import { createPaginatedResponse } from "../utils/pagination.js";
