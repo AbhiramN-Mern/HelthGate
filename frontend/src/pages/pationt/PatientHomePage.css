@@ -27,11 +27,11 @@
   max-width: 1240px;
   margin: 0 auto;
   padding: 0 24px;
-  height: 68px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
 }
 
 .php-brand {
@@ -41,6 +41,7 @@
   text-decoration: none;
   color: inherit;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .php-brand-logo {
@@ -63,7 +64,7 @@
 }
 
 .php-brand-name {
-  font-size: 1.15rem;
+  font-size: 1.12rem;
   font-weight: 700;
   color: var(--hg-primary);
   letter-spacing: -0.02em;
@@ -81,31 +82,37 @@
 .php-nav-links {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 18px;
   list-style: none;
   margin: 0;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .php-nav-link {
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 500;
   color: var(--hg-text-secondary);
-  transition: color 0.15s ease;
+  transition: color 0.15s ease, background-color 0.15s ease;
   position: relative;
-  padding: 6px 0;
+  padding: 6px 2px;
+  white-space: nowrap;
 }
 
-.php-nav-link:hover,
+.php-nav-link:hover {
+  color: var(--hg-primary);
+}
+
 .php-nav-link.active {
   color: var(--hg-primary);
+  font-weight: 600;
 }
 
 .php-nav-link.active::after {
   content: '';
   position: absolute;
-  bottom: 0;
+  bottom: -2px;
   left: 0;
   right: 0;
   height: 2px;
@@ -116,7 +123,8 @@
 .php-nav-user {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .php-user-badge-wrap {
@@ -173,14 +181,19 @@
 }
 
 .php-btn-profile {
-  padding: 7px 14px;
+  padding: 0 14px;
+  height: 36px;
   border-radius: var(--hg-radius-md);
   border: 1px solid var(--hg-border);
   background-color: #ffffff;
   color: var(--hg-text-main);
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -190,14 +203,19 @@
 }
 
 .php-btn-logout {
-  padding: 7px 14px;
+  padding: 0 14px;
+  height: 36px;
   border-radius: var(--hg-radius-md);
   border: 1px solid var(--hg-danger-border);
   background-color: var(--hg-danger-bg);
   color: var(--hg-danger);
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
@@ -213,7 +231,7 @@
   background-color: #ffffff;
   border-bottom: 1px solid var(--hg-border);
   color: var(--hg-text-main);
-  padding: 36px 24px 40px;
+  padding: 22px 24px 20px;
 }
 
 .php-hero-inner {
@@ -221,28 +239,29 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .php-hero-top {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 18px;
 }
 
 .php-hero-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: var(--hg-radius-sm);
   background-color: var(--hg-primary-subtle);
   border: 1px solid var(--hg-primary-border);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--hg-primary);
+  margin-bottom: 4px;
 }
 
 .php-hero-pill-dot {
@@ -253,18 +272,23 @@
 }
 
 .php-hero-greeting {
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 500;
   color: var(--hg-text-muted);
-  margin-top: 8px;
+  margin: 0 0 2px;
+}
+
+.php-hero-greeting strong {
+  color: var(--hg-text-main);
+  font-weight: 600;
 }
 
 .php-hero-title {
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
-  font-weight: 800;
+  font-size: clamp(1.6rem, 2.2vw, 2.15rem);
+  font-weight: 700;
   letter-spacing: -0.02em;
-  line-height: 1.2;
-  margin: 4px 0 8px;
+  line-height: 1.25;
+  margin: 2px 0 4px;
   color: var(--hg-text-main);
 }
 
@@ -273,34 +297,41 @@
 }
 
 .php-hero-sub {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--hg-text-secondary);
-  max-width: 600px;
-  line-height: 1.6;
+  max-width: 520px;
+  line-height: 1.5;
   margin: 0;
 }
 
 .php-hero-metrics {
   display: flex;
-  gap: 14px;
+  gap: 10px;
+  align-items: center;
   flex-wrap: wrap;
 }
 
 .php-metric-card {
   background-color: var(--hg-surface-subtle);
   border: 1px solid var(--hg-border);
-  border-radius: var(--hg-radius-lg);
-  padding: 14px 18px;
+  border-radius: var(--hg-radius-md);
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 150px;
+  min-width: 138px;
   box-shadow: var(--hg-shadow-xs);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.php-metric-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--hg-shadow-sm);
 }
 
 .php-metric-icon {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--hg-radius-md);
   background-color: var(--hg-primary-subtle);
   color: var(--hg-primary);
@@ -312,17 +343,18 @@
 .php-metric-info {
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
 .php-metric-value {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--hg-text-main);
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 .php-metric-label {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: var(--hg-text-muted);
   text-transform: uppercase;
@@ -335,10 +367,10 @@
 .php-search-box {
   background-color: #ffffff;
   border-radius: var(--hg-radius-lg);
-  padding: 14px;
+  padding: 8px 10px;
   box-shadow: var(--hg-shadow-sm);
   display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr auto auto;
+  grid-template-columns: 2fr 1.15fr 1.15fr auto auto;
   gap: 10px;
   align-items: center;
   border: 1px solid var(--hg-border);
@@ -351,13 +383,15 @@
   background-color: #ffffff;
   border: 1px solid var(--hg-border);
   border-radius: var(--hg-radius-md);
-  padding: 10px 14px;
+  padding: 0 14px;
+  height: 46px;
+  box-sizing: border-box;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .php-input-wrap:focus-within {
   border-color: var(--hg-primary);
-  box-shadow: 0 0 0 3px rgba(11, 90, 102, 0.15);
+  box-shadow: 0 0 0 3px rgba(11, 90, 102, 0.12);
 }
 
 .php-input-icon {
@@ -371,7 +405,8 @@
   border: none;
   background: transparent;
   width: 100%;
-  font-size: 0.9rem;
+  height: 100%;
+  font-size: 0.88rem;
   color: var(--hg-text-main);
   outline: none;
 }
@@ -384,37 +419,45 @@
   background-color: #ffffff;
   border: 1px solid var(--hg-border);
   border-radius: var(--hg-radius-md);
-  padding: 10px 12px;
+  padding: 0 12px;
+  height: 46px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .php-select-wrap:focus-within {
   border-color: var(--hg-primary);
-  box-shadow: 0 0 0 3px rgba(11, 90, 102, 0.15);
+  box-shadow: 0 0 0 3px rgba(11, 90, 102, 0.12);
 }
 
 .php-select-wrap select {
   border: none;
   background: transparent;
   width: 100%;
-  font-size: 0.88rem;
+  height: 100%;
+  font-size: 0.86rem;
   color: var(--hg-text-main);
   outline: none;
   cursor: pointer;
 }
 
 .php-btn-search {
-  padding: 11px 22px;
+  height: 46px;
+  box-sizing: border-box;
+  padding: 0 20px;
   border-radius: var(--hg-radius-md);
   border: none;
   background-color: var(--hg-primary);
   color: #ffffff;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   cursor: pointer;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: var(--hg-shadow-xs);
   transition: background-color 0.15s ease;
 }
@@ -424,15 +467,20 @@
 }
 
 .php-btn-reset {
-  padding: 11px 16px;
+  height: 46px;
+  box-sizing: border-box;
+  padding: 0 14px;
   border-radius: var(--hg-radius-md);
   border: 1px solid var(--hg-border);
   background-color: #ffffff;
   color: var(--hg-text-secondary);
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   cursor: pointer;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -556,20 +604,20 @@
 
 .php-appointments-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
   gap: 18px;
 }
 
 .php-appointment-card {
   background-color: #ffffff;
   border-radius: var(--hg-radius-lg);
-  padding: 20px;
+  padding: 20px 22px;
   box-shadow: var(--hg-shadow-xs);
   border: 1px solid var(--hg-border);
   border-left: 4px solid var(--hg-primary);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   position: relative;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -582,7 +630,7 @@
 .php-appt-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
 }
 
@@ -590,7 +638,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: var(--hg-radius-sm);
   font-size: 0.72rem;
   font-weight: 600;
@@ -619,8 +667,9 @@
   font-weight: 600;
   color: var(--hg-text-secondary);
   background-color: var(--hg-surface-muted);
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: var(--hg-radius-sm);
+  border: 1px solid var(--hg-border-subtle);
 }
 
 .php-appt-doctor {
@@ -630,13 +679,13 @@
 }
 
 .php-appt-avatar {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: var(--hg-radius-md);
   background-color: var(--hg-primary);
   color: #ffffff;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -648,10 +697,10 @@
 }
 
 .php-appt-doc-name {
-  font-size: 0.98rem;
+  font-size: 1.02rem;
   font-weight: 700;
   color: var(--hg-text-main);
-  margin: 0;
+  margin: 0 0 2px;
 }
 
 .php-appt-doc-spec {
@@ -662,12 +711,14 @@
 
 .php-appt-details {
   display: grid;
-  gap: 6px;
-  padding: 10px 12px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px 14px;
+  padding: 10px 14px;
   background-color: var(--hg-surface-muted);
   border-radius: var(--hg-radius-md);
   font-size: 0.82rem;
   color: var(--hg-text-secondary);
+  border: 1px solid var(--hg-border-subtle);
 }
 
 .php-appt-detail-row {
@@ -2500,16 +2551,17 @@
 
 @media (max-width: 1024px) {
   .php-navbar-inner {
-    padding: 0 18px;
-    gap: 14px;
+    padding: 0 16px;
+    gap: 12px;
   }
 
   .php-nav-links {
-    gap: 16px;
+    gap: 14px;
   }
 
   .php-search-box {
     grid-template-columns: 1.5fr 1fr 1fr auto auto;
+    gap: 8px;
   }
 }
 
@@ -2523,6 +2575,7 @@
     grid-column: span 1;
     text-align: center;
     justify-content: center;
+    width: 100%;
   }
 }
 
@@ -2565,26 +2618,39 @@
     display: block;
     position: fixed;
     inset: 0;
-    top: 68px;
+    top: 64px;
     background-color: rgba(15, 23, 42, 0.4);
     z-index: 90;
   }
 
+  .php-hero-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
   .php-hero-metrics {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
     width: 100%;
   }
 
   .php-metric-card {
     min-width: 0;
     width: 100%;
+    padding: 10px 12px;
+    gap: 8px;
   }
 
   .php-section-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+  }
+
+  .php-appointments-grid {
+    grid-template-columns: 1fr;
   }
 
   .php-appointments-section {
@@ -2595,7 +2661,7 @@
 @media (max-width: 640px) {
   .php-navbar-inner {
     padding: 0 12px;
-    height: 62px;
+    height: 60px;
     gap: 8px;
   }
 
@@ -2614,8 +2680,9 @@
 
   .php-btn-profile,
   .php-btn-logout {
-    padding: 6px 10px;
-    font-size: 0.8rem;
+    padding: 0 10px;
+    height: 32px;
+    font-size: 0.78rem;
   }
 
   .php-notif-dropdown {
@@ -2624,16 +2691,20 @@
   }
 
   .php-hero {
-    padding: 24px 16px 28px;
+    padding: 18px 14px 18px;
   }
 
   .php-hero-title {
-    font-size: 1.85rem;
+    font-size: 1.65rem;
+  }
+
+  .php-hero-metrics {
+    grid-template-columns: 1fr 1fr;
   }
 
   .php-search-box {
     grid-template-columns: 1fr;
-    padding: 12px;
+    padding: 10px;
     gap: 8px;
   }
 
@@ -2644,8 +2715,8 @@
   }
 
   .php-main {
-    padding: 24px 14px 48px;
-    gap: 32px;
+    padding: 20px 12px 40px;
+    gap: 28px;
   }
 
   .php-modal-card {

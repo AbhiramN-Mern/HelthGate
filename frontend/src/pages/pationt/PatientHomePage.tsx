@@ -831,7 +831,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   className={`php-nav-link ${showHistory ? 'active' : ''}`}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }}
                 >
-                  {showHistory ? 'Hide History' : `Appointment History (${pastAppointments.length})`}
+                  {showHistory ? 'Hide History' : `History (${pastAppointments.length})`}
                 </button>
               </li>
             )}
@@ -839,7 +839,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               <a href="#specializations" className="php-nav-link" onClick={() => setMobileNavOpen(false)}>Specializations</a>
             </li>
             <li>
-              <a href="#doctors" className="php-nav-link" onClick={() => setMobileNavOpen(false)}>Find Doctors</a>
+              <a href="#doctors" className="php-nav-link" onClick={() => setMobileNavOpen(false)}>Doctors</a>
             </li>
             <li>
               <a href="#hospitals" className="php-nav-link" onClick={() => setMobileNavOpen(false)}>Hospitals</a>
@@ -852,9 +852,9 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   navigate('/patient/payments')
                 }}
                 className="php-nav-link"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', color: '#0d9488', fontWeight: 700 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }}
               >
-                Payments & Billing
+                Billing
               </button>
             </li>
           </ul>
@@ -1016,13 +1016,11 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               </p>
 
               <h1 className="php-hero-title">
-                Your Health,<br />
-                <span>Our Gateway.</span>
+                Find the care you need.
               </h1>
 
               <p className="php-hero-sub">
-                Connect with verified medical specialists, explore accredited hospitals,
-                and manage your consultations through HealthGate's trusted gateway.
+                Find verified doctors, explore specialties, and manage your upcoming appointments.
               </p>
             </div>
 
