@@ -41,6 +41,7 @@ import {
 } from '../../components/common/Icons'
 import { MockPaymentModal } from '../../components/payment/MockPaymentModal'
 import { launchPaymentCheckout } from '../../utils/checkoutLauncher'
+import { Pagination } from '../../components/common/Pagination'
 import './PatientHomePage.css'
 
 type PatientHomePageProps = {
@@ -113,6 +114,12 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   const [searchInput, setSearchInput] = useState('')
   const [selectedSpec, setSelectedSpec] = useState('')
   const [selectedHospital, setSelectedHospital] = useState('')
+
+  // Doctor Server-Side Pagination States
+  const [doctorPage, setDoctorPage] = useState(1)
+  const [doctorTotalPages, setDoctorTotalPages] = useState(1)
+  const [doctorTotalItems, setDoctorTotalItems] = useState(0)
+  const doctorLimit = 8
 
   // Booking Modal State
   const [bookingDoctor, setBookingDoctor] = useState<DoctorProfile | null>(null)
@@ -259,7 +266,8 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   // 2. Fetch Doctors on filter changes
   useEffect(() => {
     if (token) {
-      fetchDoctors()
+      setDoctorPage(1)
+      fetchDoctors(undefined, 1)
     }
   }, [token, selectedSpec, selectedHospital])
 
@@ -454,7 +462,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
     }
   }
 
-  const fetchDoctors = async (overrideSearch?: string) => {
+  const fetchDoctors = async (overrideSearch?: string, targetPage = doctorPage) => {
     setLoadingDoctors(true)
     setDoctorsError(null)
     try {
@@ -464,13 +472,18 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
           search: searchVal.trim() || undefined,
           specialization: selectedSpec || undefined,
           hospital: selectedHospital || undefined,
+          page: targetPage,
+          limit: doctorLimit,
         },
         token,
       )
-      const verifiedOnly = (res.doctors || []).filter(
+      const verifiedOnly = (res.doctors || res.data || []).filter(
         (doc) => doc.verificationStatus === 'verified'
       )
       setDoctors(verifiedOnly)
+      setDoctorTotalPages(res.totalPages || 1)
+      setDoctorTotalItems(res.totalItems || verifiedOnly.length)
+      setDoctorPage(res.currentPage || targetPage)
     } catch (err) {
       setDoctorsError(getFriendlyErrorMessage(err, 'Unable to load doctors from server. Please try again.'))
     } finally {
@@ -480,14 +493,16 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    fetchDoctors(searchInput)
+    setDoctorPage(1)
+    fetchDoctors(searchInput, 1)
   }
 
   const handleResetFilters = () => {
     setSearchInput('')
     setSelectedSpec('')
     setSelectedHospital('')
-    fetchDoctors('')
+    setDoctorPage(1)
+    fetchDoctors('', 1)
   }
 
   // Calendar & Availability Helpers
@@ -1108,7 +1123,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               {searchInput.trim() && (
                 <span className="php-filter-pill">
                   "{searchInput}"
-                  <button type="button" onClick={() => { setSearchInput(''); fetchDoctors(''); }} aria-label="Clear search">
+                  <button type="button" onClick={() => { setSearchInput(''); setDoctorPage(1); fetchDoctors('', 1); }} aria-label="Clear search">
                     <CloseIcon size={12} />
                   </button>
                 </span>
@@ -1771,7 +1786,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               <button
                 type="button"
                 className="php-btn-retry"
-                onClick={() => fetchDoctors()}
+                onClick={() => fetchDoctors(undefined, doctorPage)}
               >
                 Retry
               </button>
@@ -1917,6 +1932,23 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   </div>
                 )
               })}
+            </div>
+          )}
+
+          {doctorTotalPages > 1 && !loadingDoctors && (
+            <div style={{ marginTop: '28px' }}>
+              <Pagination
+                currentPage={doctorPage}
+                totalPages={doctorTotalPages}
+                totalItems={doctorTotalItems}
+                itemsPerPage={doctorLimit}
+                onPageChange={(p) => {
+                  setDoctorPage(p)
+                  fetchDoctors(undefined, p)
+                  document.getElementById('doctors')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                loading={loadingDoctors}
+              />
             </div>
           )}
         </section>

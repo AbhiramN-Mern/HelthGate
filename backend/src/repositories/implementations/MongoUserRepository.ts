@@ -21,7 +21,27 @@ export class MongoUserRepository implements IUserRepository {
   }
 
   async findAll(): Promise<(User & { _id: Types.ObjectId; id: string })[]> {
-    return (await UserModel.find().select("-password").sort({ createdAt: -1 }).exec()) as (User & { _id: Types.ObjectId; id: string })[];
+    return this.find({});
+  }
+
+  async find(
+    filter: Record<string, unknown> = {},
+    sort: Record<string, 1 | -1> = { createdAt: -1 },
+    limit?: number,
+    skip?: number,
+  ): Promise<(User & { _id: Types.ObjectId; id: string })[]> {
+    let query = UserModel.find(filter).select("-password").sort(sort);
+    if (skip !== undefined && skip > 0) {
+      query = query.skip(skip);
+    }
+    if (limit !== undefined && limit > 0) {
+      query = query.limit(limit);
+    }
+    return (await query.exec()) as (User & { _id: Types.ObjectId; id: string })[];
+  }
+
+  async count(filter: Record<string, unknown> = {}): Promise<number> {
+    return UserModel.countDocuments(filter).exec();
   }
 
   async findByIdAndDelete(id: string | Types.ObjectId): Promise<any> {

@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import type { AuthenticatedRequest } from "../types/auth.js";
 import { patientService } from "../container.js";
+import { parsePagination } from "../utils/pagination.js";
 
 export const getMyPatientProfile = async (
   req: AuthenticatedRequest,
@@ -63,10 +64,19 @@ export const getPatientNotifications = async (
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const notifications = await patientService.getPatientNotifications(userId);
+    const { page, limit } = parsePagination(req.query, 10);
+    const result = await patientService.getPatientNotifications(userId, { page, limit });
+    if ("data" in result) {
+      return res.status(200).json({
+        success: true,
+        ...result,
+        notifications: result.data,
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      notifications,
+      notifications: result,
     });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;

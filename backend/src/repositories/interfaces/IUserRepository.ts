@@ -6,5 +6,12 @@ export interface IUserRepository {
   findById(id: string | Types.ObjectId): Promise<(User & { _id: Types.ObjectId; id: string }) | null>;
   create(userData: Partial<User>): Promise<User & { _id: Types.ObjectId; id: string }>;
   findAll(): Promise<(User & { _id: Types.ObjectId; id: string })[]>;
+  find(
+    filter?: Record<string, unknown>,
+    sort?: Record<string, 1 | -1>,
+    limit?: number,
+    skip?: number,
+  ): Promise<(User & { _id: Types.ObjectId; id: string })[]>;
+  count(filter?: Record<string, unknown>): Promise<number>;
   findByIdAndDelete(id: string | Types.ObjectId): Promise<any>;
 }

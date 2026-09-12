@@ -53,6 +53,7 @@ import {
   AlertCircleIcon,
   MenuIcon,
 } from '../../components/common/Icons'
+import { Pagination } from '../../components/common/Pagination'
 import './AdminDashboardPage.css'
 
 type AdminDashboardPageProps = {
@@ -214,6 +215,32 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
   const [apptStatusFilter, setApptStatusFilter] = useState<string>('all')
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all')
   const [paymentSearch, setPaymentSearch] = useState('')
+
+  // Server-Side Pagination States
+  const [patientPage, setPatientPage] = useState(1)
+  const [patientTotalPages, setPatientTotalPages] = useState(1)
+  const [patientTotalItems, setPatientTotalItems] = useState(0)
+  const [patientLoading, setPatientLoading] = useState(false)
+
+  const [doctorPage, setDoctorPage] = useState(1)
+  const [doctorTotalPages, setDoctorTotalPages] = useState(1)
+  const [doctorTotalItems, setDoctorTotalItems] = useState(0)
+  const [doctorLoading, setDoctorLoading] = useState(false)
+
+  const [apptPage, setApptPage] = useState(1)
+  const [apptTotalPages, setApptTotalPages] = useState(1)
+  const [apptTotalItems, setApptTotalItems] = useState(0)
+  const [apptLoading, setApptLoading] = useState(false)
+
+  const [hospitalPage, setHospitalPage] = useState(1)
+  const [hospitalTotalPages, setHospitalTotalPages] = useState(1)
+  const [hospitalTotalItems, setHospitalTotalItems] = useState(0)
+  const [hospitalLoading, setHospitalLoading] = useState(false)
+
+  const [adminPaymentPage, setAdminPaymentPage] = useState(1)
+  const [adminPaymentTotalPages, setAdminPaymentTotalPages] = useState(1)
+  const [adminPaymentTotalItems, setAdminPaymentTotalItems] = useState(0)
+  const [adminPaymentLoading, setAdminPaymentLoading] = useState(false)
 
   // Modals & Detail Forms
   const [selectedPatient, setSelectedPatient] = useState<AdminPatient | null>(null)
@@ -405,6 +432,160 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
 
     void loadAllAdminData()
   }, [navigate, token])
+
+  // Paginated Fetchers for Admin Modules
+  const fetchAdminPatients = async (targetPage = patientPage, targetSearch = patientSearch) => {
+    if (!token) return
+    setPatientLoading(true)
+    try {
+      const res = await getAllPatientsForAdmin(token, {
+        page: targetPage,
+        limit: 10,
+        search: targetSearch.trim() || undefined,
+      })
+      setPatients(res.patients || res.data || [])
+      setPatientTotalPages(res.totalPages || 1)
+      setPatientTotalItems(res.totalItems || (res.patients || []).length)
+      setPatientPage(res.currentPage || targetPage)
+    } catch (err) {
+      console.warn('Failed to load paginated patients:', err)
+    } finally {
+      setPatientLoading(false)
+    }
+  }
+
+  const fetchAdminDoctors = async (
+    targetPage = doctorPage,
+    targetSearch = doctorSearch,
+    targetStatus = doctorStatusFilter
+  ) => {
+    if (!token) return
+    setDoctorLoading(true)
+    try {
+      const res = await getAllDoctorsForAdmin(token, {
+        page: targetPage,
+        limit: 10,
+        search: targetSearch.trim() || undefined,
+        status: targetStatus === 'all' ? undefined : targetStatus,
+      })
+      setDoctors(res.doctors || res.data || [])
+      setDoctorTotalPages(res.totalPages || 1)
+      setDoctorTotalItems(res.totalItems || (res.doctors || []).length)
+      setDoctorPage(res.currentPage || targetPage)
+    } catch (err) {
+      console.warn('Failed to load paginated doctors:', err)
+    } finally {
+      setDoctorLoading(false)
+    }
+  }
+
+  const fetchAdminAppointments = async (targetPage = apptPage, targetStatus = apptStatusFilter) => {
+    if (!token) return
+    setApptLoading(true)
+    try {
+      const res = await getAllAppointmentsForAdminApi(token, {
+        page: targetPage,
+        limit: 10,
+        status: targetStatus === 'all' ? undefined : targetStatus,
+      })
+      setAllAppointments(res.appointments || res.data || [])
+      setApptTotalPages(res.totalPages || 1)
+      setApptTotalItems(res.totalItems || (res.appointments || []).length)
+      setApptPage(res.currentPage || targetPage)
+    } catch (err) {
+      console.warn('Failed to load paginated appointments:', err)
+    } finally {
+      setApptLoading(false)
+    }
+  }
+
+  const fetchAdminHospitals = async (targetPage = hospitalPage, targetSearch = hospitalSearch) => {
+    if (!token) return
+    setHospitalLoading(true)
+    try {
+      const res = await getAllHospitalsForAdmin(token, {
+        page: targetPage,
+        limit: 10,
+        search: targetSearch.trim() || undefined,
+      })
+      setHospitals(res.hospitals || res.data || [])
+      setHospitalTotalPages(res.totalPages || 1)
+      setHospitalTotalItems(res.totalItems || (res.hospitals || []).length)
+      setHospitalPage(res.currentPage || targetPage)
+    } catch (err) {
+      console.warn('Failed to load paginated hospitals:', err)
+    } finally {
+      setHospitalLoading(false)
+    }
+  }
+
+  const fetchAdminPayments = async (targetPage = adminPaymentPage, targetStatus = paymentStatusFilter) => {
+    if (!token) return
+    setAdminPaymentLoading(true)
+    try {
+      const res = await getPaymentsApi(
+        {
+          page: targetPage,
+          limit: 10,
+          status: targetStatus === 'all' ? undefined : targetStatus,
+        },
+        token
+      )
+      setAdminPayments(res.payments || res.data || [])
+      setAdminPaymentTotalPages(res.totalPages || 1)
+      setAdminPaymentTotalItems(res.totalItems || (res.payments || []).length)
+      setAdminPaymentPage(res.currentPage || targetPage)
+    } catch (err) {
+      console.warn('Failed to load paginated payments:', err)
+    } finally {
+      setAdminPaymentLoading(false)
+    }
+  }
+
+  // Reactive Module Fetches when Tab or Filters Change
+  useEffect(() => {
+    if (activeSection === 'patients') {
+      const timer = setTimeout(() => {
+        setPatientPage(1)
+        fetchAdminPatients(1, patientSearch)
+      }, 250)
+      return () => clearTimeout(timer)
+    }
+  }, [patientSearch, activeSection])
+
+  useEffect(() => {
+    if (activeSection === 'doctors') {
+      const timer = setTimeout(() => {
+        setDoctorPage(1)
+        fetchAdminDoctors(1, doctorSearch, doctorStatusFilter)
+      }, 250)
+      return () => clearTimeout(timer)
+    }
+  }, [doctorSearch, doctorStatusFilter, activeSection])
+
+  useEffect(() => {
+    if (activeSection === 'appointments') {
+      setApptPage(1)
+      fetchAdminAppointments(1, apptStatusFilter)
+    }
+  }, [apptStatusFilter, activeSection])
+
+  useEffect(() => {
+    if (activeSection === 'hospitals' && hospitalTab === 'directory') {
+      const timer = setTimeout(() => {
+        setHospitalPage(1)
+        fetchAdminHospitals(1, hospitalSearch)
+      }, 250)
+      return () => clearTimeout(timer)
+    }
+  }, [hospitalSearch, activeSection, hospitalTab])
+
+  useEffect(() => {
+    if (activeSection === 'payments') {
+      setAdminPaymentPage(1)
+      fetchAdminPayments(1, paymentStatusFilter)
+    }
+  }, [paymentStatusFilter, activeSection])
 
   // Handle URL item ID selection (patient or doctor view)
   useEffect(() => {
@@ -1686,6 +1867,22 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                   </tbody>
                 </table>
               </div>
+
+              {patientTotalPages > 1 && !patientLoading && (
+                <div style={{ marginTop: '20px' }}>
+                  <Pagination
+                    currentPage={patientPage}
+                    totalPages={patientTotalPages}
+                    totalItems={patientTotalItems}
+                    itemsPerPage={10}
+                    onPageChange={(p) => {
+                      setPatientPage(p)
+                      fetchAdminPatients(p, patientSearch)
+                    }}
+                    loading={patientLoading}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -2016,6 +2213,22 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                   </tbody>
                 </table>
               </div>
+
+              {doctorTotalPages > 1 && !doctorLoading && (
+                <div style={{ marginTop: '20px' }}>
+                  <Pagination
+                    currentPage={doctorPage}
+                    totalPages={doctorTotalPages}
+                    totalItems={doctorTotalItems}
+                    itemsPerPage={10}
+                    onPageChange={(p) => {
+                      setDoctorPage(p)
+                      fetchAdminDoctors(p, doctorSearch, doctorStatusFilter)
+                    }}
+                    loading={doctorLoading}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -2595,6 +2808,22 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                     </tbody>
                   </table>
                   </div>
+
+                  {hospitalTotalPages > 1 && !hospitalLoading && (
+                    <div style={{ marginTop: '20px' }}>
+                      <Pagination
+                        currentPage={hospitalPage}
+                        totalPages={hospitalTotalPages}
+                        totalItems={hospitalTotalItems}
+                        itemsPerPage={10}
+                        onPageChange={(p) => {
+                          setHospitalPage(p)
+                          fetchAdminHospitals(p, hospitalSearch)
+                        }}
+                        loading={hospitalLoading}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -3304,6 +3533,22 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                   </tbody>
                 </table>
               </div>
+
+              {apptTotalPages > 1 && !apptLoading && (
+                <div style={{ marginTop: '20px' }}>
+                  <Pagination
+                    currentPage={apptPage}
+                    totalPages={apptTotalPages}
+                    totalItems={apptTotalItems}
+                    itemsPerPage={10}
+                    onPageChange={(p) => {
+                      setApptPage(p)
+                      fetchAdminAppointments(p, apptStatusFilter)
+                    }}
+                    loading={apptLoading}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -3440,12 +3685,11 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                       type="button"
                       className="admin-btn-secondary"
                       onClick={() => {
-                        getPaymentsApi({}, token)
-                          .then((res) => setAdminPayments(res.payments || []))
-                          .catch(() => {})
+                        fetchAdminPayments(adminPaymentPage, paymentStatusFilter)
                       }}
+                      disabled={adminPaymentLoading}
                     >
-                      Refresh
+                      {adminPaymentLoading ? 'Refreshing...' : 'Refresh'}
                     </button>
                   </div>
                 </div>
@@ -3585,6 +3829,22 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                         })}
                       </tbody>
                     </table>
+                  </div>
+                )}
+
+                {adminPaymentTotalPages > 1 && !adminPaymentLoading && (
+                  <div style={{ marginTop: '20px' }}>
+                    <Pagination
+                      currentPage={adminPaymentPage}
+                      totalPages={adminPaymentTotalPages}
+                      totalItems={adminPaymentTotalItems}
+                      itemsPerPage={10}
+                      onPageChange={(p) => {
+                        setAdminPaymentPage(p)
+                        fetchAdminPayments(p, paymentStatusFilter)
+                      }}
+                      loading={adminPaymentLoading}
+                    />
                   </div>
                 )}
               </div>

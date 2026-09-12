@@ -1,7 +1,13 @@
 import { Types } from "mongoose";
 
 export interface IHospitalDoctorRepository {
-  find(filter: Record<string, unknown>, populate?: any, sort?: Record<string, 1 | -1>): Promise<any[]>;
+  find(
+    filter: Record<string, unknown>,
+    populate?: any,
+    sort?: Record<string, 1 | -1>,
+    limit?: number,
+    skip?: number,
+  ): Promise<any[]>;
   findOne(filter: Record<string, unknown>): Promise<any | null>;
   findById(id: string | Types.ObjectId, populate?: any): Promise<any | null>;
   create(data: Record<string, unknown>): Promise<any>;

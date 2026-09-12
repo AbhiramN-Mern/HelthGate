@@ -8,6 +8,7 @@ export interface INotificationRepository {
     message: string;
     appointment?: string | Types.ObjectId;
   }): Promise<any>;
-  findByRecipient(recipientId: string | Types.ObjectId, limit?: number): Promise<any[]>;
+  findByRecipient(recipientId: string | Types.ObjectId, limit?: number, skip?: number): Promise<any[]>;
+  count(filter?: Record<string, unknown>): Promise<number>;
   markAsRead(notificationId: string | Types.ObjectId, recipientId: string | Types.ObjectId): Promise<any | null>;
 }

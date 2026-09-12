@@ -20,6 +20,7 @@ import {
 } from '../../api/auth.api'
 import { MockPaymentModal } from '../../components/payment/MockPaymentModal'
 import { launchPaymentCheckout } from '../../utils/checkoutLauncher'
+import { Pagination } from '../../components/common/Pagination'
 import './PatientPaymentsPage.css'
 
 export type PatientPaymentsPageProps = {
@@ -41,9 +42,14 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
   const token = localStorage.getItem('helthgate_token') || ''
 
   const [payments, setPayments] = useState<PaymentRecord[]>([])
+  const [allUserPayments, setAllUserPayments] = useState<PaymentRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'SUCCESS' | 'PENDING' | 'FAILED'>('ALL')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const itemsPerPage = 8
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
@@ -55,27 +61,60 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
   } | null>(null)
   const [retryingId, setRetryingId] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!token && onRequireAuth) {
-      onRequireAuth()
-      return
-    }
-    fetchPayments()
-  }, [token])
-
-  const fetchPayments = async () => {
-    setLoading(true)
-    setError(null)
+  const fetchStats = async () => {
     try {
       const res = await getPaymentsApi({}, token)
       if (res.success && res.payments) {
-        setPayments(res.payments)
+        setAllUserPayments(res.payments)
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const fetchPayments = async (targetPage = page, targetStatus = statusFilter) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await getPaymentsApi(
+        {
+          status: targetStatus === 'ALL' ? undefined : targetStatus,
+          page: targetPage,
+          limit: itemsPerPage,
+        },
+        token
+      )
+      if (res.success) {
+        setPayments(res.payments || res.data || [])
+        setTotalPages(res.totalPages || 1)
+        setTotalItems(res.totalItems || 0)
+        setPage(res.currentPage || targetPage)
       }
     } catch (err: any) {
       setError(getFriendlyErrorMessage(err, 'Failed to load payment records. Please try again.'))
     } finally {
       setLoading(false)
     }
+  }
+
+  useEffect(() => {
+    if (!token && onRequireAuth) {
+      onRequireAuth()
+      return
+    }
+    fetchStats()
+    fetchPayments(1, statusFilter)
+  }, [token])
+
+  const handleStatusChange = (newStatus: 'ALL' | 'SUCCESS' | 'PENDING' | 'FAILED') => {
+    setStatusFilter(newStatus)
+    setPage(1)
+    fetchPayments(1, newStatus)
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+    fetchPayments(newPage, statusFilter)
   }
 
   const handleRetryPayment = async (payment: PaymentRecord) => {
@@ -133,17 +172,14 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
     }
   }
 
-  // Filtered payments
-  const filteredPayments = payments.filter((p) => {
-    if (statusFilter === 'ALL') return true
-    return p.status === statusFilter
-  })
-
-  // Calculations for KPIs
-  const successPayments = payments.filter((p) => p.status === 'SUCCESS')
+  // Calculations for KPIs (using all lifetime records)
+  const pool = allUserPayments.length > 0 ? allUserPayments : payments
+  const successPayments = pool.filter((p) => p.status === 'SUCCESS')
   const totalSpent = successPayments.reduce((acc, p) => acc + (p.amount || 0), 0)
-  const failedCount = payments.filter((p) => p.status === 'FAILED').length
-  const pendingCount = payments.filter((p) => p.status === 'PENDING').length
+  const failedCount = pool.filter((p) => p.status === 'FAILED').length
+  const pendingCount = pool.filter((p) => p.status === 'PENDING').length
+
+  const filteredPayments = payments
 
   return (
     <div className="ppp-page-layout">
@@ -300,7 +336,10 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
           <button
             type="button"
             className="ppp-btn-refresh"
-            onClick={fetchPayments}
+            onClick={() => {
+              fetchStats()
+              fetchPayments(page, statusFilter)
+            }}
             disabled={loading}
           >
             {loading ? (
@@ -363,28 +402,28 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
             <button
               type="button"
               className={`ppp-filter-tab ${statusFilter === 'ALL' ? 'active' : ''}`}
-              onClick={() => setStatusFilter('ALL')}
+              onClick={() => handleStatusChange('ALL')}
             >
-              All Transactions ({payments.length})
+              All Transactions ({pool.length})
             </button>
             <button
               type="button"
               className={`ppp-filter-tab ${statusFilter === 'SUCCESS' ? 'active success' : ''}`}
-              onClick={() => setStatusFilter('SUCCESS')}
+              onClick={() => handleStatusChange('SUCCESS')}
             >
               Successful ({successPayments.length})
             </button>
             <button
               type="button"
               className={`ppp-filter-tab ${statusFilter === 'PENDING' ? 'active pending' : ''}`}
-              onClick={() => setStatusFilter('PENDING')}
+              onClick={() => handleStatusChange('PENDING')}
             >
               Pending ({pendingCount})
             </button>
             <button
               type="button"
               className={`ppp-filter-tab ${statusFilter === 'FAILED' ? 'active failed' : ''}`}
-              onClick={() => setStatusFilter('FAILED')}
+              onClick={() => handleStatusChange('FAILED')}
             >
               Failed ({failedCount})
             </button>
@@ -406,7 +445,7 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
             <AlertCircleIcon size={36} />
             <h3>Unable to Load Payments</h3>
             <p>{error}</p>
-            <button type="button" className="ppp-btn-primary" onClick={fetchPayments}>
+            <button type="button" className="ppp-btn-primary" onClick={() => fetchPayments(page, statusFilter)}>
               Try Again
             </button>
           </div>
@@ -566,6 +605,19 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {totalPages > 1 && !loading && (
+          <div style={{ marginTop: '24px' }}>
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              loading={loading}
+            />
           </div>
         )}
       </main>

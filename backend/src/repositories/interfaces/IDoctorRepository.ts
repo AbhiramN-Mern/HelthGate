@@ -10,7 +10,13 @@ export interface IDoctorRepository {
   updateById(id: string | Types.ObjectId, updates: Record<string, unknown>): Promise<any | null>;
   toggleActiveStatus(id: string | Types.ObjectId): Promise<any | null>;
   deleteById(id: string | Types.ObjectId): Promise<any>;
-  find(filter: Record<string, unknown>, populateDetails?: boolean, sort?: Record<string, 1 | -1>): Promise<any[]>;
+  find(
+    filter: Record<string, unknown>,
+    populateDetails?: boolean,
+    sort?: Record<string, 1 | -1>,
+    limit?: number,
+    skip?: number,
+  ): Promise<any[]>;
   distinctSpecializations(): Promise<string[]>;
   count(filter?: Record<string, unknown>): Promise<number>;
 }

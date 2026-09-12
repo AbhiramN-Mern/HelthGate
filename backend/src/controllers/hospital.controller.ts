@@ -1,10 +1,16 @@
 import { Request, Response } from "express";
 import { hospitalService } from "../container.js";
+import { parsePagination } from "../utils/pagination.js";
 
 export const getActiveHospitals = async (req: Request, res: Response) => {
   try {
-    const hospitals = await hospitalService.getActiveHospitals();
-    return res.status(200).json({ success: true, hospitals });
+    const { page, limit } = parsePagination(req.query, 10);
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+    const result = await hospitalService.getActiveHospitals({ page, limit, search });
+    if ("data" in result) {
+      return res.status(200).json({ success: true, ...result, hospitals: result.data });
+    }
+    return res.status(200).json({ success: true, hospitals: result });
   } catch (err: any) {
     const statusCode = err.statusCode || 500;
     return res.status(statusCode).json({ success: false, message: err.message || "Unable to fetch hospitals" });
@@ -13,8 +19,14 @@ export const getActiveHospitals = async (req: Request, res: Response) => {
 
 export const getAllHospitals = async (req: Request, res: Response) => {
   try {
-    const hospitals = await hospitalService.getAllHospitals();
-    return res.status(200).json({ success: true, hospitals });
+    const { page, limit } = parsePagination(req.query, 10);
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
+    const result = await hospitalService.getAllHospitals({ page, limit, search, status });
+    if ("data" in result) {
+      return res.status(200).json({ success: true, ...result, hospitals: result.data });
+    }
+    return res.status(200).json({ success: true, hospitals: result });
   } catch (err: any) {
     const statusCode = err.statusCode || 500;
     return res.status(statusCode).json({ success: false, message: err.message || "Unable to fetch hospitals" });

@@ -65,10 +65,18 @@ export class MongoDoctorRepository implements IDoctorRepository {
     filter: Record<string, unknown> = {},
     populateDetails = true,
     sort: Record<string, 1 | -1> = { createdAt: -1 },
+    limit?: number,
+    skip?: number,
   ): Promise<any[]> {
-    const query = DoctorModel.find(filter).sort(sort);
+    let query = DoctorModel.find(filter).sort(sort);
+    if (skip !== undefined && skip > 0) {
+      query = query.skip(skip);
+    }
+    if (limit !== undefined && limit > 0) {
+      query = query.limit(limit);
+    }
     if (populateDetails) {
-      query.populate("user", "name email role").populate("hospital", "name isActive");
+      query = query.populate("user", "name email role").populate("hospital", "name isActive");
     }
     return query.exec();
   }

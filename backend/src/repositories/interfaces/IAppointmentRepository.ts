@@ -10,6 +10,8 @@ export interface IAppointmentRepository {
     populateDetails?: boolean,
     sort?: Record<string, 1 | -1>,
     select?: string,
+    limit?: number,
+    skip?: number,
   ): Promise<any[]>;
   findByIdAndUpdate(id: string | Types.ObjectId, update: Record<string, unknown>): Promise<any | null>;
   updateStatus(id: string | Types.ObjectId, status: string): Promise<any | null>;

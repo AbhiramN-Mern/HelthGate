@@ -42,10 +42,18 @@ export class MongoAppointmentRepository implements IAppointmentRepository {
     populateDetails = false,
     sort: Record<string, 1 | -1> = { appointmentDate: 1 },
     select?: string,
+    limit?: number,
+    skip?: number,
   ): Promise<any[]> {
     let query = AppointmentModel.find(filter).sort(sort);
     if (select) {
       query = query.select(select) as any;
+    }
+    if (skip !== undefined && skip > 0) {
+      query = query.skip(skip);
+    }
+    if (limit !== undefined && limit > 0) {
+      query = query.limit(limit);
     }
     if (populateDetails) {
       query = this.applyStandardPopulate(query);

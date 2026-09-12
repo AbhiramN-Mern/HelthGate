@@ -6,6 +6,7 @@ import { INotificationRepository } from "../repositories/interfaces/INotificatio
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { NotificationService } from "./notification.service.js";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../core/errors/AppError.js";
+import { createPaginatedResponse } from "../utils/pagination.js";
 
 export const MAX_BOOKING_DAYS_AHEAD = Number(process.env.MAX_BOOKING_DAYS_AHEAD) || 90;
 
@@ -208,14 +209,31 @@ export class AppointmentService {
     return { available: true, doctorDoc };
   }
 
-  async getMyAppointments(patientUserId: string) {
-    return this.appointmentRepo.find(
-      {
-        patient: patientUserId,
-      },
+  async getMyAppointments(
+    options: string | { patientUserId: string; page?: number; limit?: number; status?: string },
+  ) {
+    const patientUserId = typeof options === "string" ? options : options.patientUserId;
+    const page = typeof options === "string" ? 1 : options.page ?? 1;
+    const limit = typeof options === "string" ? 1000 : options.limit ?? 10;
+    const status = typeof options === "string" ? undefined : options.status;
+
+    const filter: Record<string, unknown> = { patient: patientUserId };
+    if (status && status !== "all") {
+      filter.status = status;
+    }
+
+    const total = await this.appointmentRepo.count(filter);
+    const skip = (Math.max(page, 1) - 1) * limit;
+    const appointments = await this.appointmentRepo.find(
+      filter,
       true,
       { appointmentDate: -1 },
+      undefined,
+      limit,
+      skip,
     );
+
+    return createPaginatedResponse(appointments, total, page, limit);
   }
 
   async createAppointment(data: {

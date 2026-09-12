@@ -50,9 +50,25 @@ export class MongoPatientRepository implements IPatientRepository {
   }
 
   async findAll(populateUser = true): Promise<any[]> {
-    const query = PatientModel.find().sort({ createdAt: -1 });
+    return this.find({}, populateUser);
+  }
+
+  async find(
+    filter: Record<string, unknown> = {},
+    populateUser = true,
+    sort: Record<string, 1 | -1> = { createdAt: -1 },
+    limit?: number,
+    skip?: number,
+  ): Promise<any[]> {
+    let query = PatientModel.find(filter).sort(sort);
+    if (skip !== undefined && skip > 0) {
+      query = query.skip(skip);
+    }
+    if (limit !== undefined && limit > 0) {
+      query = query.limit(limit);
+    }
     if (populateUser) {
-      query.populate("user", "name email role");
+      query = query.populate("user", "name email role");
     }
     return query.exec();
   }

@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import type { AuthenticatedRequest } from "../types/auth.js";
 import { doctorService } from "../container.js";
+import { parsePagination } from "../utils/pagination.js";
 
 export const getMyDoctorProfile = async (
   req: AuthenticatedRequest,
@@ -59,15 +60,20 @@ export const getAvailableDoctors = async (
 ) => {
   try {
     const { search, specialization, hospital } = req.query;
-    const doctors = await doctorService.getAvailableDoctors({
+    const { page, limit } = parsePagination(req.query, 10);
+
+    const result = await doctorService.getAvailableDoctors({
       search: typeof search === "string" ? search : undefined,
       specialization: typeof specialization === "string" ? specialization : undefined,
       hospital: typeof hospital === "string" ? hospital : undefined,
+      page,
+      limit,
     });
 
     return res.status(200).json({
       success: true,
-      doctors,
+      ...result,
+      doctors: result.data,
     });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;

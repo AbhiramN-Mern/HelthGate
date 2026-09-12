@@ -1,10 +1,18 @@
 import type { Request, Response } from "express";
 import { adminService } from "../container.js";
+import { parsePagination } from "../utils/pagination.js";
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const users = await adminService.getAllUsers();
-    return res.status(200).json({ success: true, users });
+    const { page, limit } = parsePagination(req.query, 10);
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+    const role = typeof req.query.role === "string" ? req.query.role : undefined;
+
+    const result = await adminService.getAllUsers({ page, limit, search, role });
+    if ("data" in result) {
+      return res.status(200).json({ success: true, ...result, users: result.data });
+    }
+    return res.status(200).json({ success: true, users: result });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({
@@ -17,8 +25,15 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
 export const getAllPatients = async (req: Request, res: Response) => {
   try {
-    const patients = await adminService.getAllPatients();
-    return res.status(200).json({ success: true, patients });
+    const { page, limit } = parsePagination(req.query, 10);
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
+
+    const result = await adminService.getAllPatients({ page, limit, search, status });
+    if ("data" in result) {
+      return res.status(200).json({ success: true, ...result, patients: result.data });
+    }
+    return res.status(200).json({ success: true, patients: result });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({
@@ -81,8 +96,16 @@ export const updatePatientById = async (req: Request, res: Response) => {
 
 export const getAllDoctors = async (req: Request, res: Response) => {
   try {
-    const doctors = await adminService.getAllDoctors();
-    return res.status(200).json({ success: true, doctors });
+    const { page, limit } = parsePagination(req.query, 10);
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
+    const specialization = typeof req.query.specialization === "string" ? req.query.specialization : undefined;
+
+    const result = await adminService.getAllDoctors({ page, limit, search, status, specialization });
+    if ("data" in result) {
+      return res.status(200).json({ success: true, ...result, doctors: result.data });
+    }
+    return res.status(200).json({ success: true, doctors: result });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({
@@ -246,9 +269,10 @@ export const getAdminDashboard = async (req: Request, res: Response) => {
 export const getAllAppointmentsForAdmin = async (req: Request, res: Response) => {
   try {
     const { status, doctor, hospital, date } = req.query;
+    const { page, limit } = parsePagination(req.query, 10);
     const query: Record<string, unknown> = {};
 
-    if (status && typeof status === "string") query.status = status;
+    if (status && typeof status === "string" && status !== "all") query.status = status;
     if (doctor && typeof doctor === "string") query.doctor = doctor;
     if (hospital && typeof hospital === "string") query.hospital = hospital;
     if (date && typeof date === "string") {
@@ -259,8 +283,11 @@ export const getAllAppointmentsForAdmin = async (req: Request, res: Response) =>
       query.appointmentDate = { $gte: startOfDay, $lte: endOfDay };
     }
 
-    const appointments = await adminService.getAllAppointmentsForAdmin(query);
-    return res.status(200).json({ success: true, appointments });
+    const result = await adminService.getAllAppointmentsForAdmin(query, { page, limit });
+    if ("data" in result) {
+      return res.status(200).json({ success: true, ...result, appointments: result.data });
+    }
+    return res.status(200).json({ success: true, appointments: result });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({
@@ -273,8 +300,21 @@ export const getAllAppointmentsForAdmin = async (req: Request, res: Response) =>
 
 export const getAllHospitalDoctorsForAdmin = async (req: Request, res: Response) => {
   try {
-    const hospitalDoctors = await adminService.getAllHospitalDoctorsForAdmin();
-    return res.status(200).json({ success: true, hospitalDoctors });
+    const { page, limit } = parsePagination(req.query, 10);
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
+    const hospitalId = typeof req.query.hospitalId === "string" ? req.query.hospitalId : undefined;
+    const doctorId = typeof req.query.doctorId === "string" ? req.query.doctorId : undefined;
+
+    const result = await adminService.getAllHospitalDoctorsForAdmin({ status, hospitalId, doctorId, page, limit });
+    if ("data" in result) {
+      return res.status(200).json({
+        success: true,
+        ...result,
+        relationships: result.data,
+        hospitalDoctors: result.data,
+      });
+    }
+    return res.status(200).json({ success: true, hospitalDoctors: result, relationships: result });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({
@@ -287,8 +327,12 @@ export const getAllHospitalDoctorsForAdmin = async (req: Request, res: Response)
 
 export const getHospitalDoctorHistory = async (req: Request, res: Response) => {
   try {
-    const history = await adminService.getHospitalDoctorHistory();
-    return res.status(200).json({ success: true, history });
+    const { page, limit } = parsePagination(req.query, 10);
+    const result = await adminService.getHospitalDoctorHistory({ page, limit });
+    if ("data" in result) {
+      return res.status(200).json({ success: true, ...result, history: result.data });
+    }
+    return res.status(200).json({ success: true, history: result });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({

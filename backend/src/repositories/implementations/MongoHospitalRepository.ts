@@ -3,8 +3,20 @@ import HospitalModel, { IHospital } from "../../models/hospital.model.js";
 import { IHospitalRepository } from "../interfaces/IHospitalRepository.js";
 
 export class MongoHospitalRepository implements IHospitalRepository {
-  async find(filter: Record<string, unknown> = {}, sort: Record<string, 1 | -1> = { name: 1 }): Promise<any[]> {
-    return HospitalModel.find(filter).sort(sort).lean().exec();
+  async find(
+    filter: Record<string, unknown> = {},
+    sort: Record<string, 1 | -1> = { name: 1 },
+    limit?: number,
+    skip?: number,
+  ): Promise<any[]> {
+    let query = HospitalModel.find(filter).sort(sort);
+    if (skip !== undefined && skip > 0) {
+      query = query.skip(skip);
+    }
+    if (limit !== undefined && limit > 0) {
+      query = query.limit(limit);
+    }
+    return query.lean().exec();
   }
 
   async findById(id: string | Types.ObjectId): Promise<any | null> {

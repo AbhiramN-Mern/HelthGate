@@ -2,6 +2,7 @@ import type { Response } from "express";
 import type { AuthenticatedRequest } from "../types/auth.js";
 import { appointmentService } from "../container.js";
 import { MAX_BOOKING_DAYS_AHEAD } from "../services/appointment.service.js";
+import { parsePagination } from "../utils/pagination.js";
 
 export { MAX_BOOKING_DAYS_AHEAD };
 
@@ -19,10 +20,20 @@ export const getMyAppointments = async (
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const appointments = await appointmentService.getMyAppointments(patientUserId);
+    const { page, limit } = parsePagination(req.query, 10);
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
+
+    const result = await appointmentService.getMyAppointments({
+      patientUserId,
+      page,
+      limit,
+      status,
+    });
+
     return res.status(200).json({
       success: true,
-      appointments,
+      ...result,
+      appointments: result.data,
     });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;

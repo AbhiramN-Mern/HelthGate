@@ -7,6 +7,7 @@ import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { IPatientRepository } from "../repositories/interfaces/IPatientRepository.js";
 import { NotificationService } from "./notification.service.js";
 import { BadRequestError, NotFoundError } from "../core/errors/AppError.js";
+import { createPaginatedResponse } from "../utils/pagination.js";
 
 const doctorUpdateFields = [
   "specialization",
@@ -76,8 +77,10 @@ export class DoctorService {
     search?: string;
     specialization?: string;
     hospital?: string;
+    page?: number;
+    limit?: number;
   }) {
-    const { search, specialization, hospital } = filters;
+    const { search, specialization, hospital, page = 1, limit = 10 } = filters;
 
     const query: Record<string, unknown> = {
       available: true,
@@ -101,7 +104,41 @@ export class DoctorService {
       ];
     }
 
-    const doctors = await this.doctorRepo.find(query, true, { createdAt: -1 });
+    if (search && typeof search === "string" && search.trim()) {
+      const term = search.trim();
+      const matchingUsers = await this.userRepo.find({
+        name: { $regex: term, $options: "i" },
+      });
+      const matchingUserIds = matchingUsers.map((u) => u._id);
+
+      const matchingHospitals = await this.hospitalRepo.find({
+        name: { $regex: term, $options: "i" },
+      });
+      const matchingHospIds = matchingHospitals.map((h) => h._id);
+      const activeDocIdsInMatchingHospitals = await this.hospitalDoctorRepo.distinct("doctor", {
+        hospital: { $in: matchingHospIds },
+        status: "ACTIVE",
+      });
+
+      const searchOr = [
+        { user: { $in: matchingUserIds } },
+        { specialization: { $regex: term, $options: "i" } },
+        { _id: { $in: activeDocIdsInMatchingHospitals } },
+        { hospital: { $in: matchingHospIds } },
+      ];
+
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, { $or: searchOr }];
+        delete query.$or;
+      } else {
+        query.$or = searchOr;
+      }
+    }
+
+    const total = await this.doctorRepo.count(query);
+    const skip = (Math.max(page, 1) - 1) * limit;
+
+    const doctors = await this.doctorRepo.find(query, true, { createdAt: -1 }, limit, skip);
 
     const doctorIds = doctors.map((d: any) => d._id);
     const activeAssociations = await this.hospitalDoctorRepo.find(
@@ -123,7 +160,7 @@ export class DoctorService {
       }
     });
 
-    let enrichedDoctors = doctors.map((d: any) => {
+    const enrichedDoctors = doctors.map((d: any) => {
       const activeHospitals = doctorHospitalsMap[String(d._id)] || [];
       if (d.hospital && !activeHospitals.some((h) => String(h._id) === String(d.hospital._id))) {
         activeHospitals.push({
@@ -141,19 +178,7 @@ export class DoctorService {
       };
     });
 
-    if (search && typeof search === "string" && search.trim()) {
-      const term = search.trim().toLowerCase();
-      enrichedDoctors = enrichedDoctors.filter((doc: any) => {
-        const docName = doc.user?.name?.toLowerCase() || "";
-        const spec = doc.specialization?.toLowerCase() || "";
-        const hospMatches = (doc.affiliatedHospitals || []).some((h: any) =>
-          h.name?.toLowerCase().includes(term),
-        );
-        return docName.includes(term) || spec.includes(term) || hospMatches;
-      });
-    }
-
-    return enrichedDoctors;
+    return createPaginatedResponse(enrichedDoctors, total, page, limit);
   }
 
   async getDoctorDashboard(userId: string) {

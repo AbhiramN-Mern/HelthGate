@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import type { AuthenticatedRequest } from "../types/auth.js";
 import { paymentService } from "../container.js";
+import { parsePagination } from "../utils/pagination.js";
 
 export const createPaymentOrder = async (
   req: AuthenticatedRequest,
@@ -143,8 +144,7 @@ export const getPaymentHistory = async (
     }
 
     const status = req.query.status as string | undefined;
-    const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+    const { page, limit } = parsePagination(req.query, 10);
 
     const result = await paymentService.getPaymentHistory({
       patientUserId,
@@ -157,6 +157,7 @@ export const getPaymentHistory = async (
     return res.status(200).json({
       success: true,
       ...result,
+      payments: result.data || result.payments,
     });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;

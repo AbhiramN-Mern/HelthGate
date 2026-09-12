@@ -14,6 +14,18 @@ export type AuthResponse = {
   user?: AuthUser
 }
 
+export type PaginatedResponse<T> = {
+  success: boolean
+  data?: T[]
+  currentPage?: number
+  totalPages?: number
+  totalItems?: number
+  itemsPerPage?: number
+  hasNextPage?: boolean
+  hasPreviousPage?: boolean
+  message?: string
+}
+
 export type PatientProfile = {
   _id?: string
   user?: { name?: string; email?: string; role?: string }
@@ -287,8 +299,17 @@ export type AdminDoctor = {
   }
 }
 
-export const getAllPatientsForAdmin = async (token: string): Promise<{ success: boolean; patients?: AdminPatient[] }> => {
-  return request<{ success: boolean; patients?: AdminPatient[] }>('/api/admin/patients', { method: 'GET' }, token)
+export const getAllPatientsForAdmin = async (
+  token: string,
+  params?: { search?: string; status?: string; page?: number; limit?: number },
+): Promise<PaginatedResponse<AdminPatient> & { patients?: AdminPatient[] }> => {
+  const query = new URLSearchParams()
+  if (params?.search) query.set('search', params.search)
+  if (params?.status) query.set('status', params.status)
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.limit) query.set('limit', String(params.limit))
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request<PaginatedResponse<AdminPatient> & { patients?: AdminPatient[] }>(`/api/admin/patients${qs}`, { method: 'GET' }, token)
 }
 
 export const getPatientByIdForAdmin = async (
@@ -339,8 +360,18 @@ export const createDoctorForAdmin = async (
   }, token)
 }
 
-export const getAllDoctorsForAdmin = async (token: string): Promise<{ success: boolean; doctors?: AdminDoctor[] }> => {
-  return request<{ success: boolean; doctors?: AdminDoctor[] }>('/api/admin/doctors', { method: 'GET' }, token)
+export const getAllDoctorsForAdmin = async (
+  token: string,
+  params?: { search?: string; status?: string; specialization?: string; page?: number; limit?: number },
+): Promise<PaginatedResponse<AdminDoctor> & { doctors?: AdminDoctor[] }> => {
+  const query = new URLSearchParams()
+  if (params?.search) query.set('search', params.search)
+  if (params?.status) query.set('status', params.status)
+  if (params?.specialization) query.set('specialization', params.specialization)
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.limit) query.set('limit', String(params.limit))
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request<PaginatedResponse<AdminDoctor> & { doctors?: AdminDoctor[] }>(`/api/admin/doctors${qs}`, { method: 'GET' }, token)
 }
 
 export const getDoctorByIdForAdmin = async (
@@ -444,12 +475,28 @@ export type HospitalDoctorItem = {
   updatedAt?: string
 }
 
-export const getActiveHospitals = async (): Promise<{ success: boolean; hospitals?: Hospital[] }> => {
-  return request<{ success: boolean; hospitals?: Hospital[] }>('/api/hospitals/active', { method: 'GET' })
+export const getActiveHospitals = async (
+  params?: { search?: string; page?: number; limit?: number },
+): Promise<PaginatedResponse<Hospital> & { hospitals?: Hospital[] }> => {
+  const query = new URLSearchParams()
+  if (params?.search) query.set('search', params.search)
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.limit) query.set('limit', String(params.limit))
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request<PaginatedResponse<Hospital> & { hospitals?: Hospital[] }>(`/api/hospitals/active${qs}`, { method: 'GET' })
 }
 
-export const getAllHospitalsForAdmin = async (token: string): Promise<{ success: boolean; hospitals?: Hospital[] }> => {
-  return request<{ success: boolean; hospitals?: Hospital[] }>('/api/hospitals', { method: 'GET' }, token)
+export const getAllHospitalsForAdmin = async (
+  token: string,
+  params?: { search?: string; status?: string; page?: number; limit?: number },
+): Promise<PaginatedResponse<Hospital> & { hospitals?: Hospital[] }> => {
+  const query = new URLSearchParams()
+  if (params?.search) query.set('search', params.search)
+  if (params?.status) query.set('status', params.status)
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.limit) query.set('limit', String(params.limit))
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request<PaginatedResponse<Hospital> & { hospitals?: Hospital[] }>(`/api/hospitals${qs}`, { method: 'GET' }, token)
 }
 
 export const createHospitalForAdmin = async (
@@ -545,14 +592,16 @@ export const requestJoinHospitalApi = async (
 // Doctor-Hospital Governance APIs (Main Admin)
 export const getAllHospitalDoctorsForAdminApi = async (
   token: string,
-  params?: { status?: string; hospitalId?: string; doctorId?: string },
-): Promise<{ success: boolean; relationships?: HospitalDoctorItem[] }> => {
+  params?: { status?: string; hospitalId?: string; doctorId?: string; page?: number; limit?: number },
+): Promise<PaginatedResponse<HospitalDoctorItem> & { relationships?: HospitalDoctorItem[] }> => {
   const query = new URLSearchParams()
   if (params?.status) query.set('status', params.status)
   if (params?.hospitalId) query.set('hospitalId', params.hospitalId)
   if (params?.doctorId) query.set('doctorId', params.doctorId)
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.limit) query.set('limit', String(params.limit))
   const qs = query.toString() ? `?${query.toString()}` : ''
-  return request<{ success: boolean; relationships?: HospitalDoctorItem[] }>(`/api/admin/hospital-doctors${qs}`, { method: 'GET' }, token)
+  return request<PaginatedResponse<HospitalDoctorItem> & { relationships?: HospitalDoctorItem[] }>(`/api/admin/hospital-doctors${qs}`, { method: 'GET' }, token)
 }
 
 export const approveDoctorHospitalRequestApi = async (
@@ -596,8 +645,13 @@ export const removeDoctorFromHospitalApi = async (
 
 export const getHospitalDoctorHistoryApi = async (
   token: string,
-): Promise<{ success: boolean; history?: HospitalDoctorItem[] }> => {
-  return request<{ success: boolean; history?: HospitalDoctorItem[] }>('/api/admin/hospital-doctors/history', { method: 'GET' }, token)
+  params?: { page?: number; limit?: number },
+): Promise<PaginatedResponse<HospitalDoctorItem> & { history?: HospitalDoctorItem[] }> => {
+  const query = new URLSearchParams()
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.limit) query.set('limit', String(params.limit))
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request<PaginatedResponse<HospitalDoctorItem> & { history?: HospitalDoctorItem[] }>(`/api/admin/hospital-doctors/history${qs}`, { method: 'GET' }, token)
 }
 
 export type RescheduleRequest = {
@@ -632,23 +686,41 @@ export const getSpecializations = async (): Promise<{ success: boolean; speciali
 }
 
 export const getAvailableDoctors = async (
-  params?: { search?: string; specialization?: string; hospital?: string },
+  params?: { search?: string; specialization?: string; hospital?: string; page?: number; limit?: number },
   token?: string,
-): Promise<{ success: boolean; doctors?: DoctorProfile[] }> => {
+): Promise<PaginatedResponse<DoctorProfile> & { doctors?: DoctorProfile[] }> => {
   const query = new URLSearchParams()
   if (params?.search) query.set('search', params.search)
   if (params?.specialization) query.set('specialization', params.specialization)
   if (params?.hospital) query.set('hospital', params.hospital)
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.limit) query.set('limit', String(params.limit))
   const qs = query.toString() ? `?${query.toString()}` : ''
-  return request<{ success: boolean; doctors?: DoctorProfile[] }>(`/api/doctors${qs}`, { method: 'GET' }, token)
+  return request<PaginatedResponse<DoctorProfile> & { doctors?: DoctorProfile[] }>(`/api/doctors${qs}`, { method: 'GET' }, token)
 }
 
-export const getHospitals = async (token?: string): Promise<{ success: boolean; hospitals?: Hospital[] }> => {
-  return request<{ success: boolean; hospitals?: Hospital[] }>('/api/hospitals', { method: 'GET' }, token)
+export const getHospitals = async (
+  token?: string,
+  params?: { search?: string; page?: number; limit?: number },
+): Promise<PaginatedResponse<Hospital> & { hospitals?: Hospital[] }> => {
+  const query = new URLSearchParams()
+  if (params?.search) query.set('search', params.search)
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.limit) query.set('limit', String(params.limit))
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request<PaginatedResponse<Hospital> & { hospitals?: Hospital[] }>(`/api/hospitals${qs}`, { method: 'GET' }, token)
 }
 
-export const getMyAppointments = async (token: string): Promise<{ success: boolean; appointments?: AppointmentItem[] }> => {
-  return request<{ success: boolean; appointments?: AppointmentItem[] }>('/api/appointments/my', { method: 'GET' }, token)
+export const getMyAppointments = async (
+  token: string,
+  params?: { status?: string; page?: number; limit?: number },
+): Promise<PaginatedResponse<AppointmentItem> & { appointments?: AppointmentItem[] }> => {
+  const query = new URLSearchParams()
+  if (params?.status) query.set('status', params.status)
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.limit) query.set('limit', String(params.limit))
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request<PaginatedResponse<AppointmentItem> & { appointments?: AppointmentItem[] }>(`/api/appointments/my${qs}`, { method: 'GET' }, token)
 }
 
 export type NotificationItem = {
@@ -819,9 +891,14 @@ export const respondAppointmentRescheduleApi = async (
 
 export const getPatientNotificationsApi = async (
   token: string,
-): Promise<{ success: boolean; notifications?: NotificationItem[] }> => {
-  return request<{ success: boolean; notifications?: NotificationItem[] }>(
-    '/api/patients/notifications',
+  params?: { page?: number; limit?: number },
+): Promise<PaginatedResponse<NotificationItem> & { notifications?: NotificationItem[] }> => {
+  const query = new URLSearchParams()
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.limit) query.set('limit', String(params.limit))
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request<PaginatedResponse<NotificationItem> & { notifications?: NotificationItem[] }>(
+    `/api/patients/notifications${qs}`,
     { method: 'GET' },
     token,
   )
@@ -870,8 +947,19 @@ export const getAdminDashboardApi = async (token: string): Promise<AdminDashboar
   return request<AdminDashboardData>('/api/admin/dashboard', { method: 'GET' }, token)
 }
 
-export const getAllAppointmentsForAdminApi = async (token: string): Promise<{ success: boolean; appointments?: AppointmentItem[] }> => {
-  return request<{ success: boolean; appointments?: AppointmentItem[] }>('/api/admin/appointments', { method: 'GET' }, token)
+export const getAllAppointmentsForAdminApi = async (
+  token: string,
+  params?: { status?: string; doctor?: string; hospital?: string; date?: string; page?: number; limit?: number },
+): Promise<PaginatedResponse<AppointmentItem> & { appointments?: AppointmentItem[] }> => {
+  const query = new URLSearchParams()
+  if (params?.status) query.set('status', params.status)
+  if (params?.doctor) query.set('doctor', params.doctor)
+  if (params?.hospital) query.set('hospital', params.hospital)
+  if (params?.date) query.set('date', params.date)
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.limit) query.set('limit', String(params.limit))
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request<PaginatedResponse<AppointmentItem> & { appointments?: AppointmentItem[] }>(`/api/admin/appointments${qs}`, { method: 'GET' }, token)
 }
 
 // ==========================================
@@ -950,13 +1038,13 @@ export type VerifyPaymentResponse = {
   canRetry?: boolean
 }
 
-export type PaymentHistoryResponse = {
+export type PaymentHistoryResponse = PaginatedResponse<PaymentRecord> & {
   success: boolean
   payments: PaymentRecord[]
-  total: number
-  page: number
-  limit: number
-  totalPages: number
+  total?: number
+  page?: number
+  limit?: number
+  totalPages?: number
 }
 
 export const createPaymentOrderApi = async (

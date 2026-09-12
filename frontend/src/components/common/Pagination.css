@@ -1,0 +1,147 @@
+/* HealthGate Reusable Pagination Component Styles */
+
+.hg-pagination-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 4px;
+  margin-top: 14px;
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+  transition: opacity 0.2s ease-in-out;
+}
+
+.hg-pagination-container.is-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.hg-pagination-info {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.hg-pagination-highlight {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.hg-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hg-pagination-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hg-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #334155;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  padding: 0 10px;
+  user-select: none;
+}
+
+.hg-pagination-btn:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.hg-pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+  background-color: #f8fafc;
+  color: #94a3b8;
+}
+
+.hg-pagination-btn:focus-visible {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 2px;
+}
+
+.hg-pagination-nav {
+  gap: 6px;
+  padding: 0 14px;
+}
+
+.hg-pagination-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.hg-pagination-num {
+  min-width: 36px;
+  padding: 0 6px;
+}
+
+.hg-pagination-num.active {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border-color: #0284c7;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+}
+
+.hg-pagination-num.active:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  border-color: #0369a1;
+  color: #ffffff;
+}
+
+.hg-pagination-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 36px;
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 0.95rem;
+  user-select: none;
+}
+
+/* Responsive Styles */
+@media (max-width: 640px) {
+  .hg-pagination-container {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .hg-pagination-info {
+    text-align: center;
+    font-size: 0.8125rem;
+  }
+
+  .hg-pagination-controls {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hg-pagination-btn-text {
+    display: none;
+  }
+
+  .hg-pagination-nav {
+    padding: 0 10px;
+    min-width: 36px;
+  }
+}

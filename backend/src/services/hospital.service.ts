@@ -1,6 +1,7 @@
 import { IHospitalRepository } from "../repositories/interfaces/IHospitalRepository.js";
 import { IHospitalDoctorRepository } from "../repositories/interfaces/IHospitalDoctorRepository.js";
 import { BadRequestError, NotFoundError } from "../core/errors/AppError.js";
+import { createPaginatedResponse } from "../utils/pagination.js";
 
 export class HospitalService {
   constructor(
@@ -26,13 +27,52 @@ export class HospitalService {
     }));
   }
 
-  async getActiveHospitals() {
-    const hospitals = await this.hospitalRepo.find({ isActive: true }, { name: 1 });
+  async getActiveHospitals(options?: { search?: string; page?: number; limit?: number }) {
+    const page = options?.page;
+    const limit = options?.limit;
+    const filter: Record<string, unknown> = { isActive: true };
+    if (options?.search && options.search.trim()) {
+      filter.name = { $regex: options.search.trim(), $options: "i" };
+    }
+
+    if (page !== undefined && limit !== undefined) {
+      const total = await this.hospitalRepo.count(filter);
+      const skip = (Math.max(page, 1) - 1) * limit;
+      const hospitals = await this.hospitalRepo.find(filter, { name: 1 }, limit, skip);
+      const enriched = await this.enrichHospitalsWithActiveDoctorCount(hospitals);
+      return createPaginatedResponse(enriched, total, page, limit);
+    }
+
+    const hospitals = await this.hospitalRepo.find(filter, { name: 1 });
     return this.enrichHospitalsWithActiveDoctorCount(hospitals);
   }
 
-  async getAllHospitals() {
-    const hospitals = await this.hospitalRepo.find({}, { name: 1 });
+  async getAllHospitals(options?: { search?: string; isActive?: boolean; status?: string; page?: number; limit?: number }) {
+    const page = options?.page;
+    const limit = options?.limit;
+    const filter: Record<string, unknown> = {};
+    if (options?.isActive !== undefined) {
+      filter.isActive = options.isActive;
+    }
+    if (options?.status && options.status !== "all") {
+      if (options.status === "active") filter.isActive = true;
+      else if (options.status === "inactive") filter.isActive = false;
+      else if (options.status === "verified") filter.verificationStatus = "verified";
+      else filter.verificationStatus = options.status;
+    }
+    if (options?.search && options.search.trim()) {
+      filter.name = { $regex: options.search.trim(), $options: "i" };
+    }
+
+    if (page !== undefined && limit !== undefined) {
+      const total = await this.hospitalRepo.count(filter);
+      const skip = (Math.max(page, 1) - 1) * limit;
+      const hospitals = await this.hospitalRepo.find(filter, { name: 1 }, limit, skip);
+      const enriched = await this.enrichHospitalsWithActiveDoctorCount(hospitals);
+      return createPaginatedResponse(enriched, total, page, limit);
+    }
+
+    const hospitals = await this.hospitalRepo.find(filter, { name: 1 });
     return this.enrichHospitalsWithActiveDoctorCount(hospitals);
   }
 

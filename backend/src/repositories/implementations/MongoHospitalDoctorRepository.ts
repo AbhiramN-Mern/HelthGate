@@ -3,8 +3,20 @@ import HospitalDoctorModel from "../../models/hospitalDoctor.model.js";
 import { IHospitalDoctorRepository } from "../interfaces/IHospitalDoctorRepository.js";
 
 export class MongoHospitalDoctorRepository implements IHospitalDoctorRepository {
-  async find(filter: Record<string, unknown>, populate?: any, sort: Record<string, 1 | -1> = { updatedAt: -1 }): Promise<any[]> {
+  async find(
+    filter: Record<string, unknown>,
+    populate?: any,
+    sort: Record<string, 1 | -1> = { updatedAt: -1 },
+    limit?: number,
+    skip?: number,
+  ): Promise<any[]> {
     let query = HospitalDoctorModel.find(filter).sort(sort);
+    if (skip !== undefined && skip > 0) {
+      query = query.skip(skip);
+    }
+    if (limit !== undefined && limit > 0) {
+      query = query.limit(limit);
+    }
     if (populate) {
       if (Array.isArray(populate)) {
         populate.forEach((p) => {

@@ -12,6 +12,7 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "../core/errors/AppError.js";
+import { createPaginatedResponse } from "../utils/pagination.js";
 
 export const DEFAULT_CONSULTATION_FEE = 500;
 
@@ -379,12 +380,15 @@ export class PaymentService {
       this.paymentRepo.count(filter),
     ]);
 
+    const paginated = createPaginatedResponse(payments, total, page, limit);
+
     return {
+      ...paginated,
       payments,
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit) || 1,
+      totalPages: paginated.totalPages,
     };
   }
 

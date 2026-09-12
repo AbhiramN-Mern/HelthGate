@@ -8,6 +8,7 @@ import { INotificationRepository } from "../repositories/interfaces/INotificatio
 import { IAdminRepository } from "../repositories/interfaces/IAdminRepository.js";
 import { IPasswordHasher } from "../core/security/IPasswordHasher.js";
 import { BadRequestError, ConflictError, NotFoundError } from "../core/errors/AppError.js";
+import { createPaginatedResponse } from "../utils/pagination.js";
 
 export class AdminService {
   constructor(
@@ -22,11 +23,67 @@ export class AdminService {
     private passwordHasher: IPasswordHasher,
   ) {}
 
-  async getAllUsers() {
+  async getAllUsers(options?: { search?: string; role?: string; page?: number; limit?: number }) {
+    const page = options?.page;
+    const limit = options?.limit;
+    const filter: Record<string, unknown> = {};
+
+    if (options?.role && options.role !== "all") {
+      filter.role = options.role;
+    }
+    if (options?.search && options.search.trim()) {
+      const term = options.search.trim();
+      filter.$or = [
+        { name: { $regex: term, $options: "i" } },
+        { email: { $regex: term, $options: "i" } },
+      ];
+    }
+
+    if (page !== undefined && limit !== undefined) {
+      const total = await this.userRepo.count(filter);
+      const skip = (Math.max(page, 1) - 1) * limit;
+      const users = await this.userRepo.find(filter, { createdAt: -1 }, limit, skip);
+      return createPaginatedResponse(users, total, page, limit);
+    }
+
     return this.userRepo.findAll();
   }
 
-  async getAllPatients() {
+  async getAllPatients(options?: { search?: string; status?: string; active?: boolean; page?: number; limit?: number }) {
+    const page = options?.page;
+    const limit = options?.limit;
+    const filter: Record<string, unknown> = {};
+
+    if (options?.active !== undefined) {
+      filter.active = options.active;
+    } else if (options?.status && options.status !== "all") {
+      if (options.status === "active") filter.active = true;
+      else if (options.status === "inactive") filter.active = false;
+    }
+
+    if (options?.search && options.search.trim()) {
+      const term = options.search.trim();
+      const matchingUsers = await this.userRepo.find({
+        $or: [
+          { name: { $regex: term, $options: "i" } },
+          { email: { $regex: term, $options: "i" } },
+        ],
+      });
+      const matchingUserIds = matchingUsers.map((u) => u._id);
+
+      filter.$or = [
+        { user: { $in: matchingUserIds } },
+        { phone: { $regex: term, $options: "i" } },
+      ];
+    }
+
+    if (page !== undefined && limit !== undefined) {
+      const total = await this.patientRepo.count(filter);
+      const skip = (Math.max(page, 1) - 1) * limit;
+      const patients = await this.patientRepo.find(filter, true, { createdAt: -1 }, limit, skip);
+      return createPaginatedResponse(patients, total, page, limit);
+    }
+
     return this.patientRepo.findAll(true);
   }
 
@@ -54,8 +111,104 @@ export class AdminService {
     return patient;
   }
 
-  async getAllDoctors() {
-    const doctors = await this.doctorRepo.find({}, true, { createdAt: -1 });
+  async getAllDoctors(options?: {
+    search?: string;
+    status?: string;
+    specialization?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = options?.page;
+    const limit = options?.limit;
+    const query: Record<string, unknown> = {};
+
+    if (options?.status && options.status !== "all") {
+      if (options.status === "active") query.active = true;
+      else if (options.status === "inactive") query.active = false;
+      else if (["pending", "verified", "rejected"].includes(options.status)) {
+        query.verificationStatus = options.status;
+      }
+    }
+
+    if (options?.specialization && options.specialization.trim() && options.specialization !== "all") {
+      query.specialization = { $regex: new RegExp(`^${options.specialization.trim()}$`, "i") };
+    }
+
+    if (options?.search && options.search.trim()) {
+      const term = options.search.trim();
+      const matchingUsers = await this.userRepo.find({
+        $or: [
+          { name: { $regex: term, $options: "i" } },
+          { email: { $regex: term, $options: "i" } },
+        ],
+      });
+      const matchingUserIds = matchingUsers.map((u) => u._id);
+
+      const matchingHospitals = await this.hospitalRepo.find({
+        name: { $regex: term, $options: "i" },
+      });
+      const matchingHospIds = matchingHospitals.map((h) => h._id);
+      const activeDocIdsInMatchingHospitals = await this.hospitalDoctorRepo.distinct("doctor", {
+        hospital: { $in: matchingHospIds },
+        status: "ACTIVE",
+      });
+
+      query.$or = [
+        { user: { $in: matchingUserIds } },
+        { specialization: { $regex: term, $options: "i" } },
+        { licenseNumber: { $regex: term, $options: "i" } },
+        { _id: { $in: activeDocIdsInMatchingHospitals } },
+        { hospital: { $in: matchingHospIds } },
+      ];
+    }
+
+    if (page !== undefined && limit !== undefined) {
+      const total = await this.doctorRepo.count(query);
+      const skip = (Math.max(page, 1) - 1) * limit;
+      const doctors = await this.doctorRepo.find(query, true, { createdAt: -1 }, limit, skip);
+
+      const doctorIds = doctors.map((d: any) => d._id);
+      const activeAssociations = await this.hospitalDoctorRepo.find(
+        { doctor: { $in: doctorIds }, status: "ACTIVE" },
+        { path: "hospital", select: "name isActive departments" },
+      );
+
+      const doctorHospitalsMap: Record<string, any[]> = {};
+      activeAssociations.forEach((assoc: any) => {
+        const docId = String(assoc.doctor);
+        if (!doctorHospitalsMap[docId]) doctorHospitalsMap[docId] = [];
+        if (assoc.hospital) {
+          doctorHospitalsMap[docId].push({
+            _id: assoc.hospital._id,
+            name: assoc.hospital.name,
+            department: assoc.department,
+            relationshipId: assoc._id,
+          });
+        }
+      });
+
+      const enrichedDoctors = doctors.map((d: any) => {
+        const activeHospitals = doctorHospitalsMap[String(d._id)] || [];
+        if (d.hospital && !activeHospitals.some((h) => String(h._id) === String(d.hospital._id))) {
+          activeHospitals.push({
+            _id: d.hospital._id,
+            name: d.hospital.name,
+            department: "",
+          });
+        }
+
+        const docObj = d.toObject ? d.toObject() : { ...d };
+        return {
+          ...docObj,
+          affiliatedHospitals: activeHospitals,
+          isFreelance: activeHospitals.length === 0,
+        };
+      });
+
+      return createPaginatedResponse(enrichedDoctors, total, page, limit);
+    }
+
+    const doctors = await this.doctorRepo.find(query, true, { createdAt: -1 });
 
     const doctorIds = doctors.map((d: any) => d._id);
     const activeAssociations = await this.hospitalDoctorRepo.find(
@@ -322,30 +475,76 @@ export class AdminService {
     };
   }
 
-  async getAllAppointmentsForAdmin(query: Record<string, unknown> = {}) {
+  async getAllAppointmentsForAdmin(
+    query: Record<string, unknown> = {},
+    options?: { page?: number; limit?: number },
+  ) {
+    const page = options?.page;
+    const limit = options?.limit;
+
+    if (page !== undefined && limit !== undefined) {
+      const total = await this.appointmentRepo.count(query);
+      const skip = (Math.max(page, 1) - 1) * limit;
+      const appointments = await this.appointmentRepo.find(query, true, { createdAt: -1 }, undefined, limit, skip);
+      return createPaginatedResponse(appointments, total, page, limit);
+    }
+
     return this.appointmentRepo.find(query, true, { createdAt: -1 });
   }
 
-  async getAllHospitalDoctorsForAdmin() {
-    return this.hospitalDoctorRepo.find(
-      {},
-      [
-        { path: "doctor", populate: { path: "user", select: "name email" } },
-        { path: "hospital", select: "name isActive departments" },
-      ],
-      { updatedAt: -1 },
-    );
+  async getAllHospitalDoctorsForAdmin(options?: {
+    status?: string;
+    hospitalId?: string;
+    doctorId?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = options?.page;
+    const limit = options?.limit;
+    const filter: Record<string, unknown> = {};
+
+    if (options?.status && options.status !== "all") {
+      filter.status = options.status;
+    }
+    if (options?.hospitalId) {
+      filter.hospital = options.hospitalId;
+    }
+    if (options?.doctorId) {
+      filter.doctor = options.doctorId;
+    }
+
+    const populate = [
+      { path: "doctor", populate: { path: "user", select: "name email" } },
+      { path: "hospital", select: "name isActive departments" },
+    ];
+
+    if (page !== undefined && limit !== undefined) {
+      const total = await this.hospitalDoctorRepo.count(filter);
+      const skip = (Math.max(page, 1) - 1) * limit;
+      const relationships = await this.hospitalDoctorRepo.find(filter, populate, { updatedAt: -1 }, limit, skip);
+      return createPaginatedResponse(relationships, total, page, limit);
+    }
+
+    return this.hospitalDoctorRepo.find(filter, populate, { updatedAt: -1 });
   }
 
-  async getHospitalDoctorHistory() {
-    return this.hospitalDoctorRepo.find(
-      { status: { $in: ["REJECTED", "REMOVED", "ACTIVE"] } },
-      [
-        { path: "doctor", populate: { path: "user", select: "name email" } },
-        { path: "hospital", select: "name" },
-      ],
-      { updatedAt: -1 },
-    );
+  async getHospitalDoctorHistory(options?: { page?: number; limit?: number }) {
+    const page = options?.page;
+    const limit = options?.limit;
+    const filter = { status: { $in: ["REJECTED", "REMOVED", "ACTIVE"] } };
+    const populate = [
+      { path: "doctor", populate: { path: "user", select: "name email" } },
+      { path: "hospital", select: "name" },
+    ];
+
+    if (page !== undefined && limit !== undefined) {
+      const total = await this.hospitalDoctorRepo.count(filter);
+      const skip = (Math.max(page, 1) - 1) * limit;
+      const history = await this.hospitalDoctorRepo.find(filter, populate, { updatedAt: -1 }, limit, skip);
+      return createPaginatedResponse(history, total, page, limit);
+    }
+
+    return this.hospitalDoctorRepo.find(filter, populate, { updatedAt: -1 });
   }
 
   async associateDoctorWithHospital(data: {

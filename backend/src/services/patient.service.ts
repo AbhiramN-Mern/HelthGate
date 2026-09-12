@@ -1,6 +1,7 @@
 import { IPatientRepository } from "../repositories/interfaces/IPatientRepository.js";
 import { INotificationRepository } from "../repositories/interfaces/INotificationRepository.js";
 import { BadRequestError, NotFoundError } from "../core/errors/AppError.js";
+import { createPaginatedResponse } from "../utils/pagination.js";
 
 const patientUpdateFields = [
   "dateOfBirth",
@@ -53,7 +54,17 @@ export class PatientService {
     return patient;
   }
 
-  async getPatientNotifications(userId: string) {
+  async getPatientNotifications(userId: string, options?: { page?: number; limit?: number }) {
+    const page = options?.page;
+    const limit = options?.limit;
+
+    if (page !== undefined && limit !== undefined) {
+      const total = await this.notificationRepo.count({ recipient: userId });
+      const skip = (Math.max(page, 1) - 1) * limit;
+      const notifications = await this.notificationRepo.findByRecipient(userId, limit, skip);
+      return createPaginatedResponse(notifications, total, page, limit);
+    }
+
     return this.notificationRepo.findByRecipient(userId, 30);
   }
 
