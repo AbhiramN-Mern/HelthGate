@@ -13,6 +13,7 @@ import { MongoNotificationRepository } from "./repositories/implementations/Mong
 import { MongoAdminRepository } from "./repositories/implementations/MongoAdminRepository.js";
 import { MongoCallSessionRepository } from "./repositories/implementations/MongoCallSessionRepository.js";
 import { MongoPaymentRepository } from "./repositories/implementations/MongoPaymentRepository.js";
+import { MongoPrescriptionRepository } from "./repositories/implementations/MongoPrescriptionRepository.js";
 
 // Gateways & Infrastructure
 import { MockPaymentGateway } from "./infrastructure/payment/mock/MockPaymentGateway.js";
@@ -37,6 +38,7 @@ import { AdminService } from "./services/admin.service.js";
 import { PaymentService } from "./services/payment.service.js";
 import { NotificationService } from "./services/notification.service.js";
 import { VideoCallService } from "./services/videoCall.service.js";
+import { PrescriptionService } from "./services/prescription.service.js";
 
 // 1. Security & Core utilities
 export const passwordHasher = new BcryptPasswordHasher();
@@ -67,6 +69,7 @@ export const notificationRepo = new MongoNotificationRepository();
 export const adminRepo = new MongoAdminRepository();
 export const paymentRepo = new MongoPaymentRepository();
 export const callSessionRepo = new MongoCallSessionRepository();
+export const prescriptionRepo = new MongoPrescriptionRepository();
 
 // 4. Role Handlers & Registry
 export const roleRegistry = new RoleHandlerRegistry();
@@ -127,6 +130,12 @@ export const videoCallService = new VideoCallService(
   appointmentRepo,
   callSessionRepo,
   notificationService,
+  doctorRepo,
+);
+
+export const prescriptionService = new PrescriptionService(
+  prescriptionRepo,
+  appointmentRepo,
   doctorRepo,
 );
 

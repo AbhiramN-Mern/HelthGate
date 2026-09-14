@@ -680,6 +680,16 @@ export type AppointmentItem = {
   status?: string
   reason?: string
   type?: string
+  consultationType?: 'online' | 'offline'
+  actualStartTime?: string
+  startedEarly?: boolean
+  videoCall?: {
+    startedAt?: string
+    endedAt?: string
+    duration?: number
+    roomId?: string
+    enabled?: boolean
+  }
   createdAt?: string
   rescheduleRequest?: RescheduleRequest
   cancellationReason?: string
@@ -1253,6 +1263,72 @@ export const getVideoIceServersApi = async (
 ): Promise<{ success: boolean; iceServers: RTCIceServer[] }> => {
   return request<{ success: boolean; iceServers: RTCIceServer[] }>(
     `/api/video/ice-servers`,
+    {
+      method: 'GET',
+    },
+    token,
+  )
+}
+
+export type MedicineItem = {
+  name: string
+  dosage?: string
+  frequency?: string
+  duration?: string
+  instructions?: string
+}
+
+export type PrescriptionItem = {
+  _id?: string
+  appointment: string | { _id: string; appointmentDate?: string; timeSlot?: string; consultationType?: string; status?: string }
+  patient: string | { _id: string; name?: string; email?: string; phone?: string; gender?: string; dateOfBirth?: string }
+  doctor: string | { _id: string; user?: { name?: string; email?: string }; specialization?: string }
+  diagnosis: string
+  medicines: MedicineItem[]
+  additionalAdvice?: string
+  followUpDate?: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export const savePrescriptionApi = async (
+  appointmentId: string,
+  payload: {
+    diagnosis: string
+    medicines: MedicineItem[]
+    additionalAdvice?: string
+    followUpDate?: string | null
+  },
+  token: string,
+): Promise<{ success: boolean; message?: string; prescription?: PrescriptionItem }> => {
+  return request<{ success: boolean; message?: string; prescription?: PrescriptionItem }>(
+    `/api/prescriptions/appointment/${appointmentId}`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+    token,
+  )
+}
+
+export const getPrescriptionByAppointmentApi = async (
+  appointmentId: string,
+  token: string,
+): Promise<{ success: boolean; message?: string; prescription?: PrescriptionItem | null }> => {
+  return request<{ success: boolean; message?: string; prescription?: PrescriptionItem | null }>(
+    `/api/prescriptions/appointment/${appointmentId}`,
+    {
+      method: 'GET',
+    },
+    token,
+  )
+}
+
+export const getMyPrescriptionsApi = async (
+  token: string,
+): Promise<{ success: boolean; message?: string; prescriptions?: PrescriptionItem[] }> => {
+  return request<{ success: boolean; message?: string; prescriptions?: PrescriptionItem[] }>(
+    `/api/prescriptions/my`,
     {
       method: 'GET',
     },

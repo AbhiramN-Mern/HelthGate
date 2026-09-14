@@ -21,6 +21,7 @@ import {
   type PaymentRecord,
   type PaymentOrderResult,
 } from '../../api/auth.api'
+import { PatientPrescriptionModal } from '../../components/prescription/PatientPrescriptionModal'
 import {
   SearchIcon,
   CalendarIcon,
@@ -127,10 +128,14 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   const [bookingDate, setBookingDate] = useState('')
   const [bookingTime, setBookingTime] = useState('10:00 AM')
   const [bookingReason, setBookingReason] = useState('')
+  const [consultationType, setConsultationType] = useState<'online' | 'offline'>('online')
   const [bookingSubmitting, setBookingSubmitting] = useState(false)
   const [bookingFeedback, setBookingFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [calMonth, setCalMonth] = useState<Date>(new Date())
   const [bookedSlotsByDate, setBookedSlotsByDate] = useState<Record<string, string[]>>({})
+
+  // Prescription Modal State
+  const [selectedPrescriptionApptId, setSelectedPrescriptionApptId] = useState<string | null>(null)
 
   // Booking Success Message Modal State
   const [bookingSuccessModal, setBookingSuccessModal] = useState<BookingSuccessDetails | null>(null)
@@ -618,6 +623,11 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   const handleCloseBooking = () => {
     setBookingDoctor(null)
     setBookingFeedback(null)
+    setConsultationType('online')
+  }
+
+  const handleOpenPrescription = (appointmentId: string) => {
+    setSelectedPrescriptionApptId(appointmentId)
   }
 
   const handlePrevMonth = () => {
@@ -676,6 +686,8 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
           appointmentDate: bookingDate,
           timeSlot: bookingTime,
           reason: bookingReason.trim() || 'General Consultation',
+          consultationType,
+          type: consultationType === 'online' ? 'Video' : 'In-Person',
         }),
       })
 
@@ -726,7 +738,10 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
           '',
         appointmentDate: confirmedDate,
         timeSlot: confirmedTime,
-        consultationType: appt?.type || 'In-Person Consultation',
+        consultationType:
+          (appt?.consultationType || consultationType) === 'online'
+            ? 'Online Consultation (Video)'
+            : 'Offline Consultation (In-Person)',
       }
 
       const bookingSuccessDetails: BookingSuccessDetails = {
@@ -1368,9 +1383,26 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 return (
                   <div key={appt._id} className="php-appointment-card upcoming">
                     <div className="php-appt-header">
-                      <span className={`php-appt-status-badge ${appt.status === 'confirmed' ? 'confirmed' : 'pending_payment'}`}>
-                        ● {appt.status === 'confirmed' ? 'Confirmed' : 'Pending Payment'}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span className={`php-appt-status-badge ${appt.status === 'confirmed' ? 'confirmed' : 'pending_payment'}`}>
+                          ● {appt.status === 'confirmed' ? 'Confirmed' : 'Pending Payment'}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            background: appt.consultationType === 'offline' ? '#f1f5f9' : '#e0f2fe',
+                            color: appt.consultationType === 'offline' ? '#475569' : '#0369a1',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          {appt.consultationType === 'offline' ? '🏥 Offline Visit' : '📹 Online Video'}
+                        </span>
+                      </div>
                       <span className="php-appt-time-badge">
                         {appt.timeSlot || '10:00 AM'}
                       </span>
@@ -1460,26 +1492,29 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           }}>
                             <CheckCircleIcon size={13} /> Paid & Confirmed
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => navigate(`/consultation/${appt._id}`)}
-                            style={{
-                              background: 'linear-gradient(135deg, #0ea5a4 0%, #0284c7 100%)',
-                              color: '#ffffff',
-                              border: 'none',
-                              padding: '5px 12px',
-                              borderRadius: '8px',
-                              fontSize: '0.78rem',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              boxShadow: '0 2px 6px rgba(14, 165, 164, 0.25)',
-                            }}
-                          >
-                            📹 Join Video Call
-                          </button>
+                          {/* ONLY online appointments can join video call */}
+                          {appt.consultationType !== 'offline' && (
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/consultation/${appt._id}`)}
+                              style={{
+                                background: 'linear-gradient(135deg, #0ea5a4 0%, #0284c7 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                padding: '5px 12px',
+                                borderRadius: '8px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                boxShadow: '0 2px 6px rgba(14, 165, 164, 0.25)',
+                              }}
+                            >
+                              📹 Join Video Call
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <button
@@ -1707,9 +1742,26 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   return (
                     <div key={appt._id} className={cardClass}>
                       <div className="php-appt-header">
-                        <span className={statusBadgeClass}>
-                          ● {statusLabel}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span className={statusBadgeClass}>
+                            ● {statusLabel}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              background: appt.consultationType === 'offline' ? '#f1f5f9' : '#e0f2fe',
+                              color: appt.consultationType === 'offline' ? '#475569' : '#0369a1',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            {appt.consultationType === 'offline' ? '🏥 Offline' : '📹 Online'}
+                          </span>
+                        </div>
                         <span className="php-appt-time-badge">
                           {appt.timeSlot || '10:00 AM'}
                         </span>
@@ -1763,11 +1815,33 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                       )}
 
                       {/* History Status Footer Note */}
-                      <div className="php-history-card-footer">
+                      <div className="php-history-card-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                         {isCompleted && (
-                          <span className="php-history-card-tag completed">
-                            <CheckCircleIcon size={13} /> Consultation Completed
-                          </span>
+                          <>
+                            <span className="php-history-card-tag completed">
+                              <CheckCircleIcon size={13} /> Consultation Completed
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenPrescription(appt._id!)}
+                              style={{
+                                background: 'linear-gradient(135deg, #0d5c63 0%, #0ea5a4 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                padding: '6px 14px',
+                                borderRadius: '8px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                boxShadow: '0 2px 6px rgba(13, 92, 99, 0.2)',
+                              }}
+                            >
+                              📄 View Prescription
+                            </button>
+                          </>
                         )}
                         {isCancelled && (
                           <span className="php-history-card-tag cancelled">
@@ -2572,6 +2646,145 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                     )}
                   </div>
 
+                  {/* Consultation Type Selection */}
+                  <div className="php-form-group">
+                    <label className="php-form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      Consultation Type <span style={{ color: '#ef4444', fontWeight: 800 }}>*</span>
+                    </label>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+                        gap: '12px',
+                        marginTop: '6px',
+                      }}
+                    >
+                      <div
+                        onClick={() => setConsultationType('online')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '12px',
+                          padding: '12px 14px',
+                          borderRadius: '12px',
+                          border:
+                            consultationType === 'online'
+                              ? '2px solid #0ea5a4'
+                              : '1px solid #cbd5e1',
+                          background:
+                            consultationType === 'online'
+                              ? 'rgba(14, 165, 164, 0.08)'
+                              : '#ffffff',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          boxShadow:
+                            consultationType === 'online'
+                              ? '0 4px 14px rgba(14, 165, 164, 0.15)'
+                              : 'none',
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          id="consult-type-online"
+                          name="consultationType"
+                          value="online"
+                          checked={consultationType === 'online'}
+                          onChange={() => setConsultationType('online')}
+                          style={{ marginTop: '3px', accentColor: '#0ea5a4' }}
+                        />
+                        <div style={{ flex: 1 }}>
+                          <label
+                            htmlFor="consult-type-online"
+                            style={{
+                              fontWeight: 700,
+                              fontSize: '0.92rem',
+                              color: '#0f172a',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              cursor: 'pointer',
+                              marginBottom: '2px',
+                            }}
+                          >
+                            📹 Online Consultation
+                          </label>
+                          <p
+                            style={{
+                              fontSize: '0.78rem',
+                              color: '#64748b',
+                              margin: 0,
+                              lineHeight: 1.35,
+                            }}
+                          >
+                            Video consultation with the doctor
+                          </p>
+                        </div>
+                      </div>
+
+                      <div
+                        onClick={() => setConsultationType('offline')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '12px',
+                          padding: '12px 14px',
+                          borderRadius: '12px',
+                          border:
+                            consultationType === 'offline'
+                              ? '2px solid #0d5c63'
+                              : '1px solid #cbd5e1',
+                          background:
+                            consultationType === 'offline'
+                              ? 'rgba(13, 92, 99, 0.08)'
+                              : '#ffffff',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          boxShadow:
+                            consultationType === 'offline'
+                              ? '0 4px 14px rgba(13, 92, 99, 0.15)'
+                              : 'none',
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          id="consult-type-offline"
+                          name="consultationType"
+                          value="offline"
+                          checked={consultationType === 'offline'}
+                          onChange={() => setConsultationType('offline')}
+                          style={{ marginTop: '3px', accentColor: '#0d5c63' }}
+                        />
+                        <div style={{ flex: 1 }}>
+                          <label
+                            htmlFor="consult-type-offline"
+                            style={{
+                              fontWeight: 700,
+                              fontSize: '0.92rem',
+                              color: '#0f172a',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              cursor: 'pointer',
+                              marginBottom: '2px',
+                            }}
+                          >
+                            🏥 Offline Consultation
+                          </label>
+                          <p
+                            style={{
+                              fontSize: '0.78rem',
+                              color: '#64748b',
+                              margin: 0,
+                              lineHeight: 1.35,
+                            }}
+                          >
+                            Visit the hospital/clinic physically
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Reason for Visit */}
                   <div className="php-form-group">
                     <label className="php-form-label">Reason for Visit (Optional)</label>
@@ -3016,6 +3229,19 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             </div>
           </div>
         </div>
+      )}
+
+      {/* ========================================================
+          CLINICAL PRESCRIPTION VIEW MODAL
+          ======================================================== */}
+      {selectedPrescriptionApptId && (
+        <PatientPrescriptionModal
+          isOpen={!!selectedPrescriptionApptId}
+          onClose={() => setSelectedPrescriptionApptId(null)}
+          appointmentId={selectedPrescriptionApptId}
+          token={token}
+          fallbackPatientName={user?.name}
+        />
       )}
     </div>
   )

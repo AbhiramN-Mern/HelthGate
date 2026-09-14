@@ -247,14 +247,29 @@ export class AppointmentService {
     timeSlot?: string;
     reason?: string;
     type?: string;
+    consultationType?: "online" | "offline" | string;
   }) {
-    const { patientUserId, doctor, hospital, department, appointmentDate, timeSlot, reason, type } = data;
+    const { patientUserId, doctor, hospital, department, appointmentDate, timeSlot, reason, type, consultationType } = data;
 
     if (!doctor || !appointmentDate) {
       throw new BadRequestError("Doctor and appointmentDate are required");
     }
 
     const cleanTimeSlot = (timeSlot || "10:00 AM").trim();
+
+    // Validate and resolve consultationType
+    let resolvedConsultationType: "online" | "offline" = "online";
+    if (consultationType) {
+      const normalized = consultationType.toString().trim().toLowerCase();
+      if (normalized !== "online" && normalized !== "offline") {
+        throw new BadRequestError("consultationType must be either 'online' or 'offline'");
+      }
+      resolvedConsultationType = normalized as "online" | "offline";
+    } else if (type && (type.toLowerCase() === "in-person" || type.toLowerCase() === "offline")) {
+      resolvedConsultationType = "offline";
+    }
+
+    const resolvedLegacyType = resolvedConsultationType === "online" ? "Video" : "In-Person";
 
     const validation = await this.validateDoctorSlotAvailability({
       doctorId: doctor,
@@ -314,7 +329,8 @@ export class AppointmentService {
       appointmentDate: new Date(appointmentDate),
       timeSlot: cleanTimeSlot,
       reason: reason || "General Consultation",
-      type: (type as any) || "In-Person",
+      type: (type as any) || resolvedLegacyType,
+      consultationType: resolvedConsultationType,
       status: "pending_payment",
     });
 

@@ -11,6 +11,7 @@ import appointmentRoutes from "./routes/appointment.routes.js";
 import specializationRoutes from "./routes/specialization.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import videoCallRoutes from "./routes/videoCall.routes.js";
+import prescriptionRoutes from "./routes/prescription.routes.js";
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use("/api/specializations", specializationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/video-calls", videoCallRoutes);
 app.use("/api/video", videoCallRoutes);
+app.use("/api/prescriptions", prescriptionRoutes);
 
 
 // Health check route

@@ -4,11 +4,15 @@ import {
   getVideoCallDetailsApi,
   endVideoCallApi,
   type VideoCallSessionDetails,
+  type AppointmentItem,
+  type PrescriptionItem,
 } from '../../api/auth.api'
 import { useWebRTC } from '../../hooks/useWebRTC'
 import { RemoteVideo } from '../../components/video/RemoteVideo'
 import { LocalVideo } from '../../components/video/LocalVideo'
 import { CallControls } from '../../components/video/CallControls'
+import { PrescriptionModal } from '../../components/prescription/PrescriptionModal'
+import { PatientPrescriptionModal } from '../../components/prescription/PatientPrescriptionModal'
 import './ConsultationPage.css'
 
 export default function ConsultationPage() {
@@ -24,6 +28,9 @@ export default function ConsultationPage() {
   const [loading, setLoading] = useState(true)
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [callEndedInfo, setCallEndedInfo] = useState<{ endedBy: string; reason?: string } | null>(null)
+  const [showDoctorPrescriptionModal, setShowDoctorPrescriptionModal] = useState(false)
+  const [savedPrescription, setSavedPrescription] = useState<PrescriptionItem | null>(null)
+  const [showPatientPrescriptionModal, setShowPatientPrescriptionModal] = useState(false)
 
   const token = localStorage.getItem('helthgate_token') || ''
 
@@ -128,7 +135,7 @@ export default function ConsultationPage() {
       } catch (e) {
         console.warn('Error finalizing end call:', e)
       }
-      navigate(getDashboardRoute())
+      setCallEndedInfo({ endedBy: 'user', reason: 'Consultation concluded by user' })
     }
   }
 
@@ -226,33 +233,209 @@ export default function ConsultationPage() {
     )
   }
 
-  // Render: Call Ended Modal/Screen
+  // Render: Call Ended Screen with Post-Consultation Prescription Flow
   if (callEndedInfo) {
+    const isDoctor = session?.userRole === 'doctor'
+    const modalAppt: AppointmentItem | null = session
+      ? {
+          _id: session.appointmentId || paramApptId || '',
+          appointmentDate: session.appointmentDate || new Date().toISOString(),
+          timeSlot: session.timeSlot || '10:00 AM',
+          status: 'completed',
+          patient: {
+            _id: '',
+            name: session.patientName || 'Patient',
+            email: '',
+          },
+          doctor: {
+            _id: '',
+            user: { name: session.doctorName || 'Doctor' },
+            specialization: session.specialization,
+          },
+          consultationType: 'online',
+        }
+      : null
+
     return (
       <div className="hg-consultation-page">
         <div className="hg-error-screen">
-          <div className="hg-error-card">
-            <div className="hg-error-icon-box" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="hg-error-card" style={{ maxWidth: '560px', padding: '32px' }}>
+            <div
+              className="hg-error-icon-box"
+              style={{
+                background: 'rgba(16, 185, 129, 0.15)',
+                color: '#10b981',
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px auto',
+              }}
+            >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
             </div>
-            <h3 className="hg-error-title">Consultation Concluded</h3>
-            <p className="hg-error-message">
-              The video call has ended. Your appointment record and consultation metadata have been safely updated.
+
+            <h3 className="hg-error-title" style={{ fontSize: '1.4rem', color: '#0f172a', marginBottom: '6px' }}>
+              {isDoctor ? 'Consultation Completed' : 'Consultation Concluded'}
+            </h3>
+
+            <p className="hg-error-message" style={{ fontSize: '0.92rem', color: '#64748b', marginBottom: '20px' }}>
+              {isDoctor
+                ? `The video consultation with ${session?.patientName || 'the patient'} has finished successfully. You can now issue clinical advice and a medicine prescription.`
+                : `Your video consultation with Dr. ${session?.doctorName?.replace(/^Dr\.?\s*/i, '') || 'Doctor'} has concluded.`}
             </p>
-            <div className="hg-error-actions">
-              <button
-                type="button"
-                className="hg-btn-primary-action"
-                onClick={() => navigate(getDashboardRoute())}
-              >
-                Return to Dashboard
-              </button>
+
+            <div
+              style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '16px',
+                marginBottom: '24px',
+                textAlign: 'left',
+              }}
+            >
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem' }}>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>
+                    {isDoctor ? 'Patient' : 'Attending Doctor'}
+                  </span>
+                  <div style={{ fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+                    {isDoctor ? session?.patientName || 'Patient' : `Dr. ${session?.doctorName?.replace(/^Dr\.?\s*/i, '') || 'Doctor'}`}
+                  </div>
+                  {session?.specialization && (
+                    <div style={{ fontSize: '0.78rem', color: '#0ea5a4', fontWeight: 600 }}>
+                      {session.specialization}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Appointment Slot
+                  </span>
+                  <div style={{ fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+                    {session?.timeSlot || 'Scheduled Slot'}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                    {session?.appointmentDate
+                      ? new Date(session.appointmentDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
+                      : 'Today'}
+                  </div>
+                </div>
+              </div>
+
+              {savedPrescription && (
+                <div
+                  style={{
+                    marginTop: '14px',
+                    padding: '10px 12px',
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: '8px',
+                    color: '#166534',
+                    fontSize: '0.84rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <span>✓</span>
+                  <span>Prescription created with {savedPrescription.medicines?.length || 0} prescribed medicine(s).</span>
+                </div>
+              )}
+            </div>
+
+            <div className="hg-error-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {isDoctor ? (
+                <>
+                  <button
+                    type="button"
+                    className="hg-btn-primary-action"
+                    style={{
+                      background: 'linear-gradient(135deg, #0d5c63 0%, #088395 100%)',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '10px 22px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setShowDoctorPrescriptionModal(true)}
+                  >
+                    {savedPrescription ? '📄 Edit Prescription' : '📄 Create Prescription & Advice'}
+                  </button>
+                  <button
+                    type="button"
+                    className="hg-btn-secondary-action"
+                    onClick={() => navigate(getDashboardRoute())}
+                  >
+                    {savedPrescription ? 'Return to Dashboard' : 'Skip & Return to Dashboard'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="hg-btn-primary-action"
+                    style={{
+                      background: 'linear-gradient(135deg, #0d5c63 0%, #088395 100%)',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '10px 22px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setShowPatientPrescriptionModal(true)}
+                  >
+                    📄 View Prescription
+                  </button>
+                  <button
+                    type="button"
+                    className="hg-btn-secondary-action"
+                    onClick={() => navigate(getDashboardRoute())}
+                  >
+                    Return to Home
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Doctor Prescription Modal */}
+        {showDoctorPrescriptionModal && modalAppt && (
+          <PrescriptionModal
+            isOpen={showDoctorPrescriptionModal}
+            appointment={modalAppt}
+            token={token}
+            onClose={() => setShowDoctorPrescriptionModal(false)}
+            onSaved={(prescription) => {
+              setSavedPrescription(prescription)
+            }}
+          />
+        )}
+
+        {/* Patient Prescription Viewer Modal */}
+        {showPatientPrescriptionModal && (
+          <PatientPrescriptionModal
+            isOpen={showPatientPrescriptionModal}
+            onClose={() => setShowPatientPrescriptionModal(false)}
+            appointmentId={session?.appointmentId || paramApptId}
+            token={token}
+            fallbackPatientName={session?.patientName}
+          />
+        )}
       </div>
     )
   }

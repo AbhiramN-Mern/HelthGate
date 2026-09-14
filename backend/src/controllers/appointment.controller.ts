@@ -55,7 +55,7 @@ export const createAppointment = async (
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const { doctor, hospital, department, appointmentDate, timeSlot, reason, type } = req.body;
+    const { doctor, hospital, department, appointmentDate, timeSlot, reason, type, consultationType } = req.body;
 
     const appointment = await appointmentService.createAppointment({
       patientUserId,
@@ -66,6 +66,7 @@ export const createAppointment = async (
       timeSlot,
       reason,
       type,
+      consultationType,
     });
 
     return res.status(201).json({

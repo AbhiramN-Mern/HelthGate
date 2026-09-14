@@ -175,9 +175,37 @@ export class VideoCallService {
   }
 
   /**
+   * Helper to parse scheduled appointment Date and timeSlot into a single Date object
+   */
+  public computeScheduledDateTime(appointmentDate: Date | string, timeSlot?: string): Date | null {
+    if (!appointmentDate) return null;
+    const dateObj = new Date(appointmentDate);
+    if (isNaN(dateObj.getTime())) return null;
+
+    let hours = 10;
+    let minutes = 0;
+    if (timeSlot) {
+      const match = timeSlot.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+      if (match) {
+        let parsedHours = parseInt(match[1], 10);
+        const parsedMinutes = parseInt(match[2], 10);
+        const meridian = match[3]?.toUpperCase();
+        if (meridian === "PM" && parsedHours < 12) parsedHours += 12;
+        else if (meridian === "AM" && parsedHours === 12) parsedHours = 0;
+        hours = parsedHours;
+        minutes = parsedMinutes;
+      }
+    }
+
+    const scheduled = new Date(dateObj);
+    scheduled.setHours(hours, minutes, 0, 0);
+    return scheduled;
+  }
+
+  /**
    * Doctor Starts Consultation Call
    * CRITICAL REQUIREMENT: DO NOT block by appointment start time.
-   * Doctor can start any eligible appointment at any time.
+   * Doctor can start any eligible online appointment at any time.
    */
   async startConsultationCall({
     appointmentId,
@@ -220,6 +248,13 @@ export class VideoCallService {
       );
     }
 
+    // Consultation Type Eligibility Check
+    if (appointment.consultationType === "offline") {
+      throw new BadRequestError(
+        "Video consultation is not available for offline appointments. This appointment is scheduled for in-person clinic consultation.",
+      );
+    }
+
     // Status Eligibility Check
     const normalizedStatus = (appointment.status || "").toLowerCase();
     if (normalizedStatus === "cancelled") {
@@ -237,15 +272,31 @@ export class VideoCallService {
       );
     }
 
-    // Notice: We intentionally DO NOT check appointment start time or date here!
-    // Doctors are authorized to initiate the call at any time for eligible appointments.
+    // Notice: We intentionally DO NOT block by appointment start time or date!
+    // Doctors are authorized to initiate early if needed. We calculate and record if it started early:
+    const now = new Date();
+    const scheduledStart = this.computeScheduledDateTime(
+      appointment.appointmentDate,
+      appointment.timeSlot,
+    );
+    const startedEarly = scheduledStart ? now.getTime() < scheduledStart.getTime() : false;
+
+    // Persist actualStartTime and videoCall start metadata on appointment
+    await this.appointmentRepo.findByIdAndUpdate(appointment._id, {
+      actualStartTime: appointment.actualStartTime || now,
+      startedEarly: appointment.startedEarly ?? startedEarly,
+      "videoCall.startedAt": appointment.videoCall?.startedAt || now,
+      "videoCall.enabled": true,
+    });
 
     // 5. Prevent Duplicate Active Sessions: Check for existing ringing/active session
+    let isNewSession = false;
     let session = this.callSessionRepo
       ? await this.callSessionRepo.findActiveByAppointment(appointment._id)
       : null;
 
     if (!session) {
+      isNewSession = true;
       const secureRoomId = `room-${crypto.randomUUID()}`;
       if (this.callSessionRepo) {
         session = await this.callSessionRepo.create({
@@ -281,28 +332,33 @@ export class VideoCallService {
 
     const activeSession = session!;
 
-    // 6. Persistent Notification for Patient (Database)
-    if (this.notificationService) {
-      await this.notificationService.sendVideoCallNotification({
-        patientUserId,
-        appointmentId: appointment._id,
-        callSessionId: activeSession._id,
-        doctorName,
-      });
-    }
+    // 6. Persistent & Real-Time Notification for Patient
+    // Only send notification if creating a brand new session (prevents duplicate spam on doctor reconnect/refresh)
+    if (isNewSession) {
+      if (this.notificationService) {
+        await this.notificationService.sendVideoCallNotification({
+          patientUserId,
+          appointmentId: appointment._id,
+          callSessionId: activeSession._id,
+          doctorName,
+          appointmentDate: appointment.appointmentDate,
+          timeSlot: appointment.timeSlot,
+        });
+      }
 
-    // 7. Real-Time Socket Notification to Patient
-    if (this.socketBroadcaster) {
-      this.socketBroadcaster("video-call-incoming", `user:${patientUserId}`, {
-        callSessionId: activeSession._id.toString(),
-        appointmentId: appointment._id.toString(),
-        roomId: activeSession.roomId,
-        doctorName,
-        specialization,
-        timeSlot: appointment.timeSlot,
-        title: "Video Consultation Started",
-        message: `Dr. ${doctorName.replace(/^Dr\.?\s*/i, "")} has started a video consultation.`,
-      });
+      if (this.socketBroadcaster) {
+        this.socketBroadcaster("video-call-incoming", `user:${patientUserId}`, {
+          callSessionId: activeSession._id.toString(),
+          appointmentId: appointment._id.toString(),
+          roomId: activeSession.roomId,
+          doctorName,
+          specialization,
+          timeSlot: appointment.timeSlot,
+          appointmentDate: appointment.appointmentDate,
+          title: "Video Consultation Started",
+          message: `Dr. ${doctorName.replace(/^Dr\.?\s*/i, "")} has started your video consultation. The doctor is ready to meet you.`,
+        });
+      }
     }
 
     const iceServers = await this.getIceServers();
@@ -398,6 +454,12 @@ export class VideoCallService {
       true,
     );
 
+    if (appointment?.consultationType === "offline") {
+      throw new BadRequestError(
+        "Video consultation is not available for offline appointments. Please visit the clinic.",
+      );
+    }
+
     const { doctorName, patientName, specialization } =
       appointment
         ? await this.resolveAppointmentParticipants(appointment)
@@ -460,6 +522,13 @@ export class VideoCallService {
 
     if (!appointment) {
       throw new NotFoundError("Appointment not found");
+    }
+
+    // Offline check
+    if (appointment.consultationType === "offline") {
+      throw new BadRequestError(
+        "Video consultation is not available for offline appointments. This appointment is scheduled for in-person clinic consultation.",
+      );
     }
 
     const {

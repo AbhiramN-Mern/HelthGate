@@ -637,19 +637,44 @@ export class NotificationService {
     appointmentId,
     callSessionId,
     doctorName,
+    appointmentDate,
+    timeSlot,
   }: {
     patientUserId: string | Types.ObjectId;
     appointmentId: string | Types.ObjectId;
     callSessionId: string | Types.ObjectId;
     doctorName: string;
+    appointmentDate?: string | Date;
+    timeSlot?: string;
   }) {
     try {
+      // Prevent duplicate unread notifications for the same appointment session
+      const existing = await this.notificationRepo.find({
+        recipient: patientUserId,
+        type: "video_call_started",
+        appointment: appointmentId,
+        isRead: false,
+      });
+
+      if (existing && existing.length > 0) {
+        return { success: true, notification: existing[0] };
+      }
+
       const cleanDoctorName = (doctorName || "Doctor").replace(/^Dr\.?\s*/i, "");
+      let dateInfo = "";
+      if (appointmentDate) {
+        const d = new Date(appointmentDate);
+        dateInfo = !isNaN(d.getTime()) ? ` for ${d.toLocaleDateString()}` : "";
+      }
+      if (timeSlot) {
+        dateInfo += dateInfo ? ` at ${timeSlot}` : ` at ${timeSlot}`;
+      }
+
       const notification = await this.notificationRepo.create({
         recipient: patientUserId,
         type: "video_call_started",
         title: "Video Consultation Started",
-        message: `Dr. ${cleanDoctorName} has started a video consultation.`,
+        message: `Dr. ${cleanDoctorName} has started your video consultation${dateInfo}. The doctor is ready to meet you.`,
         appointment: appointmentId,
         callSession: callSessionId,
       });

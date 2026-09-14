@@ -21,6 +21,7 @@ import {
   type Hospital,
   type HospitalDoctorItem,
 } from '../../api/auth.api'
+import { PrescriptionModal } from '../../components/prescription/PrescriptionModal'
 import './DoctorDashboardPage.css'
 import {
   CalendarIcon,
@@ -118,6 +119,16 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
   const [consultNotes, setConsultNotes] = useState('')
   const [consultDiagnosis, setConsultDiagnosis] = useState('')
   const [consultSubmitting, setConsultSubmitting] = useState(false)
+
+  // Early Video Consultation Confirmation Warning Modal State
+  const [earlyCallAppt, setEarlyCallAppt] = useState<{
+    appt: AppointmentItem
+    timeStr: string
+    dateStr: string
+  } | null>(null)
+
+  // End-of-Consultation Prescription Modal State
+  const [prescriptionModalAppt, setPrescriptionModalAppt] = useState<AppointmentItem | null>(null)
 
   // Appointment Details Modal State
   const [viewingAppt, setViewingAppt] = useState<AppointmentItem | null>(null)
@@ -387,6 +398,48 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
   }
 
   const [startingCallApptId, setStartingCallApptId] = useState<string | null>(null)
+
+  // Helper to dynamically check if scheduled appointment time has not arrived yet
+  const checkIsEarlyConsultation = (appt: AppointmentItem): { isEarly: boolean; timeStr: string; dateStr: string } => {
+    if (!appt.appointmentDate) return { isEarly: false, timeStr: '10:00 AM', dateStr: 'Today' }
+    const dateObj = new Date(appt.appointmentDate)
+    const timeSlot = (appt.timeSlot || '10:00 AM').trim()
+
+    let hours = 10
+    let minutes = 0
+    const match = timeSlot.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i)
+    if (match) {
+      let h = parseInt(match[1], 10)
+      const m = parseInt(match[2], 10)
+      const meridian = match[3]?.toUpperCase()
+      if (meridian === 'PM' && h < 12) h += 12
+      else if (meridian === 'AM' && h === 12) h = 0
+      hours = h
+      minutes = m
+    }
+
+    const scheduledDate = new Date(dateObj)
+    scheduledDate.setHours(hours, minutes, 0, 0)
+    const isEarly = new Date().getTime() < scheduledDate.getTime()
+
+    const dateStr = dateObj.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+
+    return { isEarly, timeStr: timeSlot, dateStr }
+  }
+
+  // Doctor clicks "Start Video Consultation"
+  const handleInitiateVideoCallClick = (appt: AppointmentItem) => {
+    const { isEarly, timeStr, dateStr } = checkIsEarlyConsultation(appt)
+    if (isEarly) {
+      setEarlyCallAppt({ appt, timeStr, dateStr })
+    } else {
+      handleStartVideoConsultation(appt)
+    }
+  }
 
   // Start Real-Time Video Consultation
   const handleStartVideoConsultation = async (appt: AppointmentItem) => {
@@ -1311,9 +1364,20 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                         </div>
                       </div>
 
-                      <span className={`dd-status-pill ${statusClass}`}>
-                        ● {appt.status || 'Scheduled'}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {appt.consultationType === 'offline' ? (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f1f5f9', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            🏥 Offline Visit
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#ecfdf5', color: '#065f46', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            📹 Online Video
+                          </span>
+                        )}
+                        <span className={`dd-status-pill ${statusClass}`}>
+                          ● {appt.status || 'Scheduled'}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="dd-appt-details-row">
@@ -1378,7 +1442,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                         </button>
                       )}
 
-                      {!isCompleted && appt.status !== 'cancelled' && (
+                      {appt.consultationType !== 'offline' && !isCompleted && appt.status !== 'cancelled' && (
                         <button
                           type="button"
                           className="dd-btn-consult"
@@ -1396,10 +1460,33 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                             gap: '6px',
                           }}
                           disabled={startingCallApptId === appt._id}
-                          onClick={() => handleStartVideoConsultation(appt)}
+                          onClick={() => handleInitiateVideoCallClick(appt)}
                           title="Start Video Consultation (Available anytime)"
                         >
                           {startingCallApptId === appt._id ? 'Connecting...' : '📹 Start Video Consultation'}
+                        </button>
+                      )}
+
+                      {isCompleted && (
+                        <button
+                          type="button"
+                          className="dd-btn-consult"
+                          style={{
+                            background: 'linear-gradient(135deg, #0d5c63 0%, #088395 100%)',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontWeight: 600,
+                            fontSize: '0.84rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                          onClick={() => setPrescriptionModalAppt(appt)}
+                        >
+                          📄 Prescription
                         </button>
                       )}
 
@@ -1466,9 +1553,20 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                         </div>
                       </div>
 
-                      <span className={`dd-status-pill ${appt.status || 'scheduled'}`}>
-                        ● {appt.status || 'Scheduled'}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {appt.consultationType === 'offline' ? (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f1f5f9', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            🏥 Offline Visit
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#ecfdf5', color: '#065f46', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            📹 Online Video
+                          </span>
+                        )}
+                        <span className={`dd-status-pill ${appt.status || 'scheduled'}`}>
+                          ● {appt.status || 'Scheduled'}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="dd-appt-details-row">
@@ -1523,7 +1621,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                         View Details
                       </button>
 
-                      {appt.status !== 'completed' && appt.status !== 'cancelled' && (
+                      {appt.consultationType !== 'offline' && appt.status !== 'completed' && appt.status !== 'cancelled' && (
                         <button
                           type="button"
                           className="dd-btn-consult"
@@ -1542,10 +1640,34 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                             flex: 1,
                           }}
                           disabled={startingCallApptId === appt._id}
-                          onClick={() => handleStartVideoConsultation(appt)}
+                          onClick={() => handleInitiateVideoCallClick(appt)}
                           title="Start Video Consultation (Doctor can start anytime)"
                         >
                           {startingCallApptId === appt._id ? 'Connecting...' : '📹 Video Call'}
+                        </button>
+                      )}
+
+                      {appt.status === 'completed' && (
+                        <button
+                          type="button"
+                          className="dd-btn-consult"
+                          style={{
+                            background: 'linear-gradient(135deg, #0d5c63 0%, #088395 100%)',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '7px 12px',
+                            borderRadius: '8px',
+                            fontWeight: 600,
+                            fontSize: '0.82rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            flex: 1,
+                          }}
+                          onClick={() => setPrescriptionModalAppt(appt)}
+                        >
+                          📄 Prescription
                         </button>
                       )}
 
@@ -2101,9 +2223,9 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                 </div>
 
                 <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '12px' }}>
-                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}>Format</span>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}>Consultation Format</span>
                   <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-                    {viewingAppt.type || 'In-Person'}
+                    {viewingAppt.consultationType === 'offline' ? '🏥 Offline Visit' : '📹 Online Video'}
                   </div>
                 </div>
               </div>
@@ -2129,6 +2251,37 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                   <div style={{ fontSize: '0.74rem', color: '#78350f', marginTop: '4px', fontStyle: 'italic' }}>
                     Awaiting patient confirmation. The original confirmed schedule remains active until accepted.
                   </div>
+                </div>
+              )}
+
+              {viewingAppt.status === 'completed' && (
+                <div style={{ marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    className="dd-btn-consult"
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      fontSize: '0.85rem',
+                      background: 'linear-gradient(135deg, #0d5c63 0%, #088395 100%)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                    }}
+                    onClick={() => {
+                      const target = viewingAppt
+                      setViewingAppt(null)
+                      setPrescriptionModalAppt(target)
+                    }}
+                  >
+                    📄 View / Edit Prescription
+                  </button>
                 </div>
               )}
 
@@ -2650,6 +2803,113 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
             </form>
           </div>
         </div>
+      )}
+
+      {/* EARLY VIDEO CONSULTATION CONFIRMATION MODAL */}
+      {earlyCallAppt && (
+        <div className="dd-modal-overlay" onClick={() => setEarlyCallAppt(null)}>
+          <div className="dd-modal-card" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <div
+              className="dd-modal-header"
+              style={{
+                borderBottom: '1px solid #fed7aa',
+                background: '#fffbeb',
+                borderRadius: '12px 12px 0 0',
+                margin: '-24px -24px 20px -24px',
+                padding: '16px 24px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+                <div>
+                  <h3 className="dd-modal-title" style={{ color: '#9a3412', fontSize: '1.15rem' }}>
+                    Appointment Time Has Not Started Yet
+                  </h3>
+                  <span style={{ fontSize: '0.8rem', color: '#c2410c' }}>Early Consultation Notice</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dd-btn-close"
+                onClick={() => setEarlyCallAppt(null)}
+                aria-label="Close"
+              >
+                <CloseIcon size={16} />
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '20px', color: '#334155', fontSize: '0.92rem', lineHeight: '1.6' }}>
+              <p style={{ margin: '0 0 12px 0' }}>
+                This consultation with <strong>{earlyCallAppt.appt.patient?.name || 'the patient'}</strong> is scheduled for:
+              </p>
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  marginBottom: '14px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: '#0d5c63', marginBottom: '4px' }}>
+                  <CalendarIcon size={15} /> <span>{earlyCallAppt.dateStr}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontSize: '0.88rem' }}>
+                  <ClockIcon size={15} /> <span>Scheduled Slot: {earlyCallAppt.timeStr}</span>
+                </div>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.86rem', color: '#64748b' }}>
+                You can proceed to start the video call right now. HealthGate will immediately notify the patient that the doctor is ready to consult early.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="dd-btn-view-details"
+                onClick={() => setEarlyCallAppt(null)}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="dd-btn-consult"
+                style={{
+                  background: 'linear-gradient(135deg, #0284c7 0%, #0d9488 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '9px 18px',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                }}
+                disabled={startingCallApptId === earlyCallAppt.appt._id}
+                onClick={() => {
+                  const targetAppt = earlyCallAppt.appt
+                  setEarlyCallAppt(null)
+                  handleStartVideoConsultation(targetAppt)
+                }}
+              >
+                {startingCallApptId === earlyCallAppt.appt._id ? 'Connecting...' : 'Start Now'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* END-OF-CONSULTATION PRESCRIPTION MODAL */}
+      {prescriptionModalAppt && (
+        <PrescriptionModal
+          isOpen={!!prescriptionModalAppt}
+          appointment={prescriptionModalAppt}
+          token={token}
+          onClose={() => setPrescriptionModalAppt(null)}
+          onSaved={(_savedPrescription) => {
+            setDocFeedback({ type: 'success', message: 'Prescription saved successfully.' })
+            fetchDashboardData()
+          }}
+        />
       )}
     </div>
   )

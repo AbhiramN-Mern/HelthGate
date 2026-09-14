@@ -85,6 +85,42 @@ const appointmentSchema = new Schema(
       enum: ["In-Person", "Video", "Follow-up"],
       default: "In-Person",
     },
+    consultationType: {
+      type: String,
+      enum: ["online", "offline"],
+      default: "online",
+      required: true,
+    },
+    actualStartTime: {
+      type: Date,
+      default: null,
+    },
+    startedEarly: {
+      type: Boolean,
+      default: false,
+    },
+    videoCall: {
+      startedAt: {
+        type: Date,
+        default: null,
+      },
+      endedAt: {
+        type: Date,
+        default: null,
+      },
+      duration: {
+        type: Number,
+        default: 0,
+      },
+      roomId: {
+        type: String,
+        default: null,
+      },
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+    },
     rescheduleRequest: {
       status: {
         type: String,

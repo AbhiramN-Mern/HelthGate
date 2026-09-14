@@ -7,6 +7,10 @@ import {
   respondAppointmentReschedule,
   cancelAppointment,
 } from "../controllers/appointment.controller.js";
+import {
+  savePrescription,
+  getPrescriptionByAppointment,
+} from "../controllers/prescription.controller.js";
 import { authorize, protect } from "../middleware/auth.middleware.js";
 
 const router = Router();
@@ -30,6 +34,15 @@ router.patch(
   protect,
   authorize("patient"),
   respondAppointmentReschedule,
+);
+
+// Prescription endpoints on appointment
+router.get("/:appointmentId/prescription", protect, getPrescriptionByAppointment);
+router.post(
+  "/:appointmentId/prescription",
+  protect,
+  authorize("doctor"),
+  savePrescription,
 );
 
 export default router;
