@@ -13,6 +13,12 @@ import { LocalVideo } from '../../components/video/LocalVideo'
 import { CallControls } from '../../components/video/CallControls'
 import { PrescriptionModal } from '../../components/prescription/PrescriptionModal'
 import { PatientPrescriptionModal } from '../../components/prescription/PatientPrescriptionModal'
+import {
+  ConsultationChatDrawer,
+  type ChatMessage,
+  type ChatAttachment,
+} from '../../components/video/ConsultationChatDrawer'
+import { getSocket } from '../../services/socket.service'
 import './ConsultationPage.css'
 
 export default function ConsultationPage() {
@@ -31,6 +37,9 @@ export default function ConsultationPage() {
   const [showDoctorPrescriptionModal, setShowDoctorPrescriptionModal] = useState(false)
   const [savedPrescription, setSavedPrescription] = useState<PrescriptionItem | null>(null)
   const [showPatientPrescriptionModal, setShowPatientPrescriptionModal] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [unreadChatCount, setUnreadChatCount] = useState(0)
 
   const token = localStorage.getItem('helthgate_token') || ''
 
@@ -138,6 +147,54 @@ export default function ConsultationPage() {
       setCallEndedInfo({ endedBy: 'user', reason: 'Consultation concluded by user' })
     }
   }
+
+  // Real-time consultation chat listener
+  useEffect(() => {
+    if (!token) return
+    const socket = getSocket(token)
+
+    const handleNewChatMessage = (msg: ChatMessage) => {
+      setChatMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev
+        return [...prev, msg]
+      })
+
+      setIsChatOpen((open) => {
+        if (!open) {
+          setUnreadChatCount((count) => count + 1)
+        }
+        return open
+      })
+    }
+
+    socket.on('new-chat-message', handleNewChatMessage)
+
+    return () => {
+      socket.off('new-chat-message', handleNewChatMessage)
+    }
+  }, [token])
+
+  const handleToggleChat = useCallback(() => {
+    setIsChatOpen((open) => {
+      if (!open) {
+        setUnreadChatCount(0)
+      }
+      return !open
+    })
+  }, [])
+
+  const handleSendMessage = useCallback(
+    (text: string, attachment?: ChatAttachment | null) => {
+      if (!token) return
+      const socket = getSocket(token)
+      socket.emit('send-chat-message', {
+        roomId: session?.roomId,
+        text,
+        attachment,
+      })
+    },
+    [token, session?.roomId],
+  )
 
   // Render: Loading screen
   if (loading) {
@@ -515,6 +572,22 @@ export default function ConsultationPage() {
         onToggleAudio={toggleAudio}
         onToggleVideo={toggleVideo}
         onEndCall={handleUserEndCall}
+        isChatOpen={isChatOpen}
+        unreadChatCount={unreadChatCount}
+        onToggleChat={handleToggleChat}
+      />
+
+      {/* Real-time Clinical Chat & Attachment Drawer */}
+      <ConsultationChatDrawer
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        messages={chatMessages}
+        onSendMessage={handleSendMessage}
+        currentUserId={session?.userId || JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.id || JSON.parse(localStorage.getItem('helthgate_user') || '{}')?._id}
+        currentUserRole={session?.userRole}
+        currentUserName={session?.userName}
+        otherUserName={remoteUserName}
+        otherUserRole={session?.userRole === 'patient' ? 'doctor' : 'patient'}
       />
     </div>
   )

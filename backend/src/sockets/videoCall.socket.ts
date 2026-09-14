@@ -227,6 +227,35 @@ export const initializeVideoSocket = (io: Server) => {
     socket.on("ice-candidate", handleIceCandidate);
     socket.on("webrtc-ice-candidate", handleIceCandidate);
 
+    // Event: send-chat-message (In-call clinical messaging & attachment sharing)
+    const handleChatMessage = (data: {
+      text?: string;
+      attachment?: {
+        name: string;
+        type: string;
+        size?: number;
+        url: string;
+      };
+    }) => {
+      const room = socket.data.currentRoomId;
+      if (!room) return;
+
+      const messagePayload = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        senderRole: currentUser.role,
+        text: (data?.text || "").trim(),
+        attachment: data?.attachment || null,
+        timestamp: new Date().toISOString(),
+      };
+
+      console.log(`[VideoSocket] Chat message relayed in ${room} by ${currentUser.name}`);
+      io.to(room).emit("new-chat-message", messagePayload);
+    };
+    socket.on("send-chat-message", handleChatMessage);
+    socket.on("chat-message", handleChatMessage);
+
     // Event: end-call / end-video-call
     const handleEndCall = async (data: { reason?: string }) => {
       const room = socket.data.currentRoomId;

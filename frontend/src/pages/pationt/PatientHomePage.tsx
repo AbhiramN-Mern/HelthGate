@@ -630,6 +630,37 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
     setSelectedPrescriptionApptId(appointmentId)
   }
 
+  const handleBookFollowUp = (doctorInput: any, followUpDate?: string, reason?: string) => {
+    const doctorId =
+      typeof doctorInput === 'string'
+        ? doctorInput
+        : doctorInput?._id || doctorInput?.id
+    let targetDoc: DoctorProfile | null = null
+    if (doctorId) {
+      targetDoc = doctors.find((d) => d._id === doctorId) || null
+    }
+    if (!targetDoc && doctorInput && typeof doctorInput === 'object') {
+      targetDoc = doctorInput as DoctorProfile
+    }
+
+    if (targetDoc) {
+      setBookingDoctor(targetDoc)
+      if (followUpDate) {
+        setBookingDate(followUpDate)
+        const parsed = new Date(followUpDate)
+        if (!isNaN(parsed.getTime())) {
+          setCalMonth(parsed)
+        }
+      } else {
+        setCalMonth(new Date())
+      }
+      setBookingReason(reason || 'Recommended clinical follow-up')
+      setConsultationType('online')
+      setBookingFeedback(null)
+    }
+    setSelectedPrescriptionApptId(null)
+  }
+
   const handlePrevMonth = () => {
     const { today } = getTodayAndMaxDates()
     const isPrevDisabled =
@@ -1402,6 +1433,39 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                         >
                           {appt.consultationType === 'offline' ? '🏥 Offline Visit' : '📹 Online Video'}
                         </span>
+                        {appt.consultationType === 'offline' && (
+                          <span
+                            style={{
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              background: '#ecfdf5',
+                              color: '#065f46',
+                              border: '1px solid #a7f3d0',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                            }}
+                          >
+                            🎫 Token #{appt.tokenNumber || 'OPD-1'}
+                          </span>
+                        )}
+                        {appt.consultationType === 'offline' && appt.cabinNumber && (
+                          <span
+                            style={{
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              padding: '2px 7px',
+                              borderRadius: '6px',
+                              background: '#f8fafc',
+                              color: '#475569',
+                              border: '1px solid #e2e8f0',
+                            }}
+                          >
+                            🚪 {appt.cabinNumber}
+                          </span>
+                        )}
                       </div>
                       <span className="php-appt-time-badge">
                         {appt.timeSlot || '10:00 AM'}
@@ -1761,6 +1825,21 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           >
                             {appt.consultationType === 'offline' ? '🏥 Offline' : '📹 Online'}
                           </span>
+                          {appt.consultationType === 'offline' && appt.tokenNumber && (
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                background: '#ecfdf5',
+                                color: '#065f46',
+                                border: '1px solid #a7f3d0',
+                              }}
+                            >
+                              #{appt.tokenNumber}
+                            </span>
+                          )}
                         </div>
                         <span className="php-appt-time-badge">
                           {appt.timeSlot || '10:00 AM'}
@@ -2693,21 +2772,36 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           style={{ marginTop: '3px', accentColor: '#0ea5a4' }}
                         />
                         <div style={{ flex: 1 }}>
-                          <label
-                            htmlFor="consult-type-online"
-                            style={{
-                              fontWeight: 700,
-                              fontSize: '0.92rem',
-                              color: '#0f172a',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              cursor: 'pointer',
-                              marginBottom: '2px',
-                            }}
-                          >
-                            📹 Online Consultation
-                          </label>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <label
+                              htmlFor="consult-type-online"
+                              style={{
+                                fontWeight: 700,
+                                fontSize: '0.92rem',
+                                color: '#0f172a',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                cursor: 'pointer',
+                                marginBottom: '2px',
+                              }}
+                            >
+                              📹 Online Video
+                            </label>
+                            <span
+                              style={{
+                                fontSize: '0.85rem',
+                                fontWeight: 800,
+                                color: '#0ea5a4',
+                                background: '#f0fdfa',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                border: '1px solid #99f6e4',
+                              }}
+                            >
+                              ₹{bookingDoctor.consultationFee || 500}
+                            </span>
+                          </div>
                           <p
                             style={{
                               fontSize: '0.78rem',
@@ -2716,7 +2810,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                               lineHeight: 1.35,
                             }}
                           >
-                            Video consultation with the doctor
+                            Video consultation • Digital Rx
                           </p>
                         </div>
                       </div>
@@ -2755,21 +2849,36 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           style={{ marginTop: '3px', accentColor: '#0d5c63' }}
                         />
                         <div style={{ flex: 1 }}>
-                          <label
-                            htmlFor="consult-type-offline"
-                            style={{
-                              fontWeight: 700,
-                              fontSize: '0.92rem',
-                              color: '#0f172a',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              cursor: 'pointer',
-                              marginBottom: '2px',
-                            }}
-                          >
-                            🏥 Offline Consultation
-                          </label>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <label
+                              htmlFor="consult-type-offline"
+                              style={{
+                                fontWeight: 700,
+                                fontSize: '0.92rem',
+                                color: '#0f172a',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                cursor: 'pointer',
+                                marginBottom: '2px',
+                              }}
+                            >
+                              🏥 Physical Visit
+                            </label>
+                            <span
+                              style={{
+                                fontSize: '0.85rem',
+                                fontWeight: 800,
+                                color: '#0d5c63',
+                                background: '#f0fdf4',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                border: '1px solid #a7f3d0',
+                              }}
+                            >
+                              ₹{bookingDoctor.offlineConsultationFee || ((bookingDoctor.consultationFee || 500) + 200)}
+                            </span>
+                          </div>
                           <p
                             style={{
                               fontSize: '0.78rem',
@@ -2778,7 +2887,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                               lineHeight: 1.35,
                             }}
                           >
-                            Visit the hospital/clinic physically
+                            In-person OPD visit • Cabin Token
                           </p>
                         </div>
                       </div>
@@ -3241,6 +3350,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
           appointmentId={selectedPrescriptionApptId}
           token={token}
           fallbackPatientName={user?.name}
+          onBookFollowUp={handleBookFollowUp}
         />
       )}
     </div>

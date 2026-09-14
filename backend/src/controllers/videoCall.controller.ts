@@ -23,6 +23,7 @@ export const startCall = async (
         message: "Appointment ID is required to start a consultation.",
       });
     }
+    
 
     const consultationData = await videoCallService.startConsultationCall({
       appointmentId,

@@ -44,6 +44,15 @@ const doctorSchema = new Schema(
       default: 0,
       min: 0,
     },
+    offlineConsultationFee: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    digitalSignature: {
+      type: String,
+      default: "",
+    },
     active: {
       type: Boolean,
       default: true,

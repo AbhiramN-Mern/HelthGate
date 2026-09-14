@@ -6,6 +6,9 @@ interface CallControlsProps {
   onToggleVideo: () => void
   onEndCall: () => void
   disabled?: boolean
+  isChatOpen?: boolean
+  unreadChatCount?: number
+  onToggleChat?: () => void
 }
 
 export const CallControls = ({
@@ -16,6 +19,9 @@ export const CallControls = ({
   onToggleVideo,
   onEndCall,
   disabled = false,
+  isChatOpen = false,
+  unreadChatCount = 0,
+  onToggleChat,
 }: CallControlsProps) => {
   const formatDuration = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60)
@@ -84,6 +90,45 @@ export const CallControls = ({
           )}
           <span className="hg-btn-label">{isVideoMuted ? 'Start Video' : 'Stop Video'}</span>
         </button>
+
+        {/* Clinical Chat & Reports Toggle */}
+        {onToggleChat && (
+          <button
+            type="button"
+            onClick={onToggleChat}
+            className={`hg-control-btn ${isChatOpen ? 'active' : ''}`}
+            title="Clinical Chat & Lab Reports"
+            aria-label="Clinical Chat & Lab Reports"
+            style={{ position: 'relative' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            {unreadChatCount > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '-4px',
+                  background: '#ef4444',
+                  color: '#ffffff',
+                  fontSize: '0.7rem',
+                  fontWeight: 800,
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 8px rgba(239, 68, 68, 0.8)',
+                }}
+              >
+                {unreadChatCount}
+              </span>
+            )}
+            <span className="hg-btn-label">Chat</span>
+          </button>
+        )}
 
         {/* End Call Button */}
         <button

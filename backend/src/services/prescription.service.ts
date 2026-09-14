@@ -2,6 +2,8 @@ import type { Types } from "mongoose";
 import type { IPrescriptionRepository } from "../repositories/interfaces/IPrescriptionRepository.js";
 import type { IAppointmentRepository } from "../repositories/interfaces/IAppointmentRepository.js";
 import type { IDoctorRepository } from "../repositories/interfaces/IDoctorRepository.js";
+import type { INotificationRepository } from "../repositories/interfaces/INotificationRepository.js";
+import type { NotificationService } from "./notification.service.js";
 import {
   BadRequestError,
   ForbiddenError,
@@ -19,6 +21,7 @@ export interface SavePrescriptionInput {
     duration?: string;
     instructions?: string;
   }>;
+  labTests?: string[];
   additionalAdvice?: string;
   followUpDate?: string | Date | null;
 }
@@ -28,6 +31,7 @@ export class PrescriptionService {
     private prescriptionRepo: IPrescriptionRepository,
     private appointmentRepo: IAppointmentRepository,
     private doctorRepo?: IDoctorRepository,
+    private notificationService?: NotificationService,
   ) {}
 
   /**
@@ -86,6 +90,7 @@ export class PrescriptionService {
       doctorUserId,
       diagnosis,
       medicines,
+      labTests = [],
       additionalAdvice = "",
       followUpDate = null,
     } = input;
@@ -131,6 +136,12 @@ export class PrescriptionService {
       instructions: (m.instructions || "").trim(),
     }));
 
+    const sanitizedLabTests = Array.isArray(labTests)
+      ? labTests
+          .map((t) => String(t || "").trim())
+          .filter((t) => t.length > 0)
+      : [];
+
     const parsedFollowUpDate = followUpDate ? new Date(followUpDate) : null;
 
     // Check if prescription already exists for this appointment
@@ -141,6 +152,7 @@ export class PrescriptionService {
       prescription = await this.prescriptionRepo.updateByAppointmentId(appointmentId, {
         diagnosis: diagnosis.trim(),
         medicines: sanitizedMedicines,
+        labTests: sanitizedLabTests,
         additionalAdvice: (additionalAdvice || "").trim(),
         followUpDate: parsedFollowUpDate,
       });
@@ -151,6 +163,7 @@ export class PrescriptionService {
         doctor: doctorId as any,
         diagnosis: diagnosis.trim(),
         medicines: sanitizedMedicines,
+        labTests: sanitizedLabTests,
         additionalAdvice: (additionalAdvice || "").trim(),
         followUpDate: parsedFollowUpDate,
       });
@@ -165,7 +178,18 @@ export class PrescriptionService {
     }
 
     // Return populated prescription
-    return this.prescriptionRepo.findByAppointmentId(appointment._id, true);
+    const populated = await this.prescriptionRepo.findByAppointmentId(appointment._id, true);
+
+    // Automatically email official copy of prescription and clinical advice to patient
+    if (this.notificationService && populated) {
+      try {
+        await this.notificationService.sendPrescriptionNotification(populated, appointment);
+      } catch (notifErr) {
+        console.warn("[PrescriptionService] Outbound prescription notification error:", notifErr);
+      }
+    }
+
+    return populated;
   }
 
   /**
@@ -223,7 +247,7 @@ export class PrescriptionService {
     }
 
     if (userRole === "doctor" && this.doctorRepo) {
-      const docRecord = await this.doctorRepo.findOne({ user: userId });
+      const docRecord = await this.doctorRepo.findByUserId(userId);
       if (!docRecord) {
         return [];
       }

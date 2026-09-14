@@ -13,6 +13,7 @@ export interface CreatePrescriptionDto {
     duration?: string;
     instructions?: string;
   }>;
+  labTests?: string[];
   additionalAdvice?: string;
   followUpDate?: Date | null;
 }

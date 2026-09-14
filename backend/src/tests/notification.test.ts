@@ -28,6 +28,12 @@ class TestNotificationRepository implements Partial<INotificationRepository> {
   async findByRecipient(recipientId: any) {
     return this.notifications.filter((n) => String(n.recipient) === String(recipientId));
   }
+
+  async find(filter: Record<string, any> = {}) {
+    return this.notifications.filter((n) =>
+      Object.entries(filter).every(([k, v]) => String(n[k]) === String(v))
+    );
+  }
 }
 
 class TestAppointmentRepository implements Partial<IAppointmentRepository> {

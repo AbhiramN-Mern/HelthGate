@@ -1366,9 +1366,19 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {appt.consultationType === 'offline' ? (
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f1f5f9', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            🏥 Offline Visit
-                          </span>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f1f5f9', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              🏥 Offline Visit
+                            </span>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 7px', borderRadius: '6px', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              🎫 #{appt.tokenNumber || 'OPD-1'}
+                            </span>
+                            {appt.cabinNumber && (
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 6px', borderRadius: '6px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
+                                🚪 {appt.cabinNumber}
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#ecfdf5', color: '#065f46', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             📹 Online Video
@@ -1555,9 +1565,19 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {appt.consultationType === 'offline' ? (
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f1f5f9', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            🏥 Offline Visit
-                          </span>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f1f5f9', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              🏥 Offline Visit
+                            </span>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 7px', borderRadius: '6px', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' }}>
+                              🎫 #{appt.tokenNumber || 'OPD-1'}
+                            </span>
+                            {appt.cabinNumber && (
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 6px', borderRadius: '6px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
+                                🚪 {appt.cabinNumber}
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#ecfdf5', color: '#065f46', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             📹 Online Video
@@ -2224,8 +2244,20 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
 
                 <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '12px' }}>
                   <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}>Consultation Format</span>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-                    {viewingAppt.consultationType === 'offline' ? '🏥 Offline Visit' : '📹 Online Video'}
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
+                    <span>{viewingAppt.consultationType === 'offline' ? '🏥 Offline Visit' : '📹 Online Video'}</span>
+                    {viewingAppt.consultationType === 'offline' && (
+                      <>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' }}>
+                          🎫 Token #{viewingAppt.tokenNumber || 'OPD-1'}
+                        </span>
+                        {viewingAppt.cabinNumber && (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: '#ffffff', color: '#475569', border: '1px solid #e2e8f0' }}>
+                            🚪 Room: {viewingAppt.cabinNumber}
+                          </span>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

@@ -61,6 +61,10 @@ const prescriptionSchema = new Schema(
       type: [medicineItemSchema],
       default: [],
     },
+    labTests: {
+      type: [String],
+      default: [],
+    },
     additionalAdvice: {
       type: String,
       trim: true,
@@ -81,6 +85,7 @@ export type Prescription = InferSchemaType<typeof prescriptionSchema> & {
   appointment: Types.ObjectId;
   patient: Types.ObjectId;
   doctor: Types.ObjectId;
+  labTests?: string[];
 };
 
 const PrescriptionModel = model<Prescription>("Prescription", prescriptionSchema);

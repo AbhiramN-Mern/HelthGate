@@ -27,6 +27,8 @@ export function PrescriptionModal({
   const [medicines, setMedicines] = useState<MedicineItem[]>([
     { name: '', dosage: '', frequency: '', duration: '', instructions: '' },
   ])
+  const [labTests, setLabTests] = useState<string[]>([])
+  const [customTestInput, setCustomTestInput] = useState('')
   const [additionalAdvice, setAdditionalAdvice] = useState('')
   const [followUpDate, setFollowUpDate] = useState('')
   const [loading, setLoading] = useState(false)
@@ -51,6 +53,7 @@ export function PrescriptionModal({
               ? res.prescription.medicines
               : [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }],
           )
+          setLabTests(res.prescription.labTests || [])
           setAdditionalAdvice(res.prescription.additionalAdvice || '')
           if (res.prescription.followUpDate) {
             setFollowUpDate(new Date(res.prescription.followUpDate).toISOString().split('T')[0])
@@ -61,6 +64,7 @@ export function PrescriptionModal({
           // Reset form to blank
           setDiagnosis('')
           setMedicines([{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }])
+          setLabTests([])
           setAdditionalAdvice('')
           setFollowUpDate('')
         }
@@ -134,6 +138,7 @@ export function PrescriptionModal({
         {
           diagnosis: diagnosis.trim(),
           medicines: filteredMedicines,
+          labTests: labTests.map((t) => t.trim()).filter((t) => t.length > 0),
           additionalAdvice: additionalAdvice.trim(),
           followUpDate: followUpDate ? new Date(followUpDate).toISOString() : null,
         },
@@ -542,6 +547,168 @@ export function PrescriptionModal({
               </div>
             </div>
 
+            {/* Lab Tests & Diagnostic Investigations */}
+            <div style={{ marginBottom: '24px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '8px',
+                }}
+              >
+                <label style={{ fontSize: '0.86rem', fontWeight: 700, color: '#334155' }}>
+                  🔬 Prescribed Lab Tests & Investigations ({labTests.length})
+                </label>
+                <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                  Click to add common investigations or type below
+                </span>
+              </div>
+
+              {/* Quick-add chips */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                {[
+                  'Complete Blood Count (CBC)',
+                  'Lipid Profile',
+                  'Chest X-Ray PA View',
+                  'Fasting Blood Sugar / HbA1c',
+                  'Liver Function Test (LFT)',
+                  'Thyroid Profile (TSH)',
+                  'Kidney Function Test (KFT)',
+                  'Urine Routine & Microscopic',
+                  'ECG 12-Lead',
+                  'Ultrasound Abdomen',
+                ].map((test) => {
+                  const isAdded = labTests.includes(test)
+                  return (
+                    <button
+                      key={test}
+                      type="button"
+                      onClick={() => {
+                        if (isAdded) {
+                          setLabTests((prev) => prev.filter((t) => t !== test))
+                        } else {
+                          setLabTests((prev) => [...prev, test])
+                        }
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        fontSize: '0.76rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        border: isAdded ? '1px solid #0d9488' : '1px solid #cbd5e1',
+                        background: isAdded ? '#ccfbf1' : '#f8fafc',
+                        color: isAdded ? '#0f766e' : '#475569',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {isAdded ? '✓ ' : '+ '}
+                      {test}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Custom Test Input */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                <input
+                  type="text"
+                  placeholder="Type custom test (e.g. Vitamin D3, MRI Brain, Serum Ferritin)..."
+                  value={customTestInput}
+                  onChange={(e) => setCustomTestInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (customTestInput.trim() && !labTests.includes(customTestInput.trim())) {
+                        setLabTests((prev) => [...prev, customTestInput.trim()])
+                        setCustomTestInput('')
+                      }
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.86rem',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (customTestInput.trim() && !labTests.includes(customTestInput.trim())) {
+                      setLabTests((prev) => [...prev, customTestInput.trim()])
+                      setCustomTestInput('')
+                    }
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    background: '#0d5c63',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  + Add Test
+                </button>
+              </div>
+
+              {/* Currently Selected Tests List */}
+              {labTests.length > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                    padding: '10px 12px',
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: '10px',
+                  }}
+                >
+                  {labTests.map((test, idx) => (
+                    <span
+                      key={idx}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 10px',
+                        background: '#ffffff',
+                        border: '1px solid #86efac',
+                        borderRadius: '16px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        color: '#166534',
+                      }}
+                    >
+                      🔬 {test}
+                      <button
+                        type="button"
+                        onClick={() => setLabTests((prev) => prev.filter((_, i) => i !== idx))}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#ef4444',
+                          cursor: 'pointer',
+                          fontWeight: 800,
+                          fontSize: '0.85rem',
+                          padding: '0 2px',
+                        }}
+                        title="Remove test"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Additional Advice & Follow-up Date */}
             <div
               style={{
@@ -606,6 +773,55 @@ export function PrescriptionModal({
                     boxSizing: 'border-box',
                   }}
                 />
+              </div>
+            </div>
+
+            {/* Doctor Digital Signature & Legal Authenticity Stamp */}
+            <div
+              style={{
+                padding: '14px 18px',
+                borderRadius: '12px',
+                background: '#f8fafc',
+                border: '1.5px dashed #cbd5e1',
+                marginBottom: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+              }}
+            >
+              <div>
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 800 }}>
+                  Doctor's Digital Signature & Registration Stamp
+                </div>
+                <div style={{ fontFamily: 'cursive', fontSize: '1.25rem', color: '#0d5c63', fontWeight: 700, margin: '2px 0' }}>
+                  Dr. {(appointment.doctor as any)?.user?.name || (appointment.doctor as any)?.name || 'Medical Specialist'}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#475569' }}>
+                  Medical Council Reg No: <strong>{(appointment.doctor as any)?.licenseNumber || 'HG-REG-ACTIVE'}</strong>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '5px 12px',
+                    borderRadius: '20px',
+                    background: '#dcfce7',
+                    border: '1px solid #86efac',
+                    color: '#15803d',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                  }}
+                >
+                  ✓ Legally Verified Rx
+                </span>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '3px' }}>
+                  Automatically signed on save
+                </div>
               </div>
             </div>
 

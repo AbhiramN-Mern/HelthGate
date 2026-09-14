@@ -91,6 +91,16 @@ const appointmentSchema = new Schema(
       default: "online",
       required: true,
     },
+    tokenNumber: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    cabinNumber: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     actualStartTime: {
       type: Date,
       default: null,
@@ -233,6 +243,8 @@ export type Appointment = InferSchemaType<typeof appointmentSchema> & {
   hospitalDoctor?: Types.ObjectId | null;
   department?: string;
   isHospitalAppointment?: boolean;
+  tokenNumber?: string | null;
+  cabinNumber?: string | null;
 };
 
 const AppointmentModel = model<Appointment>("Appointment", appointmentSchema);

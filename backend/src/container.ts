@@ -137,5 +137,6 @@ export const prescriptionService = new PrescriptionService(
   prescriptionRepo,
   appointmentRepo,
   doctorRepo,
+  notificationService,
 );
 

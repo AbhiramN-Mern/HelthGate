@@ -65,6 +65,8 @@ export type DoctorProfile = {
   experience?: number | string
   licenseNumber?: string
   consultationFee?: number
+  offlineConsultationFee?: number
+  digitalSignature?: string
   available?: boolean
   availability?: DoctorAvailability
   verificationStatus?: 'pending' | 'verified' | 'rejected'
@@ -681,6 +683,8 @@ export type AppointmentItem = {
   reason?: string
   type?: string
   consultationType?: 'online' | 'offline'
+  tokenNumber?: string | null
+  cabinNumber?: string | null
   actualStartTime?: string
   startedEarly?: boolean
   videoCall?: {
@@ -1190,6 +1194,7 @@ export type VideoCallSessionDetails = {
   }
   appointmentId: string
   roomId: string
+  userId?: string
   userRole: 'doctor' | 'patient'
   userName: string
   remoteUserName: string
@@ -1280,11 +1285,12 @@ export type MedicineItem = {
 
 export type PrescriptionItem = {
   _id?: string
-  appointment: string | { _id: string; appointmentDate?: string; timeSlot?: string; consultationType?: string; status?: string }
+  appointment: string | { _id: string; appointmentDate?: string; timeSlot?: string; consultationType?: string; status?: string; tokenNumber?: string; cabinNumber?: string }
   patient: string | { _id: string; name?: string; email?: string; phone?: string; gender?: string; dateOfBirth?: string }
-  doctor: string | { _id: string; user?: { name?: string; email?: string }; specialization?: string }
+  doctor: string | { _id: string; user?: { name?: string; email?: string }; specialization?: string; licenseNumber?: string; digitalSignature?: string }
   diagnosis: string
   medicines: MedicineItem[]
+  labTests?: string[]
   additionalAdvice?: string
   followUpDate?: string | null
   createdAt?: string
@@ -1296,6 +1302,7 @@ export const savePrescriptionApi = async (
   payload: {
     diagnosis: string
     medicines: MedicineItem[]
+    labTests?: string[]
     additionalAdvice?: string
     followUpDate?: string | null
   },

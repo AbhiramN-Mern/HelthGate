@@ -9,12 +9,32 @@ export class MongoNotificationRepository implements INotificationRepository {
     title: string;
     message: string;
     appointment?: string | Types.ObjectId;
+    callSession?: string | Types.ObjectId;
   }): Promise<any> {
     return NotificationModel.create(data as any);
   }
 
   async findByRecipient(recipientId: string | Types.ObjectId, limit = 30, skip?: number): Promise<any[]> {
     let query = NotificationModel.find({ recipient: recipientId }).sort({ createdAt: -1 });
+    if (skip !== undefined && skip > 0) {
+      query = query.skip(skip);
+    }
+    if (limit !== undefined && limit > 0) {
+      query = query.limit(limit);
+    }
+    return query.exec();
+  }
+
+  async find(
+    filter: Record<string, unknown> = {},
+    sort?: Record<string, 1 | -1>,
+    limit?: number,
+    skip?: number,
+  ): Promise<any[]> {
+    let query = NotificationModel.find(filter);
+    if (sort) {
+      query = query.sort(sort);
+    }
     if (skip !== undefined && skip > 0) {
       query = query.skip(skip);
     }

@@ -717,3 +717,265 @@ HealthGate Medical Team
   return { subject, html, text };
 }
 
+export interface PrescriptionEmailData {
+  patientName: string;
+  patientEmail: string;
+  doctorName: string;
+  doctorSpecialization?: string;
+  doctorLicenseNumber?: string;
+  hospitalName?: string;
+  department?: string;
+  appointmentId: string;
+  prescriptionDate: string;
+  diagnosis: string;
+  medicines: Array<{
+    name: string;
+    dosage?: string;
+    frequency?: string;
+    duration?: string;
+    instructions?: string;
+  }>;
+  labTests?: string[];
+  additionalAdvice?: string;
+  followUpDate?: string;
+  digitalSignature?: string;
+}
+
+/**
+ * Render Official Branded Prescription Issued Email
+ */
+export function renderPrescriptionIssuedEmail(data: PrescriptionEmailData): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const cleanDoctorName = (data.doctorName || "Doctor").replace(/^Dr\.?\s*/i, "");
+  const subject = `Official Medical Prescription - Dr. ${cleanDoctorName} [Ref: ${data.appointmentId.slice(-6).toUpperCase()}]`;
+
+  const medicinesRowsHtml = (data.medicines || [])
+    .map(
+      (m, idx) => `
+      <tr style="border-top: 1px solid #e2e8f0; background: ${idx % 2 === 0 ? "#ffffff" : "#f8fafc"};">
+        <td style="padding: 10px 12px; font-weight: 700; color: #64748b; font-size: 13px;">${idx + 1}</td>
+        <td style="padding: 10px 12px; font-weight: 700; color: #0f172a; font-size: 13px;">${m.name}</td>
+        <td style="padding: 10px 12px; color: #475569; font-size: 13px;">${m.dosage || "—"}</td>
+        <td style="padding: 10px 12px; color: #475569; font-size: 13px;">${m.frequency || "—"}</td>
+        <td style="padding: 10px 12px; color: #475569; font-size: 13px;">${m.duration || "—"}</td>
+        <td style="padding: 10px 12px; color: #0d9488; font-weight: 600; font-size: 13px;">${m.instructions || "—"}</td>
+      </tr>
+    `,
+    )
+    .join("");
+
+  const labTestsHtml =
+    data.labTests && data.labTests.length > 0
+      ? `
+    <div style="margin-top: 24px; padding: 16px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0;">
+      <h3 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 700; text-transform: uppercase; color: #166534; letter-spacing: 0.5px;">
+        🔬 Prescribed Lab Tests & Diagnostic Investigations
+      </h3>
+      <ul style="margin: 0; padding-left: 20px; color: #14532d; font-size: 14px; line-height: 1.6;">
+        ${data.labTests.map((test) => `<li><strong>${test}</strong></li>`).join("")}
+      </ul>
+      <p style="margin: 8px 0 0 0; font-size: 12px; color: #15803d;">
+        Please present this prescription copy at any accredited laboratory or diagnostic testing center.
+      </p>
+    </div>
+  `
+      : "";
+
+  const adviceAndFollowUpHtml = `
+    <div style="margin-top: 24px; display: table; width: 100%;">
+      ${
+        data.additionalAdvice
+          ? `
+        <div style="display: table-cell; vertical-align: top; width: 50%; padding-right: 12px;">
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
+            <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b;">Clinical Advice</span>
+            <p style="margin: 6px 0 0 0; font-size: 13px; color: #334155; line-height: 1.5;">${data.additionalAdvice}</p>
+          </div>
+        </div>
+      `
+          : ""
+      }
+      ${
+        data.followUpDate
+          ? `
+        <div style="display: table-cell; vertical-align: top; width: 50%; padding-left: 12px;">
+          <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 14px;">
+            <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #0284c7;">Recommended Follow-Up</span>
+            <p style="margin: 6px 0 0 0; font-size: 14px; font-weight: 700; color: #0369a1;">${data.followUpDate}</p>
+          </div>
+        </div>
+      `
+          : ""
+      }
+    </div>
+  `;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${subject}</title>
+  <style>${baseStyles}</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header" style="background: linear-gradient(135deg, #0d5c63 0%, #083c40 100%);">
+      <div style="display: table; width: 100%;">
+        <div style="display: table-cell; vertical-align: middle;">
+          <div style="display: inline-block; width: 36px; height: 36px; line-height: 36px; text-align: center; background: rgba(255,255,255,0.2); border-radius: 8px; font-family: serif; font-weight: bold; font-size: 20px; color: #ffffff; margin-right: 12px; vertical-align: middle;">
+            Rx
+          </div>
+          <div style="display: inline-block; vertical-align: middle;">
+            <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">HealthGate Medical Center</h1>
+            <p style="margin: 2px 0 0 0; font-size: 13px; color: #99f6e4;">Official Consultation Prescription & Clinical Advice</p>
+          </div>
+        </div>
+        <div style="display: table-cell; vertical-align: middle; text-align: right;">
+          <span style="font-size: 11px; font-weight: 700; color: #ccfbf1; text-transform: uppercase; letter-spacing: 0.5px;">Date</span><br>
+          <strong style="font-size: 13px; color: #ffffff;">${data.prescriptionDate}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <p class="intro">
+        Dear <strong>${data.patientName}</strong>,<br><br>
+        Following your consultation, <strong>Dr. ${cleanDoctorName}</strong> has issued your official medical prescription and clinical advice. Please find your complete prescription details below.
+      </p>
+
+      <!-- Doctor & Patient Summary Card -->
+      <div class="card" style="margin-bottom: 20px;">
+        <table class="data-table">
+          <tr>
+            <td class="data-label">Attending Doctor:</td>
+            <td class="data-value">Dr. ${cleanDoctorName} ${data.doctorSpecialization ? `(${data.doctorSpecialization})` : ""}</td>
+          </tr>
+          ${
+            data.doctorLicenseNumber
+              ? `<tr>
+            <td class="data-label">Medical Reg. / License No:</td>
+            <td class="data-value"><code style="color: #0d5c63; font-weight: 700;">${data.doctorLicenseNumber}</code></td>
+          </tr>`
+              : ""
+          }
+          ${
+            data.hospitalName
+              ? `<tr>
+            <td class="data-label">Facility / Hospital:</td>
+            <td class="data-value">${data.hospitalName} ${data.department ? `(${data.department})` : ""}</td>
+          </tr>`
+              : ""
+          }
+          <tr>
+            <td class="data-label">Patient Name:</td>
+            <td class="data-value"><strong>${data.patientName}</strong></td>
+          </tr>
+          <tr>
+            <td class="data-label">Appointment Reference:</td>
+            <td class="data-value"><code>${data.appointmentId}</code></td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Clinical Diagnosis -->
+      <div style="margin-bottom: 22px; padding: 14px 16px; background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">
+        <span style="display: block; font-size: 11px; text-transform: uppercase; font-weight: 700; color: #15803d; letter-spacing: 0.5px; margin-bottom: 4px;">
+          Diagnosis & Clinical Findings
+        </span>
+        <div style="font-size: 15px; font-weight: 700; color: #166534; line-height: 1.4;">
+          ${data.diagnosis}
+        </div>
+      </div>
+
+      <!-- Prescribed Medicines Table -->
+      <div style="margin-bottom: 20px;">
+        <h3 class="card-title" style="margin-bottom: 12px;">Prescribed Medicines (${data.medicines?.length || 0})</h3>
+        <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="background: #f1f5f9; color: #334155; font-size: 11px; text-transform: uppercase; font-weight: 700;">
+                <th style="padding: 8px 12px;">#</th>
+                <th style="padding: 8px 12px;">Medicine</th>
+                <th style="padding: 8px 12px;">Dosage</th>
+                <th style="padding: 8px 12px;">Frequency</th>
+                <th style="padding: 8px 12px;">Duration</th>
+                <th style="padding: 8px 12px;">Instructions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${medicinesRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      ${labTestsHtml}
+
+      ${adviceAndFollowUpHtml}
+
+      <!-- Doctor Digital Signature & Medical Verification Box -->
+      <div style="margin-top: 30px; padding: 16px 20px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; display: table; width: 100%;">
+        <div style="display: table-cell; vertical-align: middle; width: 60%;">
+          <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">
+            Digital Signature & Authentication Stamp
+          </div>
+          <div style="font-size: 14px; font-weight: 800; color: #0d5c63; margin-top: 4px;">
+            Dr. ${cleanDoctorName}
+          </div>
+          <div style="font-size: 12px; color: #64748b;">
+            Reg. No: <strong>${data.doctorLicenseNumber || "VERIFIED"}</strong> • HealthGate Clinical Network
+          </div>
+        </div>
+        <div style="display: table-cell; vertical-align: middle; width: 40%; text-align: right;">
+          <span style="display: inline-block; padding: 6px 12px; background: #dcfce7; border: 1px solid #86efac; border-radius: 20px; font-size: 12px; font-weight: 700; color: #15803d;">
+            ✓ Digitally Authenticated
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>HealthGate Hospital Management System &bull; Dedicated to Patient Care</p>
+      <p>This is an authentic electronic prescription generated via HealthGate. Consult your licensed pharmacist for dispensation.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  const text = `
+HealthGate Medical Center - Official Medical Prescription
+
+Patient: ${data.patientName}
+Attending Doctor: Dr. ${cleanDoctorName} (${data.doctorSpecialization || "Specialist"})
+Registration/License No: ${data.doctorLicenseNumber || "VERIFIED"}
+Date: ${data.prescriptionDate}
+Appointment Reference: ${data.appointmentId}
+
+Diagnosis / Clinical Findings:
+${data.diagnosis}
+
+Prescribed Medicines:
+${(data.medicines || [])
+  .map(
+    (m, idx) =>
+      `${idx + 1}. ${m.name} - Dosage: ${m.dosage || "As directed"} | Frequency: ${m.frequency || "As directed"} | Duration: ${m.duration || "Standard"} | Instructions: ${m.instructions || "None"}`,
+  )
+  .join("\n")}
+
+${data.labTests && data.labTests.length > 0 ? `Prescribed Lab Tests:\n${data.labTests.map((t) => `- ${t}`).join("\n")}\n` : ""}
+${data.additionalAdvice ? `Clinical Advice:\n${data.additionalAdvice}\n` : ""}
+${data.followUpDate ? `Recommended Follow-Up Date: ${data.followUpDate}\n` : ""}
+
+Digitally Signed by Dr. ${cleanDoctorName} (Reg. No: ${data.doctorLicenseNumber || "VERIFIED"})
+HealthGate Medical Authority
+  `.trim();
+
+  return { subject, html, text };
+}
+
+

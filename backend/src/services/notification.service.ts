@@ -9,7 +9,9 @@ import {
   renderAppointmentStatusUpdateEmail,
   renderAppointmentRescheduleRequestEmail,
   renderAppointmentRescheduleConfirmedEmail,
+  renderPrescriptionIssuedEmail,
   type AppointmentEmailData,
+  type PrescriptionEmailData,
 } from "../utils/emailTemplates.js";
 
 export class NotificationService {
@@ -685,4 +687,127 @@ export class NotificationService {
       return { success: false, error: err.message };
     }
   }
+
+  /**
+   * Send Official Prescription Issued Notification (In-App + Email)
+   */
+  async sendPrescriptionNotification(
+    prescription: any,
+    appointment: any,
+  ): Promise<{
+    emailResult?: { success: boolean; messageId?: string; error?: string };
+    inAppSuccess: boolean;
+  }> {
+    let inAppSuccess = false;
+    let emailResult: { success: boolean; messageId?: string; error?: string } | undefined;
+
+    try {
+      const details = await this.resolveAppointmentDetails(appointment);
+
+      // Doctor license number & digital signature from doctorRepo if available
+      let doctorLicenseNumber = "";
+      let digitalSignature = "";
+      if (details.doctorId && this.doctorRepo) {
+        try {
+          const doc = await this.doctorRepo.findById(details.doctorId, false);
+          if (doc) {
+            doctorLicenseNumber = (doc as any).licenseNumber || "";
+            digitalSignature = (doc as any).digitalSignature || "";
+          }
+        } catch (e) {
+          console.warn("[NotificationService] Error fetching doctor license:", e);
+        }
+      }
+
+      // Date string
+      let prescriptionDateStr = new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+      if (prescription.createdAt) {
+        try {
+          prescriptionDateStr = new Date(prescription.createdAt).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+        } catch {
+          // fallback
+        }
+      }
+
+      let followUpDateStr = "";
+      if (prescription.followUpDate) {
+        try {
+          followUpDateStr = new Date(prescription.followUpDate).toLocaleDateString("en-US", {
+            weekday: "short",
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+        } catch {
+          followUpDateStr = String(prescription.followUpDate);
+        }
+      }
+
+      // In-App Notification to Patient
+      try {
+        if (details.patientId) {
+          await this.notificationRepo.create({
+            recipient: details.patientId,
+            type: "prescription_issued",
+            title: "Prescription Issued",
+            message: `Dr. ${details.doctorName} has issued your official consultation prescription and clinical advice.`,
+            appointment: details.appointmentIdStr,
+          });
+          inAppSuccess = true;
+        }
+      } catch (inAppErr) {
+        console.warn("[NotificationService] Failed to create prescription in-app notification:", inAppErr);
+      }
+
+      // Email Notification to Patient
+      if (details.patientEmail) {
+        try {
+          const emailData: PrescriptionEmailData = {
+            patientName: details.patientName,
+            patientEmail: details.patientEmail,
+            doctorName: details.doctorName,
+            doctorSpecialization: details.doctorSpecialization,
+            doctorLicenseNumber,
+            hospitalName: details.hospitalName,
+            department: details.department,
+            appointmentId: details.appointmentIdStr,
+            prescriptionDate: prescriptionDateStr,
+            diagnosis: prescription.diagnosis || "Consultation Assessment",
+            medicines: prescription.medicines || [],
+            labTests: prescription.labTests || [],
+            additionalAdvice: prescription.additionalAdvice || "",
+            followUpDate: followUpDateStr,
+            digitalSignature,
+          };
+
+          const rendered = renderPrescriptionIssuedEmail(emailData);
+          emailResult = await this.emailService.sendEmail({
+            to: details.patientEmail,
+            subject: rendered.subject,
+            html: rendered.html,
+            text: rendered.text,
+          });
+        } catch (emailErr: any) {
+          console.error("[NotificationService] Error sending prescription email:", emailErr);
+          emailResult = { success: false, error: emailErr.message || "Email send failure" };
+        }
+      } else {
+        console.warn(`[NotificationService] No email address for patient ID ${details.patientId}. Skipping email.`);
+        emailResult = { success: false, error: "Patient email not available" };
+      }
+    } catch (err) {
+      console.error("[NotificationService] Unexpected error in sendPrescriptionNotification:", err);
+    }
+
+    return { inAppSuccess, emailResult };
+  }
 }
+

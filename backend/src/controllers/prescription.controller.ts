@@ -25,13 +25,14 @@ export const savePrescription = async (
       });
     }
 
-    const { diagnosis, medicines, additionalAdvice, followUpDate } = req.body || {};
+    const { diagnosis, medicines, labTests, additionalAdvice, followUpDate } = req.body || {};
 
     const prescription = await prescriptionService.createOrUpdatePrescription({
       appointmentId,
       doctorUserId,
       diagnosis,
       medicines,
+      labTests,
       additionalAdvice,
       followUpDate,
     });

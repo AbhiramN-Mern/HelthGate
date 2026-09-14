@@ -80,14 +80,25 @@ export class PaymentService {
       throw new ConflictError("This appointment is already paid and confirmed");
     }
 
-    // Determine consultation fee
+    // Determine consultation fee based on consultationType (online vs offline pricing tier)
+    const isOffline = (appointment.consultationType || "").toLowerCase() === "offline";
     let fee = DEFAULT_CONSULTATION_FEE;
     const doctorObj = appointment.doctor;
-    if (doctorObj && typeof doctorObj.consultationFee === "number" && doctorObj.consultationFee > 0) {
-      fee = doctorObj.consultationFee;
-    } else if (doctorObj?._id) {
-      const docDoc = await this.doctorRepo.findById(doctorObj._id, false);
-      if (docDoc && typeof docDoc.consultationFee === "number" && docDoc.consultationFee > 0) {
+    let docDoc: any = doctorObj;
+    if ((!docDoc?.consultationFee && !docDoc?.offlineConsultationFee) && doctorObj?._id) {
+      docDoc = await this.doctorRepo.findById(doctorObj._id, false);
+    }
+
+    if (isOffline) {
+      if (typeof docDoc?.offlineConsultationFee === "number" && docDoc.offlineConsultationFee > 0) {
+        fee = docDoc.offlineConsultationFee;
+      } else if (typeof docDoc?.consultationFee === "number" && docDoc.consultationFee > 0) {
+        fee = docDoc.consultationFee + 200;
+      } else {
+        fee = DEFAULT_CONSULTATION_FEE + 200;
+      }
+    } else {
+      if (typeof docDoc?.consultationFee === "number" && docDoc.consultationFee > 0) {
         fee = docDoc.consultationFee;
       }
     }

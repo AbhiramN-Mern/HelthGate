@@ -319,6 +319,38 @@ export class AppointmentService {
       isHospitalAppointment = false;
     }
 
+    let tokenNumber: string | null = null;
+    let cabinNumber: string | null = null;
+
+    if (resolvedConsultationType === "offline") {
+      const startOfDay = new Date(appointmentDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(appointmentDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      let offlineCount = 0;
+      try {
+        const dayAppointments = await this.appointmentRepo.find({
+          doctor,
+          consultationType: "offline",
+          appointmentDate: { $gte: startOfDay, $lte: endOfDay },
+        });
+        offlineCount = Array.isArray(dayAppointments) ? dayAppointments.length : 0;
+      } catch (countErr) {
+        console.warn("Could not query day appointments for token generation:", countErr);
+      }
+
+      const tokenSeq = offlineCount + 1;
+      tokenNumber = `OPD-${tokenSeq}`;
+
+      if (selectedDepartment) {
+        const deptPrefix = selectedDepartment.split(" ")[0].slice(0, 4).toUpperCase();
+        cabinNumber = `Cabin ${deptPrefix}-${100 + (tokenSeq % 10) + 1}`;
+      } else {
+        cabinNumber = `Cabin ${101 + (tokenSeq % 12)}`;
+      }
+    }
+
     const appointment = await this.appointmentRepo.create({
       patient: patientUserId as any,
       doctor: doctor as any,
@@ -331,6 +363,8 @@ export class AppointmentService {
       reason: reason || "General Consultation",
       type: (type as any) || resolvedLegacyType,
       consultationType: resolvedConsultationType,
+      tokenNumber,
+      cabinNumber,
       status: "pending_payment",
     });
 

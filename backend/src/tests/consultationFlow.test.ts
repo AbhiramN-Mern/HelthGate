@@ -4,6 +4,7 @@ import { Types } from "mongoose";
 import { VideoCallService } from "../services/videoCall.service.js";
 import { PrescriptionService } from "../services/prescription.service.js";
 import { AppointmentService } from "../services/appointment.service.js";
+import { PaymentService } from "../services/payment.service.js";
 
 // In-memory repositories for pure, isolated unit testing
 class MockAppointmentRepo {
@@ -243,6 +244,8 @@ describe("HealthGate Consultation Flow & Prescription Tests", () => {
 
     assert.equal(offlineAppt.consultationType, "offline");
     assert.equal(offlineAppt.type, "In-Person");
+    assert.ok(offlineAppt.tokenNumber && offlineAppt.tokenNumber.startsWith("OPD-"));
+    assert.ok(offlineAppt.cabinNumber && offlineAppt.cabinNumber.includes("Cabin"));
   });
 
   it("2. Offline appointments strictly reject starting a video consultation", async () => {
@@ -425,6 +428,7 @@ describe("HealthGate Consultation Flow & Prescription Tests", () => {
           instructions: "After food",
         },
       ],
+      labTests: ["Complete Blood Count (CBC)", "Chest X-Ray"],
       additionalAdvice: "Drink plenty of warm fluids and rest.",
       followUpDate: new Date("2026-09-25"),
     });
@@ -434,6 +438,7 @@ describe("HealthGate Consultation Flow & Prescription Tests", () => {
     assert.equal(prescription.medicines.length, 2);
     assert.equal(prescription.medicines[0].name, "Amoxicillin");
     assert.equal(prescription.medicines[1].name, "Paracetamol");
+    assert.deepEqual(prescription.labTests, ["Complete Blood Count (CBC)", "Chest X-Ray"]);
 
     // Check appointment status automatically marked completed
     const updatedAppt = await appointmentRepo.findById(appt._id);
@@ -530,4 +535,89 @@ describe("HealthGate Consultation Flow & Prescription Tests", () => {
       },
     );
   });
+
+  it("8. Differential consultation fees: Online telehealth vs Offline physical visit", async () => {
+    const appointmentRepo = new MockAppointmentRepo();
+    const doctorRepo = new MockDoctorRepo();
+    const patientUserId = new Types.ObjectId().toString();
+    const doctorDocId = new Types.ObjectId();
+
+    const doctorRecord = {
+      _id: doctorDocId,
+      user: { _id: new Types.ObjectId(), name: "Dr. Gregory House" },
+      consultationFee: 600,
+      offlineConsultationFee: 850,
+      active: true,
+      verificationStatus: "verified",
+      available: true,
+    };
+    doctorRepo.doctors.push(doctorRecord);
+
+    const onlineAppt = await appointmentRepo.create({
+      patient: patientUserId,
+      doctor: doctorRecord,
+      appointmentDate: new Date(),
+      timeSlot: "11:00 AM",
+      status: "pending_payment",
+      consultationType: "online",
+    });
+
+    const offlineAppt = await appointmentRepo.create({
+      patient: patientUserId,
+      doctor: doctorRecord,
+      appointmentDate: new Date(),
+      timeSlot: "03:00 PM",
+      status: "pending_payment",
+      consultationType: "offline",
+    });
+
+    // Mock payment gateway and payment repo
+    const payments: any[] = [];
+    const mockPaymentRepo = {
+      create: async (data: any) => {
+        const p = { _id: new Types.ObjectId(), ...data };
+        payments.push(p);
+        return p;
+      },
+      findByBookingId: async () => [],
+    };
+
+    let createdOrderAmount = 0;
+    const mockGateway = {
+      createOrder: async (opts: any) => {
+        createdOrderAmount = opts.amount;
+        return {
+          orderId: "order_test_123",
+          amount: opts.amount,
+          currency: "INR",
+          status: "created",
+        };
+      },
+      verifyPayment: async () => ({ success: true, paymentId: "pay_123", orderId: "ord_123" }),
+    };
+
+    const paymentService = new PaymentService(
+      mockPaymentRepo as any,
+      appointmentRepo as any,
+      doctorRepo as any,
+      { create: async () => {} } as any,
+      { findById: async () => null } as any,
+      mockGateway as any,
+    );
+
+    // Online order: should be 600
+    const onlineOrder = await paymentService.createPaymentOrder({
+      patientUserId,
+      bookingId: onlineAppt._id.toString(),
+    });
+    assert.equal(onlineOrder.order.amount, 600);
+
+    // Offline order: should be 850
+    const offlineOrder = await paymentService.createPaymentOrder({
+      patientUserId,
+      bookingId: offlineAppt._id.toString(),
+    });
+    assert.equal(offlineOrder.order.amount, 850);
+  });
 });
+
