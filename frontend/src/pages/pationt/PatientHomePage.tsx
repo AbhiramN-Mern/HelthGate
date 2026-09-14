@@ -42,6 +42,7 @@ import {
 import { MockPaymentModal } from '../../components/payment/MockPaymentModal'
 import { launchPaymentCheckout } from '../../utils/checkoutLauncher'
 import { Pagination } from '../../components/common/Pagination'
+import { getSocket } from '../../services/socket.service'
 import './PatientHomePage.css'
 
 type PatientHomePageProps = {
@@ -138,6 +139,14 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [showNotifs, setShowNotifs] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [incomingCall, setIncomingCall] = useState<{
+    callSessionId: string
+    appointmentId: string
+    doctorName: string
+    specialization?: string
+    title: string
+    message: string
+  } | null>(null)
 
   // Reschedule Response State
   const [respondingApptId, setRespondingApptId] = useState<string | null>(null)
@@ -327,6 +336,40 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
       console.warn('Failed to load patient notifications:', err)
     }
   }
+
+  // Real-time video consultation socket listener
+  useEffect(() => {
+    if (!token) return
+    const socket = getSocket(token)
+
+    const handleIncomingCall = (data: any) => {
+      console.log('[PatientHome] Received video consultation incoming call:', data)
+      setIncomingCall(data)
+
+      // Add to notifications dropdown immediately without requiring a manual refresh
+      setNotifications((prev) => [
+        {
+          _id: `live-${Date.now()}`,
+          type: 'video_call_started',
+          title: data.title || 'Video Consultation Started',
+          message:
+            data.message ||
+            `Dr. ${data.doctorName || 'Doctor'} has started a video consultation.`,
+          isRead: false,
+          callSession: data.callSessionId,
+          appointment: data.appointmentId,
+          createdAt: new Date().toISOString(),
+        },
+        ...prev,
+      ])
+    }
+
+    socket.on('video-call-incoming', handleIncomingCall)
+
+    return () => {
+      socket.off('video-call-incoming', handleIncomingCall)
+    }
+  }, [token])
 
   const handleMarkNotificationRead = async (id: string) => {
     try {
@@ -926,6 +969,40 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                             )}
                           </div>
                           <p className="php-notif-item-msg">{n.message}</p>
+                          {(n.type === 'video_call_started' || n.type === 'VIDEO_CALL_STARTED') && (
+                            <button
+                              type="button"
+                              className="php-btn-join-call"
+                              style={{
+                                marginTop: '6px',
+                                marginBottom: '6px',
+                                background: 'linear-gradient(135deg, #0ea5a4 0%, #0284c7 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                width: 'fit-content',
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (!n.isRead) handleMarkNotificationRead(n._id)
+                                setShowNotifs(false)
+                                if (n.callSession) {
+                                  navigate(`/video-call/${n.callSession}`)
+                                } else if (n.appointment) {
+                                  navigate(`/consultation/${n.appointment}`)
+                                }
+                              }}
+                            >
+                              📹 Join Video Call
+                            </button>
+                          )}
                           <span className="php-notif-item-time">
                             {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Recent'}
                           </span>
@@ -1369,7 +1446,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                       </div>
 
                       {appt.status === 'confirmed' ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <span style={{
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -1383,6 +1460,26 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           }}>
                             <CheckCircleIcon size={13} /> Paid & Confirmed
                           </span>
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/consultation/${appt._id}`)}
+                            style={{
+                              background: 'linear-gradient(135deg, #0ea5a4 0%, #0284c7 100%)',
+                              color: '#ffffff',
+                              border: 'none',
+                              padding: '5px 12px',
+                              borderRadius: '8px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              boxShadow: '0 2px 6px rgba(14, 165, 164, 0.25)',
+                            }}
+                          >
+                            📹 Join Video Call
+                          </button>
                         </div>
                       ) : (
                         <button
@@ -2812,6 +2909,114 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
           </div>
         </div>
       </footer>
+      {/* Real-Time Incoming Video Call Notification Toast */}
+      {incomingCall && (
+        <div
+          className="php-incoming-call-modal"
+          style={{
+            position: 'fixed',
+            bottom: '28px',
+            right: '28px',
+            zIndex: 9999,
+            background: '#ffffff',
+            borderRadius: '16px',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(14, 165, 164, 0.3)',
+            padding: '20px 24px',
+            maxWidth: '380px',
+            animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+            <div
+              style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #0ea5a4 0%, #0284c7 100%)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.4rem',
+                flexShrink: 0,
+                boxShadow: '0 0 0 4px rgba(14, 165, 164, 0.2)',
+              }}
+            >
+              📹
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span
+                  style={{
+                    fontSize: '0.74rem',
+                    fontWeight: 800,
+                    color: '#0ea5a4',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  Live Consultation
+                </span>
+                <span
+                  style={{
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    background: '#10b981',
+                    display: 'inline-block',
+                  }}
+                />
+              </div>
+              <h4 style={{ margin: '4px 0 2px', fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                {incomingCall.title || 'Video Consultation Started'}
+              </h4>
+              <p style={{ margin: '0 0 12px', fontSize: '0.84rem', color: '#64748b', lineHeight: 1.4 }}>
+                {incomingCall.message || `Dr. ${incomingCall.doctorName} is waiting for you to join.`}
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sessionId = incomingCall.callSessionId
+                    setIncomingCall(null)
+                    navigate(`/video-call/${sessionId}`)
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #0ea5a4 0%, #0284c7 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.84rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(14, 165, 164, 0.3)',
+                    flex: 1,
+                  }}
+                >
+                  Join Video Call
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIncomingCall(null)}
+                  style={{
+                    background: '#f1f5f9',
+                    color: '#64748b',
+                    border: 'none',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    fontSize: '0.84rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

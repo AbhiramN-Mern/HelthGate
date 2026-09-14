@@ -628,4 +628,36 @@ export class NotificationService {
 
     return { inAppSuccess, emailResult };
   }
+
+  /**
+   * Video Consultation Started: Persistent in-app notification for patient
+   */
+  async sendVideoCallNotification({
+    patientUserId,
+    appointmentId,
+    callSessionId,
+    doctorName,
+  }: {
+    patientUserId: string | Types.ObjectId;
+    appointmentId: string | Types.ObjectId;
+    callSessionId: string | Types.ObjectId;
+    doctorName: string;
+  }) {
+    try {
+      const cleanDoctorName = (doctorName || "Doctor").replace(/^Dr\.?\s*/i, "");
+      const notification = await this.notificationRepo.create({
+        recipient: patientUserId,
+        type: "video_call_started",
+        title: "Video Consultation Started",
+        message: `Dr. ${cleanDoctorName} has started a video consultation.`,
+        appointment: appointmentId,
+        callSession: callSessionId,
+      });
+
+      return { success: true, notification };
+    } catch (err: any) {
+      console.error("[NotificationService] Error creating video call notification:", err);
+      return { success: false, error: err.message };
+    }
+  }
 }

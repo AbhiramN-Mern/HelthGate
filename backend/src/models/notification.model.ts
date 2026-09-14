@@ -16,6 +16,8 @@ const notificationSchema = new Schema(
         "rescheduled",
         "reschedule_request",
         "reschedule_response",
+        "video_call_started",
+        "VIDEO_CALL_STARTED",
         "system",
         "general",
       ],
@@ -36,6 +38,11 @@ const notificationSchema = new Schema(
       ref: "Appointment",
       default: null,
     },
+    callSession: {
+      type: Schema.Types.ObjectId,
+      ref: "CallSession",
+      default: null,
+    },
     isRead: {
       type: Boolean,
       default: false,
@@ -49,6 +56,7 @@ const notificationSchema = new Schema(
 export type Notification = InferSchemaType<typeof notificationSchema> & {
   recipient: Types.ObjectId;
   appointment?: Types.ObjectId;
+  callSession?: Types.ObjectId;
 };
 
 const NotificationModel = model<Notification>("Notification", notificationSchema);

@@ -11,6 +11,7 @@ import {
   getMyDoctorHospitalsApi,
   searchHospitalsForDoctorApi,
   requestJoinHospitalApi,
+  startVideoCallApi,
   getFriendlyErrorMessage,
   type AuthUser,
   type DoctorProfile,
@@ -382,6 +383,29 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
       setError(err instanceof Error ? err.message : 'Unable to update active status.')
     } finally {
       setStatusUpdating(false)
+    }
+  }
+
+  const [startingCallApptId, setStartingCallApptId] = useState<string | null>(null)
+
+  // Start Real-Time Video Consultation
+  const handleStartVideoConsultation = async (appt: AppointmentItem) => {
+    if (!appt._id) return
+    setStartingCallApptId(appt._id)
+    try {
+      const result = await startVideoCallApi(appt._id, token)
+      if (result.callSession?.id) {
+        navigate(`/video-call/${result.callSession.id}`)
+      } else {
+        navigate(`/consultation/${appt._id}`)
+      }
+    } catch (err: any) {
+      setDocFeedback({
+        type: 'error',
+        message: err.message || 'Failed to start video consultation. Please try again.',
+      })
+    } finally {
+      setStartingCallApptId(null)
     }
   }
 
@@ -1354,13 +1378,38 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                         </button>
                       )}
 
+                      {!isCompleted && appt.status !== 'cancelled' && (
+                        <button
+                          type="button"
+                          className="dd-btn-consult"
+                          style={{
+                            background: 'linear-gradient(135deg, #0284c7 0%, #0d9488 100%)',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontWeight: 700,
+                            fontSize: '0.84rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                          disabled={startingCallApptId === appt._id}
+                          onClick={() => handleStartVideoConsultation(appt)}
+                          title="Start Video Consultation (Available anytime)"
+                        >
+                          {startingCallApptId === appt._id ? 'Connecting...' : '📹 Start Video Consultation'}
+                        </button>
+                      )}
+
                       {!isCompleted && (
                         <button
                           type="button"
                           className="dd-btn-consult"
                           onClick={() => handleStartConsultation(appt)}
                         >
-                          ▶ Start
+                          Clinical Notes
                         </button>
                       )}
                     </div>
@@ -1473,6 +1522,32 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                       >
                         View Details
                       </button>
+
+                      {appt.status !== 'completed' && appt.status !== 'cancelled' && (
+                        <button
+                          type="button"
+                          className="dd-btn-consult"
+                          style={{
+                            background: 'linear-gradient(135deg, #0284c7 0%, #0d9488 100%)',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '7px 12px',
+                            borderRadius: '8px',
+                            fontWeight: 700,
+                            fontSize: '0.82rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            flex: 1,
+                          }}
+                          disabled={startingCallApptId === appt._id}
+                          onClick={() => handleStartVideoConsultation(appt)}
+                          title="Start Video Consultation (Doctor can start anytime)"
+                        >
+                          {startingCallApptId === appt._id ? 'Connecting...' : '📹 Video Call'}
+                        </button>
+                      )}
 
                       {appt.status !== 'completed' && appt.status !== 'cancelled' && (
                         <button

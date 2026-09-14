@@ -738,12 +738,15 @@ export type NotificationItem = {
     | 'rescheduled'
     | 'reschedule_request'
     | 'reschedule_response'
+    | 'video_call_started'
+    | 'VIDEO_CALL_STARTED'
     | 'system'
     | 'general'
   title: string
   message: string
   isRead?: boolean
   appointment?: string
+  callSession?: string
   createdAt?: string
 }
 
@@ -1163,6 +1166,96 @@ export const getPaymentByIdApi = async (
   return request<{ success: boolean; payment: PaymentRecord }>(
     `/api/payments/${paymentId}`,
     { method: 'GET' },
+    token,
+  )
+}
+
+export type VideoCallSessionDetails = {
+  success: boolean
+  callSession?: {
+    id: string
+    appointmentId: string
+    status: string
+    roomId: string
+  }
+  appointmentId: string
+  roomId: string
+  userRole: 'doctor' | 'patient'
+  userName: string
+  remoteUserName: string
+  doctorName: string
+  patientName: string
+  specialization?: string
+  timeSlot?: string
+  appointmentDate?: string
+  status?: string
+  iceServers?: RTCIceServer[]
+  message?: string
+}
+
+export const startVideoCallApi = async (
+  appointmentId: string,
+  token: string,
+): Promise<VideoCallSessionDetails> => {
+  return request<VideoCallSessionDetails>(
+    `/api/video-calls/start`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ appointmentId }),
+    },
+    token,
+  )
+}
+
+export const joinVideoCallApi = async (
+  callSessionId: string,
+  token: string,
+): Promise<VideoCallSessionDetails> => {
+  return request<VideoCallSessionDetails>(
+    `/api/video-calls/${callSessionId}/join`,
+    {
+      method: 'POST',
+    },
+    token,
+  )
+}
+
+export const getVideoCallDetailsApi = async (
+  sessionIdOrApptId: string,
+  token: string,
+): Promise<VideoCallSessionDetails> => {
+  return request<VideoCallSessionDetails>(
+    `/api/video-calls/${sessionIdOrApptId}`,
+    {
+      method: 'GET',
+    },
+    token,
+  )
+}
+
+export const endVideoCallApi = async (
+  sessionIdOrApptId: string,
+  token: string,
+  reason?: string,
+): Promise<{ success: boolean; message: string; duration?: number }> => {
+  return request<{ success: boolean; message: string; duration?: number }>(
+    `/api/video-calls/${sessionIdOrApptId}/end`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    },
+    token,
+  )
+}
+
+export const getVideoIceServersApi = async (
+  token: string,
+): Promise<{ success: boolean; iceServers: RTCIceServer[] }> => {
+  return request<{ success: boolean; iceServers: RTCIceServer[] }>(
+    `/api/video/ice-servers`,
+    {
+      method: 'GET',
+    },
     token,
   )
 }

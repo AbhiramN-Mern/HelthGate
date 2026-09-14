@@ -7,6 +7,7 @@ export interface INotificationRepository {
     title: string;
     message: string;
     appointment?: string | Types.ObjectId;
+    callSession?: string | Types.ObjectId;
   }): Promise<any>;
   findByRecipient(recipientId: string | Types.ObjectId, limit?: number, skip?: number): Promise<any[]>;
   count(filter?: Record<string, unknown>): Promise<number>;

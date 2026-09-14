@@ -9,6 +9,7 @@ import HomePage from './pages/HomePage'
 import PatientHomePage from './pages/pationt/PatientHomePage'
 import PatientPaymentsPage from './pages/pationt/PatientPaymentsPage'
 import DoctorDashboardPage from './pages/doctor/DoctorDashboardPage'
+import ConsultationPage from './pages/consultation/ConsultationPage'
 import ErrorPage from './pages/error page/ErrorPage'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -119,6 +120,26 @@ function AppShell() {
         <Route
           path="/doctor"
           element={<Navigate to="/doctor/dashboard" replace />}
+        />
+        <Route
+          path="/video-call/:callSessionId"
+          element={
+            localStorage.getItem('helthgate_token') ? (
+              <ConsultationPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/consultation/:appointmentId"
+          element={
+            localStorage.getItem('helthgate_token') ? (
+              <ConsultationPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
         />
         <Route
           path="/login"

@@ -11,6 +11,7 @@ import { MongoHospitalDoctorRepository } from "./repositories/implementations/Mo
 import { MongoAppointmentRepository } from "./repositories/implementations/MongoAppointmentRepository.js";
 import { MongoNotificationRepository } from "./repositories/implementations/MongoNotificationRepository.js";
 import { MongoAdminRepository } from "./repositories/implementations/MongoAdminRepository.js";
+import { MongoCallSessionRepository } from "./repositories/implementations/MongoCallSessionRepository.js";
 import { MongoPaymentRepository } from "./repositories/implementations/MongoPaymentRepository.js";
 
 // Gateways & Infrastructure
@@ -35,6 +36,7 @@ import { AppointmentService } from "./services/appointment.service.js";
 import { AdminService } from "./services/admin.service.js";
 import { PaymentService } from "./services/payment.service.js";
 import { NotificationService } from "./services/notification.service.js";
+import { VideoCallService } from "./services/videoCall.service.js";
 
 // 1. Security & Core utilities
 export const passwordHasher = new BcryptPasswordHasher();
@@ -64,6 +66,7 @@ export const appointmentRepo = new MongoAppointmentRepository();
 export const notificationRepo = new MongoNotificationRepository();
 export const adminRepo = new MongoAdminRepository();
 export const paymentRepo = new MongoPaymentRepository();
+export const callSessionRepo = new MongoCallSessionRepository();
 
 // 4. Role Handlers & Registry
 export const roleRegistry = new RoleHandlerRegistry();
@@ -118,5 +121,12 @@ export const paymentService = new PaymentService(
   userRepo,
   activePaymentGateway,
   notificationService,
+);
+
+export const videoCallService = new VideoCallService(
+  appointmentRepo,
+  callSessionRepo,
+  notificationService,
+  doctorRepo,
 );
 

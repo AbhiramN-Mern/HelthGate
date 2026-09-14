@@ -22,7 +22,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.4",
     "multer": "^2.3.0",
-    "nodemailer": "^10.0.8"
+    "nodemailer": "^10.0.8",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
