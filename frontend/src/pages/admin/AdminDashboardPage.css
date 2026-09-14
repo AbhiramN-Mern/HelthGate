@@ -418,6 +418,7 @@
   padding: 20px;
   border: 1px solid var(--admin-border);
   box-shadow: var(--admin-shadow-sm);
+  min-width: 0;
 }
 
 .admin-panel-header {
@@ -609,13 +610,21 @@
    ========================================================================== */
 .admin-bottom-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 1280px) {
   .admin-bottom-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-bottom-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -635,23 +644,30 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  min-width: 0;
 }
 
 .admin-appt-details {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .admin-appt-patient {
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--admin-text-main);
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .admin-appt-meta {
   font-size: 0.72rem;
   color: var(--admin-text-muted);
   margin-top: 1px;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .admin-status-pill {
@@ -660,6 +676,8 @@
   padding: 2px 7px;
   border-radius: var(--hg-radius-sm);
   text-transform: capitalize;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .admin-status-pill.scheduled { background-color: var(--hg-warning-bg); color: var(--hg-warning); }

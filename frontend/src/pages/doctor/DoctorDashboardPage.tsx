@@ -1364,23 +1364,23 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="dd-appt-top-badges">
                         {appt.consultationType === 'offline' ? (
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f1f5f9', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <div className="dd-offline-badge-group">
+                            <span className="dd-badge-consult-format offline">
                               🏥 Offline Visit
                             </span>
-                            <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 7px', borderRadius: '6px', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <span className="dd-badge-token">
                               🎫 #{appt.tokenNumber || 'OPD-1'}
                             </span>
                             {appt.cabinNumber && (
-                              <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 6px', borderRadius: '6px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
+                              <span className="dd-badge-cabin">
                                 🚪 {appt.cabinNumber}
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#ecfdf5', color: '#065f46', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="dd-badge-consult-format video">
                             📹 Online Video
                           </span>
                         )}
@@ -1405,7 +1405,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                       </div>
                       <div className="dd-detail-cell" style={{ gridColumn: '1 / -1' }}>
                         <span className="dd-detail-label">Practice Venue</span>
-                        <span className="dd-detail-val" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <span className="dd-detail-val" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
                           {appt.hospital ? (
                             <>
                               <HospitalIcon size={13} />
@@ -1455,20 +1455,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                       {appt.consultationType !== 'offline' && !isCompleted && appt.status !== 'cancelled' && (
                         <button
                           type="button"
-                          className="dd-btn-consult"
-                          style={{
-                            background: 'linear-gradient(135deg, #0284c7 0%, #0d9488 100%)',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '8px 14px',
-                            borderRadius: '8px',
-                            fontWeight: 700,
-                            fontSize: '0.84rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                          }}
+                          className="dd-btn-consult video"
                           disabled={startingCallApptId === appt._id}
                           onClick={() => handleInitiateVideoCallClick(appt)}
                           title="Start Video Consultation (Available anytime)"
@@ -1480,20 +1467,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                       {isCompleted && (
                         <button
                           type="button"
-                          className="dd-btn-consult"
-                          style={{
-                            background: 'linear-gradient(135deg, #0d5c63 0%, #088395 100%)',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '8px 14px',
-                            borderRadius: '8px',
-                            fontWeight: 600,
-                            fontSize: '0.84rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                          }}
+                          className="dd-btn-consult prescription"
                           onClick={() => setPrescriptionModalAppt(appt)}
                         >
                           📄 Prescription
@@ -1563,23 +1537,23 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="dd-appt-top-badges">
                         {appt.consultationType === 'offline' ? (
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f1f5f9', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <div className="dd-offline-badge-group">
+                            <span className="dd-badge-consult-format offline">
                               🏥 Offline Visit
                             </span>
-                            <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 7px', borderRadius: '6px', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' }}>
+                            <span className="dd-badge-token">
                               🎫 #{appt.tokenNumber || 'OPD-1'}
                             </span>
                             {appt.cabinNumber && (
-                              <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 6px', borderRadius: '6px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
+                              <span className="dd-badge-cabin">
                                 🚪 {appt.cabinNumber}
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#ecfdf5', color: '#065f46', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="dd-badge-consult-format video">
                             📹 Online Video
                           </span>
                         )}
@@ -1604,7 +1578,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                       </div>
                       <div className="dd-detail-cell" style={{ gridColumn: '1 / -1' }}>
                         <span className="dd-detail-label">Practice Venue</span>
-                        <span className="dd-detail-val" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <span className="dd-detail-val" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
                           {appt.hospital ? (
                             <>
                               <HospitalIcon size={13} />
@@ -1635,30 +1609,25 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                       <button
                         type="button"
                         className="dd-btn-view-details"
-                        style={{ flex: 1 }}
                         onClick={() => setViewingAppt(appt)}
                       >
                         View Details
                       </button>
 
+                      {appt.status !== 'completed' && appt.status !== 'cancelled' && (
+                        <button
+                          type="button"
+                          className="dd-btn-reschedule"
+                          onClick={() => handleOpenRescheduleModal(appt)}
+                        >
+                          <CalendarIcon size={13} /> {appt.rescheduleRequest?.status === 'pending' ? 'Change' : 'Reschedule'}
+                        </button>
+                      )}
+
                       {appt.consultationType !== 'offline' && appt.status !== 'completed' && appt.status !== 'cancelled' && (
                         <button
                           type="button"
-                          className="dd-btn-consult"
-                          style={{
-                            background: 'linear-gradient(135deg, #0284c7 0%, #0d9488 100%)',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '7px 12px',
-                            borderRadius: '8px',
-                            fontWeight: 700,
-                            fontSize: '0.82rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            flex: 1,
-                          }}
+                          className="dd-btn-consult video"
                           disabled={startingCallApptId === appt._id}
                           onClick={() => handleInitiateVideoCallClick(appt)}
                           title="Start Video Consultation (Doctor can start anytime)"
@@ -1670,35 +1639,10 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                       {appt.status === 'completed' && (
                         <button
                           type="button"
-                          className="dd-btn-consult"
-                          style={{
-                            background: 'linear-gradient(135deg, #0d5c63 0%, #088395 100%)',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '7px 12px',
-                            borderRadius: '8px',
-                            fontWeight: 600,
-                            fontSize: '0.82rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            flex: 1,
-                          }}
+                          className="dd-btn-consult prescription"
                           onClick={() => setPrescriptionModalAppt(appt)}
                         >
                           📄 Prescription
-                        </button>
-                      )}
-
-                      {appt.status !== 'completed' && appt.status !== 'cancelled' && (
-                        <button
-                          type="button"
-                          className="dd-btn-reschedule"
-                          style={{ flex: 1 }}
-                          onClick={() => handleOpenRescheduleModal(appt)}
-                        >
-                          <CalendarIcon size={13} /> {appt.rescheduleRequest?.status === 'pending' ? 'Change' : 'Reschedule'}
                         </button>
                       )}
                     </div>
