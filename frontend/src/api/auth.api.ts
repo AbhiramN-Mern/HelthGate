@@ -752,6 +752,8 @@ export type NotificationItem = {
   _id: string
   type:
     | 'new_appointment'
+    | 'appointment'
+    | 'appointment_confirmed'
     | 'cancellation'
     | 'rescheduled'
     | 'reschedule_request'
@@ -760,6 +762,8 @@ export type NotificationItem = {
     | 'VIDEO_CALL_STARTED'
     | 'system'
     | 'general'
+    | 'prescription_issued'
+    | 'verification'
   title: string
   message: string
   isRead?: boolean

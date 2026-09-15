@@ -4,7 +4,6 @@ import {
   getDoctorDashboard,
   updateDoctorAvailabilityApi,
   updateAppointmentStatusApi,
-  markNotificationReadApi,
   getDoctorBookedSlotsApi,
   requestAppointmentRescheduleApi,
   getMyDoctorHospitalsApi,
@@ -34,7 +33,6 @@ import {
   SettingsIcon,
   BellIcon,
   ClipboardIcon,
-  RefreshIcon,
   HospitalIcon,
 } from '../../components/common/Icons'
 
@@ -61,17 +59,6 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
   })
   const [todayAppointments, setTodayAppointments] = useState<AppointmentItem[]>([])
   const [upcomingAppointments, setUpcomingAppointments] = useState<AppointmentItem[]>([])
-  const [recentPatients, setRecentPatients] = useState<
-    {
-      patientId: string
-      name: string
-      email: string
-      lastAppointmentDate: string
-      lastAppointmentStatus: string
-      appointmentType: string
-      totalVisits: number
-    }[]
-  >([])
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [availability, setAvailability] = useState<DoctorAvailability>({
     workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
@@ -173,7 +160,6 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
       if (data.stats) setStats(data.stats)
       if (data.todayAppointments) setTodayAppointments(data.todayAppointments)
       if (data.upcomingAppointments) setUpcomingAppointments(data.upcomingAppointments)
-      if (data.recentPatients) setRecentPatients(data.recentPatients)
       if (data.notifications) setNotifications(data.notifications)
       if (data.availability) {
         setAvailability(data.availability)
@@ -424,16 +410,6 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
       })
     } finally {
       setConsultSubmitting(false)
-    }
-  }
-
-  // Mark Notification Read
-  const handleMarkNotificationRead = async (id: string) => {
-    try {
-      await markNotificationReadApi(id, token)
-      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)))
-    } catch (err) {
-      console.warn('Failed to mark notification read:', err)
     }
   }
 

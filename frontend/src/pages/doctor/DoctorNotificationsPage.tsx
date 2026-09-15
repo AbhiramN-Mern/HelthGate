@@ -94,8 +94,8 @@ function DoctorNotificationsPage({ user, onLogout, onRequireAuth }: DoctorNotifi
   const filteredNotifications = notifications.filter((n) => {
     if (filterType === 'all') return true
     if (filterType === 'unread') return !n.isRead
-    if (filterType === 'appointment') return !n.type || n.type === 'appointment'
-    if (filterType === 'rescheduled') return n.type === 'rescheduled'
+    if (filterType === 'appointment') return !n.type || n.type === 'new_appointment' || n.type === 'appointment' || n.type === 'appointment_confirmed'
+    if (filterType === 'rescheduled') return n.type === 'rescheduled' || n.type === 'reschedule_request' || n.type === 'reschedule_response'
     if (filterType === 'cancellation') return n.type === 'cancellation'
     if (filterType === 'system') return n.type === 'system'
     return true

@@ -11,11 +11,7 @@ import {
 import './DoctorPages.css'
 import {
   UsersIcon,
-  UserIcon,
-  CalendarIcon,
-  ClockIcon,
   CloseIcon,
-  CheckCircleIcon,
   AlertCircleIcon,
   BellIcon,
 } from '../../components/common/Icons'
@@ -122,7 +118,6 @@ function DoctorPatientsPage({ user, onLogout, onRequireAuth }: DoctorPatientsPag
   })
 
   const doctorName = doctor?.user?.name || user?.name || 'Doctor'
-  const doctorSpecialization = doctor?.specialization || 'Medical Specialist'
   const totalVisitsCount = patients.reduce((acc, p) => acc + (p.totalVisits || 1), 0)
 
   return (
