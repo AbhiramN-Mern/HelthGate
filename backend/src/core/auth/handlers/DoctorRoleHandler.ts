@@ -17,7 +17,13 @@ export class DoctorRoleHandler implements IRoleHandler {
   }
 
   async createProfile(userId: string, profile: Record<string, unknown>): Promise<any> {
-    return this.doctorRepo.create({ ...profile, user: userId as any });
+    return this.doctorRepo.create({
+      ...profile,
+      user: userId as any,
+      doctorApprovalStatus: "pending",
+      verificationStatus: "pending",
+      isEmailVerified: false,
+    });
   }
 
   async validateLoginStatus(userId: string): Promise<void> {
@@ -28,10 +34,10 @@ export class DoctorRoleHandler implements IRoleHandler {
     if (!doctorProfile.active) {
       throw new ForbiddenError("Doctor account is deactivated by admin");
     }
-    if (doctorProfile.verificationStatus === "pending") {
-      throw new ForbiddenError("Doctor account is pending admin verification");
-    }
-    if (doctorProfile.verificationStatus === "rejected") {
+    const isRejected =
+      doctorProfile.doctorApprovalStatus === "rejected" ||
+      doctorProfile.verificationStatus === "rejected";
+    if (isRejected) {
       throw new ForbiddenError("Doctor account was rejected by admin");
     }
   }

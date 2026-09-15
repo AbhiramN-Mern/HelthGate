@@ -6,7 +6,7 @@ export class MongoDoctorRepository implements IDoctorRepository {
   async findByUserId(userId: string | Types.ObjectId, populateDetails = true): Promise<any | null> {
     const query = DoctorModel.findOne({ user: userId });
     if (populateDetails) {
-      query.populate("user", "name email role").populate("hospital", "name isActive");
+      query.populate("user", "name email role isEmailVerified").populate("hospital", "name isActive");
     }
     return query.exec();
   }
@@ -14,7 +14,7 @@ export class MongoDoctorRepository implements IDoctorRepository {
   async findById(id: string | Types.ObjectId, populateDetails = true): Promise<any | null> {
     const query = DoctorModel.findById(id);
     if (populateDetails) {
-      query.populate("user", "name email role").populate("hospital", "name isActive");
+      query.populate("user", "name email role isEmailVerified").populate("hospital", "name isActive");
     }
     return query.exec();
   }
@@ -38,14 +38,14 @@ export class MongoDoctorRepository implements IDoctorRepository {
         setDefaultsOnInsert: true,
       },
     )
-      .populate("user", "name email role")
+      .populate("user", "name email role isEmailVerified")
       .populate("hospital", "name isActive")
       .exec();
   }
 
   async updateById(id: string | Types.ObjectId, updates: Record<string, unknown>): Promise<any | null> {
     return DoctorModel.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
-      .populate("user", "name email role")
+      .populate("user", "name email role isEmailVerified")
       .populate("hospital", "name isActive")
       .exec();
   }
@@ -76,7 +76,7 @@ export class MongoDoctorRepository implements IDoctorRepository {
       query = query.limit(limit);
     }
     if (populateDetails) {
-      query = query.populate("user", "name email role").populate("hospital", "name isActive");
+      query = query.populate("user", "name email role isEmailVerified").populate("hospital", "name isActive");
     }
     return query.exec();
   }

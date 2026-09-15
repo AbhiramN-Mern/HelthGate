@@ -11,19 +11,30 @@ import PatientPaymentsPage from './pages/pationt/PatientPaymentsPage'
 import DoctorDashboardPage from './pages/doctor/DoctorDashboardPage'
 import DoctorPatientsPage from './pages/doctor/DoctorPatientsPage'
 import DoctorNotificationsPage from './pages/doctor/DoctorNotificationsPage'
+import DoctorPendingApprovalPage from './pages/doctor/DoctorPendingApprovalPage'
 import ConsultationPage from './pages/consultation/ConsultationPage'
 import ErrorPage from './pages/error page/ErrorPage'
 import ErrorBoundary from './components/ErrorBoundary'
 
 type AuthUser = {
+  id?: string
   name?: string
   email?: string
   role?: string
+  isEmailVerified?: boolean
+  doctorApprovalStatus?: 'pending' | 'approved' | 'rejected'
+  verificationStatus?: 'pending' | 'verified' | 'rejected' | 'approved'
 }
 
-const getRoleHomeRoute = (role?: string) => {
+const getRoleHomeRoute = (role?: string, user?: AuthUser | null) => {
   if (role === 'admin') return '/admin'
-  if (role === 'doctor') return '/doctor/dashboard'
+  if (role === 'doctor') {
+    const isApproved =
+      user?.doctorApprovalStatus === 'approved' ||
+      user?.verificationStatus === 'verified' ||
+      user?.verificationStatus === 'approved'
+    return isApproved ? '/doctor/dashboard' : '/doctor/pending-approval'
+  }
   return '/patient/home'
 }
 
@@ -45,7 +56,7 @@ function AppShell() {
     localStorage.setItem('helthgate_token', activeToken)
     localStorage.setItem('helthgate_user', JSON.stringify(userData))
     setUser(userData)
-    navigate(getRoleHomeRoute(userData.role))
+    navigate(getRoleHomeRoute(userData.role, userData))
   }
 
   const handleLogout = () => {
@@ -63,7 +74,16 @@ function AppShell() {
   }
 
   const isLoggedIn = !!localStorage.getItem('helthgate_token')
-  const currentRole = JSON.parse(localStorage.getItem('helthgate_user') || '{}')?.role
+  const storedUserRaw = localStorage.getItem('helthgate_user')
+  const storedUser: AuthUser = storedUserRaw ? JSON.parse(storedUserRaw) : {}
+  const currentUser = user || (storedUser.role ? storedUser : null)
+  const currentRole = currentUser?.role
+
+  const isDoctorApproved =
+    currentUser?.role === 'doctor' &&
+    (currentUser?.doctorApprovalStatus === 'approved' ||
+      currentUser?.verificationStatus === 'verified' ||
+      currentUser?.verificationStatus === 'approved')
 
   return (
     <ErrorBoundary>
@@ -74,7 +94,7 @@ function AppShell() {
             <Navigate
               to={
                 localStorage.getItem('helthgate_token')
-                  ? getRoleHomeRoute(currentRole)
+                  ? getRoleHomeRoute(currentRole, currentUser)
                   : '/home'
               }
               replace
@@ -110,10 +130,28 @@ function AppShell() {
           }
         />
         <Route
+          path="/doctor/pending-approval"
+          element={
+            localStorage.getItem('helthgate_token') ? (
+              isDoctorApproved ? (
+                <Navigate to="/doctor/dashboard" replace />
+              ) : (
+                <DoctorPendingApprovalPage user={currentUser} onLogout={handleLogout} />
+              )
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
           path="/doctor/dashboard"
           element={
             localStorage.getItem('helthgate_token') ? (
-              <DoctorDashboardPage user={user} onLogout={handleLogout} onRequireAuth={requireAuth} />
+              isDoctorApproved ? (
+                <DoctorDashboardPage user={currentUser} onLogout={handleLogout} onRequireAuth={requireAuth} />
+              ) : (
+                <Navigate to="/doctor/pending-approval" replace />
+              )
             ) : (
               <Navigate to="/login" replace />
             )
@@ -121,13 +159,22 @@ function AppShell() {
         />
         <Route
           path="/doctor"
-          element={<Navigate to="/doctor/dashboard" replace />}
+          element={
+            <Navigate
+              to={isDoctorApproved ? '/doctor/dashboard' : '/doctor/pending-approval'}
+              replace
+            />
+          }
         />
         <Route
           path="/doctor/patients"
           element={
             localStorage.getItem('helthgate_token') ? (
-              <DoctorPatientsPage user={user} onLogout={handleLogout} onRequireAuth={requireAuth} />
+              isDoctorApproved ? (
+                <DoctorPatientsPage user={currentUser} onLogout={handleLogout} onRequireAuth={requireAuth} />
+              ) : (
+                <Navigate to="/doctor/pending-approval" replace />
+              )
             ) : (
               <Navigate to="/login" replace />
             )
@@ -141,7 +188,11 @@ function AppShell() {
           path="/doctor/notifications"
           element={
             localStorage.getItem('helthgate_token') ? (
-              <DoctorNotificationsPage user={user} onLogout={handleLogout} onRequireAuth={requireAuth} />
+              isDoctorApproved ? (
+                <DoctorNotificationsPage user={currentUser} onLogout={handleLogout} onRequireAuth={requireAuth} />
+              ) : (
+                <Navigate to="/doctor/pending-approval" replace />
+              )
             ) : (
               <Navigate to="/login" replace />
             )
@@ -175,7 +226,7 @@ function AppShell() {
           path="/login"
           element={
             localStorage.getItem('helthgate_token') ? (
-              <Navigate to={getRoleHomeRoute(currentRole)} replace />
+              <Navigate to={getRoleHomeRoute(currentRole, currentUser)} replace />
             ) : (
               <LoginPage onSuccess={handleAuthSuccess} onSwitchToRegister={() => navigate('/register')} />
             )
@@ -185,7 +236,7 @@ function AppShell() {
           path="/forgot-password"
           element={
             localStorage.getItem('helthgate_token') ? (
-              <Navigate to={getRoleHomeRoute(currentRole)} replace />
+              <Navigate to={getRoleHomeRoute(currentRole, currentUser)} replace />
             ) : (
               <LoginPage
                 initialView="forgot-password"
@@ -199,7 +250,7 @@ function AppShell() {
           path="/register"
           element={
             localStorage.getItem('helthgate_token') ? (
-              <Navigate to={getRoleHomeRoute(currentRole)} replace />
+              <Navigate to={getRoleHomeRoute(currentRole, currentUser)} replace />
             ) : (
               <RegisterPage onSuccess={handleAuthSuccess} onSwitchToLogin={() => navigate('/login')} />
             )

@@ -354,6 +354,7 @@ export class AdminService {
 
   async verifyDoctor(id: string) {
     const doctor = await this.doctorRepo.updateById(id, {
+      doctorApprovalStatus: "approved",
       verificationStatus: "verified",
       active: true,
     });
@@ -381,6 +382,7 @@ export class AdminService {
 
   async rejectDoctor(id: string, reason?: string) {
     const doctor = await this.doctorRepo.updateById(id, {
+      doctorApprovalStatus: "rejected",
       verificationStatus: "rejected",
     });
 

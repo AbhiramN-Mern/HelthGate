@@ -107,9 +107,12 @@ export const OTPVerificationView: React.FC<OTPVerificationViewProps> = ({
       })
 
       const user = {
-        name: response.user?.name || 'Patient',
+        name: response.user?.name || 'User',
         email: response.user?.email || email,
         role: response.user?.role || 'patient',
+        isEmailVerified: response.user?.isEmailVerified ?? true,
+        doctorApprovalStatus: response.user?.doctorApprovalStatus,
+        verificationStatus: response.user?.verificationStatus,
       }
 
       if (response.token) {

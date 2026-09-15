@@ -97,7 +97,7 @@ type DoctorFormState = {
   consultationFee: string
   experienceYears: string
   available: boolean
-  verificationStatus: 'pending' | 'verified' | 'rejected'
+  verificationStatus: 'pending' | 'verified' | 'rejected' | 'approved'
 }
 
 type ComplaintItem = {
@@ -213,7 +213,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
   // Search & Filter States
   const [patientSearch, setPatientSearch] = useState('')
   const [doctorSearch, setDoctorSearch] = useState('')
-  const [doctorStatusFilter, setDoctorStatusFilter] = useState<'all' | 'pending' | 'verified' | 'rejected'>('all')
+  const [doctorStatusFilter, setDoctorStatusFilter] = useState<'all' | 'pending' | 'verified' | 'rejected' | 'approved'>('all')
   const [hospitalSearch, setHospitalSearch] = useState('')
   const [apptStatusFilter, setApptStatusFilter] = useState<string>('all')
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all')
@@ -2270,7 +2270,7 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                       <th>Specialty</th>
                       <th>Hospital Affiliation</th>
                       <th>License #</th>
-                      <th>Verification</th>
+                      <th>Admin Approval</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -2314,6 +2314,37 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                           <td>
                             <strong>{d.user?.name || 'Doctor'}</strong>
                             <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{d.user?.email}</div>
+                            <div style={{ marginTop: '4px' }}>
+                              {d.user?.isEmailVerified ? (
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  fontSize: '0.68rem',
+                                  fontWeight: 600,
+                                  color: '#047857',
+                                  background: '#d1fae5',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                }}>
+                                  ✓ Email Verified
+                                </span>
+                              ) : (
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  fontSize: '0.68rem',
+                                  fontWeight: 600,
+                                  color: '#b45309',
+                                  background: '#fef3c7',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                }}>
+                                  ⏳ Email Unverified
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td>
                             <span style={{ fontWeight: 600, color: '#0d5c63' }}>
@@ -2330,20 +2361,24 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                               className="admin-severity-pill"
                               style={{
                                 background:
-                                  d.verificationStatus === 'verified'
+                                  d.verificationStatus === 'verified' || d.verificationStatus === 'approved'
                                     ? '#d1fae5'
                                     : d.verificationStatus === 'rejected'
                                     ? '#fee2e2'
                                     : '#fef3c7',
                                 color:
-                                  d.verificationStatus === 'verified'
+                                  d.verificationStatus === 'verified' || d.verificationStatus === 'approved'
                                     ? '#065f46'
                                     : d.verificationStatus === 'rejected'
                                     ? '#991b1b'
                                     : '#92400e',
                               }}
                             >
-                              {d.verificationStatus || 'Pending'}
+                              {d.verificationStatus === 'verified' || d.verificationStatus === 'approved'
+                                ? 'Approved'
+                                : d.verificationStatus === 'rejected'
+                                ? 'Rejected'
+                                : 'Pending Approval'}
                             </span>
                           </td>
                           <td>
@@ -2393,14 +2428,14 @@ function AdminDashboardPage({ user, onLogout, initialSection = 'dashboard' }: Ad
                                   className="admin-tf-tab"
                                   disabled={saving}
                                   onClick={() => {
-                                    if (d.verificationStatus === 'verified') {
+                                    if (d.verificationStatus === 'verified' || d.verificationStatus === 'approved') {
                                       handleRejectDoctor(d._id || '')
                                     } else {
                                       handleVerifyDoctor(d._id || '')
                                     }
                                   }}
                                 >
-                                  {d.verificationStatus === 'verified' ? 'Revoke Status' : 'Re-verify'}
+                                  {d.verificationStatus === 'verified' || d.verificationStatus === 'approved' ? 'Revoke Approval' : 'Re-approve'}
                                 </button>
                               )}
                             </div>

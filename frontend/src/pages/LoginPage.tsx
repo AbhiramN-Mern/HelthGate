@@ -70,6 +70,9 @@ function LoginPage({ onSuccess, onSwitchToRegister, initialView = 'login' }: Log
         name: data.user?.name || 'User',
         email: data.user?.email || email,
         role: data.user?.role || 'patient',
+        isEmailVerified: data.user?.isEmailVerified ?? false,
+        doctorApprovalStatus: data.user?.doctorApprovalStatus,
+        verificationStatus: data.user?.verificationStatus,
       }
 
       if (rememberMe) {
@@ -89,7 +92,16 @@ function LoginPage({ onSuccess, onSwitchToRegister, initialView = 'login' }: Log
         setMessage('Please verify your email before logging in.')
       } else {
         setUnverifiedEmail(null)
-        setMessage(getFriendlyErrorMessage(error, 'Invalid email or password. Please verify your credentials and try again.'))
+        const rawMsg = error?.message || error?.data?.message || ''
+        if (
+          rawMsg.toLowerCase().includes('rejected by admin') ||
+          rawMsg.toLowerCase().includes('account was rejected') ||
+          error?.code === 'DOCTOR_REJECTED'
+        ) {
+          setMessage('Your doctor account application was not approved by the administrator. Please contact support@healthgate.org for assistance.')
+        } else {
+          setMessage(getFriendlyErrorMessage(error, 'Invalid email or password. Please verify your credentials and try again.'))
+        }
       }
     } finally {
       setIsLoading(false)
@@ -166,7 +178,7 @@ function LoginPage({ onSuccess, onSwitchToRegister, initialView = 'login' }: Log
                   <div className="unverified-banner-content">
                     <div className="unverified-banner-text">
                       <h4>Email Verification Required</h4>
-                      <p>Your patient account is registered but your email has not been verified yet.</p>
+                      <p>Your account is registered but your email has not been verified yet.</p>
                     </div>
                   </div>
                   <button

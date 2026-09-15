@@ -5,6 +5,9 @@ export type AuthUser = {
   name?: string
   email?: string
   role?: string
+  isEmailVerified?: boolean
+  doctorApprovalStatus?: 'pending' | 'approved' | 'rejected'
+  verificationStatus?: 'pending' | 'verified' | 'rejected' | 'approved'
 }
 
 export type AuthResponse = {
@@ -14,6 +17,7 @@ export type AuthResponse = {
   user?: AuthUser
   requiresEmailVerification?: boolean
   email?: string
+  doctorApprovalStatus?: 'pending' | 'approved' | 'rejected'
 }
 
 export type PaginatedResponse<T> = {
@@ -50,7 +54,7 @@ export type DoctorAvailability = {
 
 export type DoctorProfile = {
   _id?: string
-  user?: { name?: string; email?: string; role?: string }
+  user?: { name?: string; email?: string; role?: string; isEmailVerified?: boolean }
   specialization?: string
   qualification?: string
   hospital?: { _id?: string; name?: string; isActive?: boolean }
@@ -71,7 +75,9 @@ export type DoctorProfile = {
   digitalSignature?: string
   available?: boolean
   availability?: DoctorAvailability
-  verificationStatus?: 'pending' | 'verified' | 'rejected'
+  verificationStatus?: 'pending' | 'verified' | 'rejected' | 'approved'
+  doctorApprovalStatus?: 'pending' | 'approved' | 'rejected'
+  isEmailVerified?: boolean
 }
 
 export const getFriendlyErrorMessage = (error: unknown, fallbackMessage = 'An unexpected error occurred. Please try again.'): string => {
@@ -316,6 +322,21 @@ export const getMyDoctorProfile = async (token: string): Promise<{ success: bool
   return request<{ success: boolean; doctor?: DoctorProfile }>('/api/doctors/me', { method: 'GET' }, token)
 }
 
+export const getDoctorVerificationStatusApi = async (
+  token: string,
+): Promise<{
+  success: boolean
+  doctorApprovalStatus?: 'pending' | 'approved' | 'rejected'
+  verificationStatus?: 'pending' | 'verified' | 'rejected' | 'approved'
+  isEmailVerified?: boolean
+  isApproved?: boolean
+  isRejected?: boolean
+  doctor?: DoctorProfile
+  message?: string
+}> => {
+  return request('/api/doctors/verification-status', { method: 'GET' }, token)
+}
+
 export const updateDoctorProfile = async (
   payload: Record<string, unknown>,
   token: string,
@@ -372,7 +393,9 @@ export type AdminDoctor = {
   consultationFee?: number
   experienceYears?: number
   available?: boolean
-  verificationStatus?: 'pending' | 'verified' | 'rejected'
+  verificationStatus?: 'pending' | 'verified' | 'rejected' | 'approved'
+  doctorApprovalStatus?: 'pending' | 'approved' | 'rejected'
+  isEmailVerified?: boolean
   hospital?: {
     _id?: string
     name?: string
@@ -385,6 +408,7 @@ export type AdminDoctor = {
     name?: string
     email?: string
     role?: string
+    isEmailVerified?: boolean
   }
 }
 

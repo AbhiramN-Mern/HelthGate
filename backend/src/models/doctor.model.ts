@@ -59,8 +59,17 @@ const doctorSchema = new Schema(
     },
     verificationStatus: {
       type: String,
-      enum: ["pending", "verified", "rejected"],
+      enum: ["pending", "verified", "rejected", "approved"],
       default: "pending",
+    },
+    doctorApprovalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
     },
     available: {
       type: Boolean,

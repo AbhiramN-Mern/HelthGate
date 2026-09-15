@@ -92,6 +92,7 @@ export const authService = new AuthService(
   roleRegistry,
   googleAuthService,
   otpService,
+  doctorRepo,
 );
 export const notificationService = new NotificationService(
   notificationRepo,

@@ -12,6 +12,7 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from "../core/errors/AppError.js";
+import { IDoctorRepository } from "../repositories/interfaces/IDoctorRepository.js";
 import { IGoogleAuthService } from "../infrastructure/security/GoogleAuthService.js";
 import { OTPService } from "./otp.service.js";
 
@@ -23,6 +24,7 @@ export class AuthService {
     private roleRegistry: RoleHandlerRegistry,
     private googleAuthService?: IGoogleAuthService,
     private otpService?: OTPService,
+    private doctorRepo?: IDoctorRepository,
   ) {}
 
   async registerUser(data: {
@@ -45,8 +47,8 @@ export class AuthService {
     const normalizedEmail = email.toLowerCase().trim();
     const existingUser = await this.userRepo.findByEmail(normalizedEmail);
 
-    // Patient email verification flow
-    if (role === "patient") {
+    // Patient & Doctor email verification flow
+    if (role === "patient" || role === "doctor") {
       if (existingUser) {
         if (existingUser.isEmailVerified) {
           throw new ConflictError("Email is already registered");
@@ -58,6 +60,15 @@ export class AuthService {
           name,
           password: hashedPassword,
         });
+
+        if (role === "doctor" && this.doctorRepo) {
+          await this.doctorRepo.updateByUserId(existingUser.id, {
+            ...profile,
+            doctorApprovalStatus: "pending",
+            verificationStatus: "pending",
+            isEmailVerified: false,
+          });
+        }
 
         if (this.otpService) {
           await this.otpService.generateAndSendOTP(existingUser.email);
@@ -76,7 +87,7 @@ export class AuthService {
         };
       }
 
-      // Fresh patient registration
+      // Fresh registration for patient or doctor
       const roleHandler = this.roleRegistry.getHandler(role);
       roleHandler.validateRegistrationProfile(profile);
 
@@ -113,7 +124,7 @@ export class AuthService {
       };
     }
 
-    // Non-patient roles (Doctor, Admin) registration
+    // Non-patient/doctor roles (Admin) registration
     if (existingUser) {
       throw new ConflictError("Email is already registered");
     }
@@ -169,8 +180,8 @@ export class AuthService {
       throw new UnauthorizedError("Invalid email or password");
     }
 
-    // Patient email verification guard
-    if (user.role === "patient" && user.authProvider !== "google" && !user.isEmailVerified) {
+    // Email verification guard for both patient and doctor
+    if ((user.role === "patient" || user.role === "doctor") && user.authProvider !== "google" && !user.isEmailVerified) {
       throw new EmailVerificationRequiredError(
         "Please verify your email before logging in.",
         user.email,
@@ -182,6 +193,14 @@ export class AuthService {
       await roleHandler.validateLoginStatus(user.id);
     }
 
+    let doctorApprovalStatus: string | undefined = undefined;
+    if (user.role === "doctor" && this.doctorRepo) {
+      const doc = await this.doctorRepo.findByUserId(user.id, false);
+      if (doc) {
+        doctorApprovalStatus = doc.doctorApprovalStatus || doc.verificationStatus || "pending";
+      }
+    }
+
     const token = this.tokenService.generateToken({ id: user.id, role: user.role as UserRole });
 
     return {
@@ -191,6 +210,8 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        isEmailVerified: user.isEmailVerified ?? false,
+        ...(doctorApprovalStatus ? { doctorApprovalStatus } : {}),
       },
     };
   }
@@ -213,11 +234,22 @@ export class AuthService {
     // Verify OTP using secure OTP service
     await this.otpService.verifyOTP(normalizedEmail, otp);
 
-    // Update patient account as verified
+    // Update account as verified
     await this.userRepo.update(user.id, {
       isEmailVerified: true,
       emailVerifiedAt: new Date(),
     });
+
+    let doctorApprovalStatus: string | undefined = undefined;
+    if (user.role === "doctor" && this.doctorRepo) {
+      await this.doctorRepo.updateByUserId(user.id, {
+        isEmailVerified: true,
+      });
+      const doc = await this.doctorRepo.findByUserId(user.id, false);
+      if (doc) {
+        doctorApprovalStatus = doc.doctorApprovalStatus || doc.verificationStatus || "pending";
+      }
+    }
 
     if (this.roleRegistry.hasRole(user.role)) {
       const roleHandler = this.roleRegistry.getHandler(user.role as UserRole);
@@ -233,6 +265,8 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        isEmailVerified: true,
+        ...(doctorApprovalStatus ? { doctorApprovalStatus } : {}),
       },
     };
   }
@@ -381,11 +415,23 @@ export class AuthService {
       throw new NotFoundError("User not found");
     }
 
+    let doctorApprovalStatus: string | undefined = undefined;
+    let verificationStatus: string | undefined = undefined;
+    if (user.role === "doctor" && this.doctorRepo) {
+      const doc = await this.doctorRepo.findByUserId(user.id, false);
+      if (doc) {
+        doctorApprovalStatus = doc.doctorApprovalStatus || doc.verificationStatus || "pending";
+        verificationStatus = doc.verificationStatus || "pending";
+      }
+    }
+
     return {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
+      isEmailVerified: user.isEmailVerified ?? false,
+      ...(doctorApprovalStatus ? { doctorApprovalStatus, verificationStatus } : {}),
     };
   }
 

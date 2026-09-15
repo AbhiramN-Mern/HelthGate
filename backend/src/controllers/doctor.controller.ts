@@ -287,3 +287,43 @@ export const requestJoinHospital = async (
     });
   }
 };
+
+export const getDoctorVerificationStatus = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const doctor = await doctorService.getMyDoctorProfile(userId);
+    const isApproved =
+      doctor?.doctorApprovalStatus === "approved" ||
+      doctor?.verificationStatus === "verified" ||
+      doctor?.verificationStatus === "approved";
+
+    const isRejected =
+      doctor?.doctorApprovalStatus === "rejected" ||
+      doctor?.verificationStatus === "rejected";
+
+    return res.status(200).json({
+      success: true,
+      doctorApprovalStatus: doctor?.doctorApprovalStatus || doctor?.verificationStatus || "pending",
+      verificationStatus: doctor?.verificationStatus || "pending",
+      isEmailVerified: (doctor?.user as any)?.isEmailVerified ?? doctor?.isEmailVerified ?? false,
+      isApproved,
+      isRejected,
+      doctor,
+    });
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to fetch doctor verification status",
+      error: error.message || "Unknown error",
+    });
+  }
+};
+
