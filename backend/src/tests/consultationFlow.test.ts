@@ -89,7 +89,10 @@ class MockCallSessionRepo {
       this.sessions.find(
         (s) =>
           s.appointmentId.toString() === appointmentId.toString() &&
-          (s.status === "ringing" || s.status === "active"),
+          (s.status === "ringing" ||
+            s.status === "active" ||
+            s.status === "DOCTOR_STARTED" ||
+            s.status === "PATIENT_JOINED"),
       ) || null
     );
   }
@@ -370,6 +373,21 @@ describe("HealthGate Consultation Flow & Prescription Tests", () => {
       status: "confirmed",
       consultationType: "online",
     });
+
+    // Patient attempts to validate access BEFORE doctor starts -> rejected with MEETING_NOT_STARTED
+    await assert.rejects(
+      async () => {
+        await videoCallService.validateCallAccess({
+          appointmentId: onlineAppt._id,
+          userId: patientUserId,
+        });
+      },
+      (err: any) => {
+        assert.equal(err.code, "MEETING_NOT_STARTED");
+        assert.match(err.message, /doctor has not started the consultation yet/i);
+        return true;
+      },
+    );
 
     const callResult = await videoCallService.startConsultationCall({
       appointmentId: onlineAppt._id,

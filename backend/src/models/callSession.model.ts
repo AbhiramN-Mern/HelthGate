@@ -1,5 +1,22 @@
 import { Schema, model, type InferSchemaType, type Types } from "mongoose";
 
+export type CallSessionStatus =
+  | "ringing"
+  | "active"
+  | "ended"
+  | "failed"
+  | "cancelled"
+  | "NOT_STARTED"
+  | "DOCTOR_STARTED"
+  | "PATIENT_JOINED"
+  | "CALL_ENDED";
+
+export type CallSessionMeetingStatus =
+  | "NOT_STARTED"
+  | "DOCTOR_STARTED"
+  | "PATIENT_JOINED"
+  | "CALL_ENDED";
+
 const callSessionSchema = new Schema(
   {
     appointmentId: {
@@ -28,8 +45,24 @@ const callSessionSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["ringing", "active", "ended", "failed", "cancelled"],
-      default: "ringing",
+      enum: [
+        "ringing",
+        "active",
+        "ended",
+        "failed",
+        "cancelled",
+        "NOT_STARTED",
+        "DOCTOR_STARTED",
+        "PATIENT_JOINED",
+        "CALL_ENDED",
+      ],
+      default: "DOCTOR_STARTED",
+      index: true,
+    },
+    meetingStatus: {
+      type: String,
+      enum: ["NOT_STARTED", "DOCTOR_STARTED", "PATIENT_JOINED", "CALL_ENDED"],
+      default: "DOCTOR_STARTED",
       index: true,
     },
     initiatedBy: {

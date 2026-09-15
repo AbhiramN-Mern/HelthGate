@@ -676,7 +676,7 @@ export class NotificationService {
         recipient: patientUserId,
         type: "video_call_started",
         title: "Video Consultation Started",
-        message: `Dr. ${cleanDoctorName} has started your video consultation${dateInfo}. The doctor is ready to meet you.`,
+        message: `Dr. ${cleanDoctorName} has started your video consultation.`,
         appointment: appointmentId,
         callSession: callSessionId,
       });

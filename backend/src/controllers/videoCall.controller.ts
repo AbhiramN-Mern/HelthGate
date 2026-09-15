@@ -74,6 +74,7 @@ export const joinCall = async (
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({
       success: false,
+      code: error.code || (statusCode === 403 ? "FORBIDDEN" : "ERROR"),
       message: error.message || "Failed to join consultation session.",
       error: error.message || "Unknown error",
     });
@@ -110,6 +111,7 @@ export const getCallDetails = async (
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({
       success: false,
+      code: error.code || (statusCode === 403 ? "FORBIDDEN" : "ERROR"),
       message: error.message || "Failed to retrieve consultation details.",
       error: error.message || "Unknown error",
     });

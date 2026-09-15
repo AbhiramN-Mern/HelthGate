@@ -33,6 +33,7 @@ export default function ConsultationPage() {
   const [session, setSession] = useState<VideoCallSessionDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [sessionError, setSessionError] = useState<string | null>(null)
+  const [meetingNotStarted, setMeetingNotStarted] = useState(false)
   const [callEndedInfo, setCallEndedInfo] = useState<{ endedBy: string; reason?: string } | null>(null)
   const [showDoctorPrescriptionModal, setShowDoctorPrescriptionModal] = useState(false)
   const [savedPrescription, setSavedPrescription] = useState<PrescriptionItem | null>(null)
@@ -67,17 +68,44 @@ export default function ConsultationPage() {
 
     setLoading(true)
     setSessionError(null)
+    setMeetingNotStarted(false)
 
     try {
       const data = await getVideoCallDetailsApi(activeId, token)
       if (data && data.success) {
-        setSession(data)
+        if (
+          data.userRole === 'patient' &&
+          data.meetingStatus !== 'DOCTOR_STARTED' &&
+          data.meetingStatus !== 'PATIENT_JOINED' &&
+          data.callSession?.status !== 'DOCTOR_STARTED' &&
+          data.callSession?.status !== 'PATIENT_JOINED'
+        ) {
+          setMeetingNotStarted(true)
+        } else {
+          setSession(data)
+        }
       } else {
-        setSessionError(data.message || 'Unable to authorize video consultation session.')
+        if (
+          data?.code === 'MEETING_NOT_STARTED' ||
+          data?.message?.toLowerCase().includes('not started') ||
+          data?.message?.toLowerCase().includes('not yet')
+        ) {
+          setMeetingNotStarted(true)
+        } else {
+          setSessionError(data.message || 'Unable to authorize video consultation session.')
+        }
       }
     } catch (err: any) {
       console.error('[ConsultationPage] Failed to fetch session:', err)
-      setSessionError(err.message || 'Failed to initialize consultation room. Please try again.')
+      if (
+        err.code === 'MEETING_NOT_STARTED' ||
+        err.message?.toLowerCase().includes('not started') ||
+        err.message?.toLowerCase().includes('not yet')
+      ) {
+        setMeetingNotStarted(true)
+      } else {
+        setSessionError(err.message || 'Failed to initialize consultation room. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -105,7 +133,9 @@ export default function ConsultationPage() {
 
   const handleCallErrorEvent = useCallback((err: { code: string; message: string }) => {
     console.error('[ConsultationPage] Call error event:', err)
-    if (err.code === 'UNAUTHORIZED' || err.code === 'NOT_FOUND') {
+    if (err.code === 'MEETING_NOT_STARTED') {
+      setMeetingNotStarted(true)
+    } else if (err.code === 'UNAUTHORIZED' || err.code === 'NOT_FOUND') {
       setSessionError(err.message || 'Access to this consultation room was denied.')
     }
   }, [])
@@ -128,6 +158,7 @@ export default function ConsultationPage() {
     callSessionId: session?.callSession?.id || callSessionId || activeId,
     roomId: session?.roomId,
     token,
+    enabled: !meetingNotStarted && !!session && !!session.roomId,
     iceServers: session?.iceServers,
     onCallEnded: handleCallEndedEvent,
     onCallError: handleCallErrorEvent,
@@ -210,6 +241,88 @@ export default function ConsultationPage() {
             <p className="hg-error-message">
               Verifying your appointment credentials and medical records securely.
             </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Render: Doctor has not started consultation yet (No waiting room!)
+  if (meetingNotStarted) {
+    return (
+      <div className="hg-consultation-page">
+        <div className="hg-error-screen">
+          <div
+            className="hg-error-card"
+            style={{
+              maxWidth: '460px',
+              padding: '36px 32px',
+              textAlign: 'center',
+              background: '#ffffff',
+              borderRadius: '20px',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(14, 165, 164, 0.15)',
+            }}
+          >
+            <div
+              className="hg-error-icon-box"
+              style={{
+                width: '68px',
+                height: '68px',
+                margin: '0 auto 20px auto',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, rgba(14, 165, 164, 0.15) 0%, rgba(2, 132, 199, 0.15) 100%)',
+                color: '#0d9488',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.8rem',
+              }}
+            >
+              📹
+            </div>
+            <h3
+              className="hg-error-title"
+              style={{
+                fontSize: '1.35rem',
+                fontWeight: 800,
+                color: '#0f172a',
+                marginBottom: '12px',
+              }}
+            >
+              Consultation Not Started
+            </h3>
+            <p
+              className="hg-error-message"
+              style={{
+                fontSize: '0.94rem',
+                color: '#475569',
+                lineHeight: 1.6,
+                marginBottom: '28px',
+              }}
+            >
+              The doctor has not started the consultation yet. You will be notified when the doctor starts the meeting.
+            </p>
+            <div className="hg-error-actions" style={{ justifyContent: 'center' }}>
+              <button
+                type="button"
+                className="hg-btn-primary-action"
+                style={{
+                  background: 'linear-gradient(135deg, #0ea5a4 0%, #0284c7 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '12px 36px',
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  fontSize: '0.94rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(14, 165, 164, 0.3)',
+                  transition: 'all 0.2s ease',
+                }}
+                onClick={() => navigate('/patient/home')}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -162,7 +162,11 @@ const request = async <T>(endpoint: string, options: RequestInit, token?: string
     }
 
     const serverMsg = data?.message || data?.error || `Request failed with status ${response.status}`
-    throw new Error(getFriendlyErrorMessage(serverMsg))
+    const error: any = new Error(getFriendlyErrorMessage(serverMsg))
+    error.code = data?.code
+    error.status = response.status
+    error.data = data
+    throw error
   }
 
   return (data || {}) as T
@@ -1186,10 +1190,13 @@ export const getPaymentByIdApi = async (
 
 export type VideoCallSessionDetails = {
   success: boolean
+  code?: string
+  meetingStatus?: 'NOT_STARTED' | 'DOCTOR_STARTED' | 'PATIENT_JOINED' | 'CALL_ENDED' | string
   callSession?: {
     id: string
     appointmentId: string
     status: string
+    meetingStatus?: string
     roomId: string
   }
   appointmentId: string

@@ -69,7 +69,30 @@ test("Video Consultation Authorization & Service Tests", async (t) => {
     },
   });
 
-  await t.test("1. Patient assigned to appointment can successfully validate access and generate roomId", async () => {
+  await t.test("1a. Patient attempting to validate access before doctor starts is rejected with MEETING_NOT_STARTED", async () => {
+    await assert.rejects(
+      async () => {
+        await service.validateCallAccess({
+          appointmentId,
+          userId: patientUserId,
+          bypassTimeCheck: true,
+        });
+      },
+      (err: any) => {
+        assert.equal(err.code, "MEETING_NOT_STARTED");
+        assert.match(err.message, /doctor has not started the consultation yet/i);
+        return true;
+      },
+    );
+  });
+
+  await t.test("1b. Patient assigned to appointment can successfully validate access and generate roomId after doctor starts", async () => {
+    // Doctor initiates consultation call
+    await service.startConsultationCall({
+      appointmentId,
+      doctorUserId,
+    });
+
     const session = await service.validateCallAccess({
       appointmentId,
       userId: patientUserId,
@@ -225,9 +248,9 @@ test("Video Consultation Authorization & Service Tests", async (t) => {
     // In-memory mock call session repo
     const mockSessions: any[] = [];
     const mockSessionRepo: any = {
-      findActiveByAppointment: async (id: any) => mockSessions.find(s => s.appointmentId === id.toString() && ["ringing", "active"].includes(s.status)) || null,
+      findActiveByAppointment: async (id: any) => mockSessions.find(s => s.appointmentId === id.toString() && ["ringing", "active", "DOCTOR_STARTED", "PATIENT_JOINED"].includes(s.status)) || null,
       create: async (data: any) => {
-        const s = { _id: new Types.ObjectId(), ...data, appointmentId: data.appointmentId.toString(), status: data.status || "ringing" };
+        const s = { _id: new Types.ObjectId(), ...data, appointmentId: data.appointmentId.toString(), status: data.status || "DOCTOR_STARTED" };
         mockSessions.push(s);
         return s;
       },
@@ -252,7 +275,8 @@ test("Video Consultation Authorization & Service Tests", async (t) => {
 
     assert.equal(result.userRole, "doctor");
     assert.ok(result.callSession.id);
-    assert.equal(result.callSession.status, "ringing");
+    assert.ok(["ringing", "DOCTOR_STARTED"].includes(result.callSession.status));
+    assert.equal(result.meetingStatus, "DOCTOR_STARTED");
     assert.ok(result.roomId.startsWith("room-"));
 
     // Verify duplicate prevention: calling start again returns the same active session
@@ -268,7 +292,8 @@ test("Video Consultation Authorization & Service Tests", async (t) => {
       callSessionId: result.callSession.id,
       patientUserId,
     });
-    assert.equal(joinResult.callSession.status, "active");
+    assert.ok(["active", "PATIENT_JOINED"].includes(joinResult.callSession.status));
+    assert.equal(joinResult.meetingStatus, "PATIENT_JOINED");
     assert.equal(joinResult.userRole, "patient");
   });
 

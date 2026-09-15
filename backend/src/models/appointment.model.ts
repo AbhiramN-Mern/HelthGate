@@ -126,6 +126,11 @@ const appointmentSchema = new Schema(
         type: String,
         default: null,
       },
+      meetingStatus: {
+        type: String,
+        enum: ["NOT_STARTED", "DOCTOR_STARTED", "PATIENT_JOINED", "CALL_ENDED"],
+        default: "NOT_STARTED",
+      },
       enabled: {
         type: Boolean,
         default: false,

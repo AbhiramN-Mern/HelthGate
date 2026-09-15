@@ -11,6 +11,23 @@ import {
   NotFoundError,
 } from "../core/errors/AppError.js";
 
+export type MeetingStatus =
+  | "NOT_STARTED"
+  | "DOCTOR_STARTED"
+  | "PATIENT_JOINED"
+  | "CALL_ENDED";
+
+export const MEETING_NOT_STARTED_MESSAGE =
+  "The doctor has not started the consultation yet. You will be notified when the doctor starts the meeting.";
+
+export class MeetingNotStartedError extends BadRequestError {
+  public code = "MEETING_NOT_STARTED";
+  constructor(message = MEETING_NOT_STARTED_MESSAGE) {
+    super(message);
+    this.name = "MeetingNotStartedError";
+  }
+}
+
 export interface IceServerConfig {
   urls: string | string[];
   username?: string;
@@ -286,6 +303,7 @@ export class VideoCallService {
       actualStartTime: appointment.actualStartTime || now,
       startedEarly: appointment.startedEarly ?? startedEarly,
       "videoCall.startedAt": appointment.videoCall?.startedAt || now,
+      "videoCall.meetingStatus": "DOCTOR_STARTED",
       "videoCall.enabled": true,
     });
 
@@ -304,13 +322,14 @@ export class VideoCallService {
           doctorId: doctorUserId,
           patientId: patientUserId,
           roomId: secureRoomId,
-          status: "ringing",
+          status: "DOCTOR_STARTED",
+          meetingStatus: "DOCTOR_STARTED",
           initiatedBy: doctorUserId,
-          startedAt: null,
+          startedAt: now,
         });
 
         console.log(
-          `[VideoCall] Created new CallSession ${session._id} with roomId: ${session.roomId}`,
+          `[VideoCall] Created new CallSession ${session._id} with roomId: ${session.roomId} (status: DOCTOR_STARTED)`,
         );
       } else {
         session = {
@@ -319,9 +338,10 @@ export class VideoCallService {
           doctorId: doctorUserId,
           patientId: patientUserId,
           roomId: secureRoomId,
-          status: "ringing",
+          status: "DOCTOR_STARTED",
+          meetingStatus: "DOCTOR_STARTED",
           initiatedBy: doctorUserId,
-          startedAt: null,
+          startedAt: now,
         } as any;
       }
     } else {
@@ -331,6 +351,7 @@ export class VideoCallService {
     }
 
     const activeSession = session!;
+    const cleanDoctorName = doctorName.replace(/^Dr\.?\s*/i, "");
 
     // 6. Persistent & Real-Time Notification for Patient
     // Only send notification if creating a brand new session (prevents duplicate spam on doctor reconnect/refresh)
@@ -356,7 +377,8 @@ export class VideoCallService {
           timeSlot: appointment.timeSlot,
           appointmentDate: appointment.appointmentDate,
           title: "Video Consultation Started",
-          message: `Dr. ${doctorName.replace(/^Dr\.?\s*/i, "")} has started your video consultation. The doctor is ready to meet you.`,
+          message: `Dr. ${cleanDoctorName} has started your video consultation.`,
+          meetingStatus: "DOCTOR_STARTED" as MeetingStatus,
         });
       }
     }
@@ -367,9 +389,11 @@ export class VideoCallService {
       callSession: {
         id: activeSession._id.toString(),
         appointmentId: appointment._id.toString(),
-        status: activeSession.status,
+        status: activeSession.status || "DOCTOR_STARTED",
+        meetingStatus: "DOCTOR_STARTED" as MeetingStatus,
         roomId: activeSession.roomId,
       },
+      meetingStatus: "DOCTOR_STARTED" as MeetingStatus,
       appointmentId: appointment._id.toString(),
       roomId: activeSession.roomId,
       doctorName,
@@ -429,7 +453,7 @@ export class VideoCallService {
       );
     }
 
-    if (session.status === "ended") {
+    if (session.status === "ended" || session.status === "CALL_ENDED") {
       throw new BadRequestError("This video consultation has ended.");
     }
 
@@ -439,12 +463,35 @@ export class VideoCallService {
       );
     }
 
-    // If session was ringing, mark as active when patient joins
-    if (session.status === "ringing") {
+    // Security check: Doctor MUST have started the consultation
+    const currentMeetingStatus = String(session.meetingStatus || session.status || "");
+    if (
+      currentMeetingStatus !== "DOCTOR_STARTED" &&
+      currentMeetingStatus !== "PATIENT_JOINED" &&
+      currentMeetingStatus !== "ringing" &&
+      currentMeetingStatus !== "active"
+    ) {
+      throw new MeetingNotStartedError();
+    }
+
+    // If session was DOCTOR_STARTED (or ringing), mark as PATIENT_JOINED when patient joins
+    if (session.status === "DOCTOR_STARTED" || session.status === "ringing") {
       const now = new Date();
       if (this.callSessionRepo) {
-        session = await this.callSessionRepo.updateStatus(session._id, "active", {
+        const updated = await this.callSessionRepo.updateStatus(session._id, "PATIENT_JOINED", {
+          meetingStatus: "PATIENT_JOINED",
           startedAt: session.startedAt || now,
+        });
+        if (updated) {
+          session = updated;
+        }
+      } else {
+        session.status = "PATIENT_JOINED";
+        session.meetingStatus = "PATIENT_JOINED";
+      }
+      if (session) {
+        await this.appointmentRepo.findByIdAndUpdate(session.appointmentId, {
+          "videoCall.meetingStatus": "PATIENT_JOINED",
         });
       }
     }
@@ -476,8 +523,10 @@ export class VideoCallService {
         id: session!._id.toString(),
         appointmentId: session!.appointmentId.toString(),
         status: session!.status,
+        meetingStatus: (session!.meetingStatus || "PATIENT_JOINED") as MeetingStatus,
         roomId: session!.roomId,
       },
+      meetingStatus: "PATIENT_JOINED" as MeetingStatus,
       appointmentId: session!.appointmentId.toString(),
       roomId: session!.roomId,
       doctorName,
@@ -571,6 +620,55 @@ export class VideoCallService {
       session = await this.callSessionRepo.findActiveByAppointment(appointment._id);
     }
 
+    if (
+      session?.status === "ended" ||
+      session?.status === "CALL_ENDED" ||
+      appointment.videoCall?.meetingStatus === "CALL_ENDED"
+    ) {
+      throw new BadRequestError(
+        "This video consultation has already ended and was marked completed.",
+      );
+    }
+
+    // CRITICAL REQUIREMENT: Backend Validation for Patient
+    // Patient must NOT enter a waiting room before doctor starts the meeting.
+    // Backend must verify that meetingStatus === DOCTOR_STARTED (or PATIENT_JOINED for reconnects).
+    if (isPatient) {
+      const apptMeetingStatus = appointment.videoCall?.meetingStatus;
+      const sessionStatus = session?.meetingStatus || session?.status;
+
+      const isDoctorStarted =
+        apptMeetingStatus === "DOCTOR_STARTED" ||
+        apptMeetingStatus === "PATIENT_JOINED" ||
+        sessionStatus === "DOCTOR_STARTED" ||
+        sessionStatus === "PATIENT_JOINED" ||
+        sessionStatus === "ringing" ||
+        sessionStatus === "active";
+
+      if (!isDoctorStarted) {
+        throw new MeetingNotStartedError();
+      }
+
+      // If doctor started and patient joins, advance status to PATIENT_JOINED
+      if (
+        (sessionStatus === "DOCTOR_STARTED" || sessionStatus === "ringing") &&
+        session?._id
+      ) {
+        if (this.callSessionRepo) {
+          session = await this.callSessionRepo.updateStatus(session._id, "PATIENT_JOINED", {
+            meetingStatus: "PATIENT_JOINED",
+            startedAt: session.startedAt || new Date(),
+          });
+        } else {
+          session.status = "PATIENT_JOINED";
+          session.meetingStatus = "PATIENT_JOINED";
+        }
+        await this.appointmentRepo.findByIdAndUpdate(appointment._id, {
+          "videoCall.meetingStatus": "PATIENT_JOINED",
+        });
+      }
+    }
+
     // Ensure session / roomId exists
     let roomId = session?.roomId || appointment.videoCall?.roomId;
     if (!roomId) {
@@ -581,20 +679,23 @@ export class VideoCallService {
           doctorId: doctorUserId,
           patientId: patientUserId,
           roomId,
-          status: isDoctor ? "ringing" : "active",
+          status: isDoctor ? "DOCTOR_STARTED" : "PATIENT_JOINED",
+          meetingStatus: isDoctor ? "DOCTOR_STARTED" : "PATIENT_JOINED",
           initiatedBy: userId,
         });
       } else {
         await this.appointmentRepo.findByIdAndUpdate(appointment._id, {
           "videoCall.enabled": true,
           "videoCall.roomId": roomId,
+          "videoCall.meetingStatus": isDoctor ? "DOCTOR_STARTED" : "PATIENT_JOINED",
         });
       }
     }
 
-    if (session?.status === "ended") {
-      throw new BadRequestError("This video consultation has already ended and was marked completed.");
-    }
+    const currentMeetingStatus =
+      session?.meetingStatus ||
+      appointment.videoCall?.meetingStatus ||
+      (isDoctor ? "DOCTOR_STARTED" : "PATIENT_JOINED");
 
     const iceServers = await this.getIceServers();
 
@@ -602,9 +703,11 @@ export class VideoCallService {
       callSession: {
         id: session?._id ? session._id.toString() : appointment._id.toString(),
         appointmentId: appointment._id.toString(),
-        status: session?.status || "ringing",
+        status: session?.status || (isDoctor ? "DOCTOR_STARTED" : "PATIENT_JOINED"),
+        meetingStatus: currentMeetingStatus as MeetingStatus,
         roomId,
       },
+      meetingStatus: currentMeetingStatus as MeetingStatus,
       appointmentId: appointment._id.toString(),
       roomId,
       userRole,
@@ -678,8 +781,9 @@ export class VideoCallService {
 
       const updatedSession = await this.callSessionRepo.updateStatus(
         session._id,
-        "ended",
+        "CALL_ENDED",
         {
+          meetingStatus: "CALL_ENDED",
           endedAt: now,
           duration: durationSeconds,
         },
@@ -690,15 +794,21 @@ export class VideoCallService {
         true,
       );
 
-      if (appointment && endedByUserId) {
-        const { doctorUserId } = await this.resolveAppointmentParticipants(
-          appointment,
-        );
-        if (doctorUserId === endedByUserId.toString()) {
-          await this.appointmentRepo.findByIdAndUpdate(appointment._id, {
-            status: "completed",
-          });
+      if (appointment) {
+        const updateData: Record<string, unknown> = {
+          "videoCall.meetingStatus": "CALL_ENDED",
+          "videoCall.endedAt": now,
+          "videoCall.duration": durationSeconds,
+        };
+        if (endedByUserId) {
+          const { doctorUserId } = await this.resolveAppointmentParticipants(
+            appointment,
+          );
+          if (doctorUserId === endedByUserId.toString()) {
+            updateData.status = "completed";
+          }
         }
+        await this.appointmentRepo.findByIdAndUpdate(appointment._id, updateData);
       }
 
       return {
@@ -725,6 +835,7 @@ export class VideoCallService {
     );
 
     const updateData: Record<string, unknown> = {
+      "videoCall.meetingStatus": "CALL_ENDED",
       "videoCall.endedAt": now,
       "videoCall.duration": durationSeconds,
     };

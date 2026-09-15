@@ -161,7 +161,7 @@ export const initializeVideoSocket = (io: Server) => {
         );
 
         socket.emit("call-error", {
-          code: "UNAUTHORIZED",
+          code: error.code || "UNAUTHORIZED",
           message: error.message || "Unable to join video consultation.",
         });
       }

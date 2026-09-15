@@ -10,6 +10,7 @@ import {
   respondAppointmentRescheduleApi,
   getPatientNotificationsApi,
   markPatientNotificationReadApi,
+  getVideoCallDetailsApi,
   createPaymentOrderApi,
   getFriendlyErrorMessage,
   type AuthUser,
@@ -151,6 +152,13 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
     specialization?: string
     title: string
     message: string
+  } | null>(null)
+
+  // Video Consultation Not Started Modal State
+  const [checkingCallApptId, setCheckingCallApptId] = useState<string | null>(null)
+  const [notStartedModal, setNotStartedModal] = useState<{
+    doctorName: string
+    appointmentTime?: string
   } | null>(null)
 
   // Reschedule Response State
@@ -382,6 +390,54 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
       setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)))
     } catch (err) {
       console.warn('Failed to mark notification as read:', err)
+    }
+  }
+
+  // Patient clicks "Video Call" from their appointment card
+  const handlePatientVideoCallClick = async (appt: AppointmentItem) => {
+    if (!appt._id) return
+    setCheckingCallApptId(appt._id)
+    const docName =
+      (appt.doctor as any)?.user?.name ||
+      (appt.doctor as any)?.name ||
+      'the attending doctor'
+
+    try {
+      const details = await getVideoCallDetailsApi(appt._id, token)
+      if (
+        details &&
+        (details.meetingStatus === 'DOCTOR_STARTED' ||
+          details.meetingStatus === 'PATIENT_JOINED' ||
+          details.callSession?.status === 'DOCTOR_STARTED' ||
+          details.callSession?.status === 'PATIENT_JOINED')
+      ) {
+        if (details.callSession?.id) {
+          navigate(`/video-call/${details.callSession.id}`)
+        } else {
+          navigate(`/consultation/${appt._id}`)
+        }
+      } else {
+        setNotStartedModal({
+          doctorName: docName,
+          appointmentTime: appt.timeSlot,
+        })
+      }
+    } catch (err: any) {
+      console.log('[PatientHome] Video call check result:', err)
+      if (
+        err.code === 'MEETING_NOT_STARTED' ||
+        err.message?.toLowerCase().includes('not started') ||
+        err.message?.toLowerCase().includes('not yet')
+      ) {
+        setNotStartedModal({
+          doctorName: docName,
+          appointmentTime: appt.timeSlot,
+        })
+      } else {
+        alert(err.message || 'Unable to join video consultation at this time.')
+      }
+    } finally {
+      setCheckingCallApptId(null)
     }
   }
 
@@ -1560,7 +1616,8 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           {appt.consultationType !== 'offline' && (
                             <button
                               type="button"
-                              onClick={() => navigate(`/consultation/${appt._id}`)}
+                              disabled={checkingCallApptId === appt._id}
+                              onClick={() => handlePatientVideoCallClick(appt)}
                               style={{
                                 background: 'linear-gradient(135deg, #0ea5a4 0%, #0284c7 100%)',
                                 color: '#ffffff',
@@ -1569,14 +1626,15 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                                 borderRadius: '8px',
                                 fontSize: '0.78rem',
                                 fontWeight: 700,
-                                cursor: 'pointer',
+                                cursor: checkingCallApptId === appt._id ? 'wait' : 'pointer',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '5px',
                                 boxShadow: '0 2px 6px rgba(14, 165, 164, 0.25)',
+                                opacity: checkingCallApptId === appt._id ? 0.75 : 1,
                               }}
                             >
-                              📹 Join Video Call
+                              📹 {checkingCallApptId === appt._id ? 'Checking...' : 'Video Call'}
                             </button>
                           )}
                         </div>
@@ -3293,15 +3351,23 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 {incomingCall.title || 'Video Consultation Started'}
               </h4>
               <p style={{ margin: '0 0 12px', fontSize: '0.84rem', color: '#64748b', lineHeight: 1.4 }}>
-                {incomingCall.message || `Dr. ${incomingCall.doctorName} is waiting for you to join.`}
+                {incomingCall.message ||
+                  (incomingCall.doctorName?.startsWith('Dr.')
+                    ? `${incomingCall.doctorName} has started your video consultation.`
+                    : `Dr. ${incomingCall.doctorName || 'Doctor'} has started your video consultation.`)}
               </p>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
                   type="button"
                   onClick={() => {
                     const sessionId = incomingCall.callSessionId
+                    const apptId = incomingCall.appointmentId
                     setIncomingCall(null)
-                    navigate(`/video-call/${sessionId}`)
+                    if (sessionId) {
+                      navigate(`/video-call/${sessionId}`)
+                    } else {
+                      navigate(`/consultation/${apptId}`)
+                    }
                   }}
                   style={{
                     background: 'linear-gradient(135deg, #0ea5a4 0%, #0284c7 100%)',
@@ -3335,6 +3401,107 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   Dismiss
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          DOCTOR NOT STARTED VIDEO CONSULTATION MODAL
+          ======================================================== */}
+      {notStartedModal && (
+        <div
+          className="php-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+          onClick={() => setNotStartedModal(null)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '20px',
+              maxWidth: '440px',
+              width: '100%',
+              padding: '32px 28px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(14, 165, 164, 0.2)',
+              textAlign: 'center',
+              animation: 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, rgba(14, 165, 164, 0.15) 0%, rgba(2, 132, 199, 0.15) 100%)',
+                color: '#0d9488',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.8rem',
+                margin: '0 auto 18px',
+                boxShadow: '0 0 0 6px rgba(14, 165, 164, 0.1)',
+              }}
+            >
+              📹
+            </div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 10px' }}>
+              Consultation Not Started
+            </h3>
+            <p style={{ fontSize: '0.92rem', color: '#475569', lineHeight: 1.55, margin: '0 0 20px' }}>
+              The doctor has not started the consultation yet. You will be notified when the doctor starts the meeting.
+            </p>
+            {notStartedModal.doctorName && (
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '10px',
+                  padding: '8px 14px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '0.8rem',
+                  color: '#64748b',
+                  fontWeight: 600,
+                  marginBottom: '24px',
+                }}
+              >
+                <span>👨‍⚕️ {notStartedModal.doctorName.startsWith('Dr.') ? notStartedModal.doctorName : `Dr. ${notStartedModal.doctorName}`}</span>
+                {notStartedModal.appointmentTime && <span>• Slot: {notStartedModal.appointmentTime}</span>}
+              </div>
+            )}
+            <div>
+              <button
+                type="button"
+                onClick={() => setNotStartedModal(null)}
+                style={{
+                  background: 'linear-gradient(135deg, #0ea5a4 0%, #0284c7 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '11px 32px',
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(14, 165, 164, 0.3)',
+                  transition: 'all 0.2s ease',
+                  width: '100%',
+                }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

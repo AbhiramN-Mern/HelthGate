@@ -18,6 +18,7 @@ export interface UseWebRTCOptions {
   callSessionId?: string
   roomId?: string
   token: string
+  enabled?: boolean
   iceServers?: RTCIceServer[]
   onCallEnded?: (data: { endedBy: string; reason?: string }) => void
   onCallError?: (error: { code: string; message: string }) => void
@@ -79,6 +80,7 @@ export const useWebRTC = ({
   callSessionId,
   roomId,
   token,
+  enabled = true,
   iceServers = DEFAULT_ICE_SERVERS,
   onCallEnded,
   onCallError,
@@ -313,7 +315,7 @@ export const useWebRTC = ({
     let isMounted = true
 
     const targetIdentifier = callSessionId || appointmentId
-    if (!targetIdentifier || !token) {
+    if (!enabled || !targetIdentifier || !token) {
       return
     }
 
@@ -436,7 +438,7 @@ export const useWebRTC = ({
         console.error('[WebRTC] Call error received:', err)
         if (!isMounted) return
         // Only set failed state on non-ignorable errors
-        if (err.code === 'UNAUTHORIZED' || err.code === 'NOT_FOUND') {
+        if (err.code === 'UNAUTHORIZED' || err.code === 'NOT_FOUND' || err.code === 'MEETING_NOT_STARTED') {
           setConnectionState('failed')
         }
         if (onCallError) onCallError(err)

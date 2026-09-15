@@ -1,5 +1,9 @@
 import type { Types } from "mongoose";
-import type { CallSession } from "../../models/callSession.model.js";
+import type {
+  CallSession,
+  CallSessionStatus,
+  CallSessionMeetingStatus,
+} from "../../models/callSession.model.js";
 
 export interface ICallSessionRepository {
   create(data: {
@@ -7,7 +11,8 @@ export interface ICallSessionRepository {
     doctorId: string | Types.ObjectId;
     patientId: string | Types.ObjectId;
     roomId: string;
-    status?: "ringing" | "active" | "ended" | "failed" | "cancelled";
+    status?: CallSessionStatus;
+    meetingStatus?: CallSessionMeetingStatus;
     initiatedBy: string | Types.ObjectId;
     startedAt?: Date | null;
   }): Promise<CallSession>;
@@ -22,7 +27,7 @@ export interface ICallSessionRepository {
 
   updateStatus(
     id: string | Types.ObjectId,
-    status: "ringing" | "active" | "ended" | "failed" | "cancelled",
+    status: CallSessionStatus,
     extra?: Record<string, unknown>,
   ): Promise<CallSession | null>;
 

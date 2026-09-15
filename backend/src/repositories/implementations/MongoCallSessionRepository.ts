@@ -1,5 +1,9 @@
 import type { Types } from "mongoose";
-import CallSessionModel, { type CallSession } from "../../models/callSession.model.js";
+import CallSessionModel, {
+  type CallSession,
+  type CallSessionStatus,
+  type CallSessionMeetingStatus,
+} from "../../models/callSession.model.js";
 import type { ICallSessionRepository } from "../interfaces/ICallSessionRepository.js";
 
 export class MongoCallSessionRepository implements ICallSessionRepository {
@@ -8,7 +12,8 @@ export class MongoCallSessionRepository implements ICallSessionRepository {
     doctorId: string | Types.ObjectId;
     patientId: string | Types.ObjectId;
     roomId: string;
-    status?: "ringing" | "active" | "ended" | "failed" | "cancelled";
+    status?: CallSessionStatus;
+    meetingStatus?: CallSessionMeetingStatus;
     initiatedBy: string | Types.ObjectId;
     startedAt?: Date | null;
   }): Promise<CallSession> {
@@ -31,7 +36,9 @@ export class MongoCallSessionRepository implements ICallSessionRepository {
   ): Promise<CallSession | null> {
     const session = await CallSessionModel.findOne({
       appointmentId,
-      status: { $in: ["ringing", "active"] },
+      status: {
+        $in: ["ringing", "active", "DOCTOR_STARTED", "PATIENT_JOINED"],
+      },
     })
       .sort({ createdAt: -1 })
       .exec();
@@ -40,7 +47,7 @@ export class MongoCallSessionRepository implements ICallSessionRepository {
 
   async updateStatus(
     id: string | Types.ObjectId,
-    status: "ringing" | "active" | "ended" | "failed" | "cancelled",
+    status: CallSessionStatus,
     extra: Record<string, unknown> = {},
   ): Promise<CallSession | null> {
     const updatePayload: Record<string, unknown> = {
@@ -63,7 +70,9 @@ export class MongoCallSessionRepository implements ICallSessionRepository {
     await CallSessionModel.updateMany(
       {
         appointmentId,
-        status: { $in: ["ringing", "active"] },
+        status: {
+          $in: ["ringing", "active", "DOCTOR_STARTED", "PATIENT_JOINED"],
+        },
       },
       {
         $set: {
