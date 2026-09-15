@@ -562,6 +562,234 @@
   color: #ffffff;
 }
 
+/* Consultation Completed Milestone Screen */
+.hg-completion-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background: radial-gradient(circle at 50% 15%, #0f2b38 0%, #08121e 70%, #050b13 100%);
+  overflow-y: auto;
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.hg-completion-card {
+  max-width: 620px;
+  width: 100%;
+  background: rgba(17, 28, 46, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 36px 32px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: hgCompletedFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hgCompletedFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.hg-completion-icon-ring {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.14);
+  border: 2px solid rgba(52, 211, 153, 0.4);
+  color: #34d399;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px auto;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.25);
+  animation: hgPulseGlow 2.5s infinite;
+}
+
+@keyframes hgPulseGlow {
+  0% { box-shadow: 0 0 16px rgba(16, 185, 129, 0.2); }
+  50% { box-shadow: 0 0 28px rgba(16, 185, 129, 0.4); }
+  100% { box-shadow: 0 0 16px rgba(16, 185, 129, 0.2); }
+}
+
+.hg-completion-title {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.3px;
+}
+
+.hg-completion-subtitle {
+  font-size: 0.92rem;
+  color: #94a3b8;
+  line-height: 1.55;
+  margin: 0 auto 24px auto;
+  max-width: 520px;
+}
+
+/* Consultation Summary Section */
+.hg-completion-details-box {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hg-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.hg-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hg-detail-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #38bdf8;
+}
+
+.hg-detail-val-main {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.hg-detail-val-sub {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.hg-specialization-badge {
+  display: inline-block;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #2dd4bf;
+  margin-top: 2px;
+}
+
+/* Prescription Status Banner */
+.hg-completion-rx-banner {
+  padding: 14px 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.86rem;
+  border: 1px solid transparent;
+}
+
+.hg-completion-rx-banner.issued {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(52, 211, 153, 0.25);
+  color: #a7f3d0;
+}
+
+.hg-completion-rx-banner.pending {
+  background: rgba(14, 165, 164, 0.1);
+  border-color: rgba(14, 165, 164, 0.25);
+  color: #99f6e4;
+}
+
+.hg-rx-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.hg-rx-banner-title {
+  font-weight: 700;
+  color: #ffffff;
+  display: block;
+}
+
+.hg-rx-banner-sub {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  display: block;
+  margin-top: 1px;
+}
+
+/* Action Button Row */
+.hg-completion-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hg-btn-completed-primary {
+  background: linear-gradient(135deg, #0d5c63 0%, #0ea5a4 100%);
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(13, 92, 99, 0.35);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hg-btn-completed-primary:hover {
+  background: linear-gradient(135deg, #084852 0%, #0d9488 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(13, 92, 99, 0.45);
+}
+
+.hg-btn-completed-secondary {
+  background: rgba(255, 255, 255, 0.07);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hg-btn-completed-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .hg-consultation-header {
@@ -600,4 +828,191 @@
   .hg-btn-label {
     font-size: 0.65rem;
   }
+
+  .hg-completion-card {
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+
+  .hg-details-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .hg-completion-title {
+    font-size: 1.3rem;
+  }
+
+  .hg-completion-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .hg-btn-completed-primary,
+  .hg-btn-completed-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hg-completion-rx-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .hg-confirm-modal-card {
+    padding: 22px 18px;
+    border-radius: 16px;
+  }
+
+  .hg-confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .hg-btn-confirm-cancel,
+  .hg-btn-confirm-danger {
+    width: 100%;
+    flex: none;
+  }
 }
+
+/* End Call Confirmation Modal */
+.hg-confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 19, 32, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: hgConfirmFadeIn 0.2s ease-out;
+}
+
+@keyframes hgConfirmFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.hg-confirm-modal-card {
+  max-width: 440px;
+  width: 100%;
+  background: #152238;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  animation: hgConfirmSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+@keyframes hgConfirmSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.hg-confirm-icon-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  border: 2px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px auto;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+.hg-confirm-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.2px;
+}
+
+.hg-confirm-message {
+  font-size: 0.88rem;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+}
+
+.hg-confirm-hint {
+  font-size: 0.78rem;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 22px;
+  text-align: left;
+}
+
+.hg-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.hg-btn-confirm-cancel {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 11px 18px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hg-btn-confirm-cancel:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.hg-btn-confirm-danger {
+  flex: 1.2;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: #ffffff;
+  border: none;
+  padding: 11px 18px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.hg-btn-confirm-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.45);
+  transform: translateY(-1px);
+}
+
+.hg-btn-confirm-danger:disabled,
+.hg-btn-confirm-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+

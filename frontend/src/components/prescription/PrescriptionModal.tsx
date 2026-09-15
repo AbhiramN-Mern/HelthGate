@@ -7,6 +7,7 @@ import {
   type PrescriptionItem,
 } from '../../api/auth.api'
 import { CloseIcon, CheckCircleIcon, AlertTriangleIcon } from '../common/Icons'
+import './PrescriptionModal.css'
 
 type PrescriptionModalProps = {
   isOpen: boolean
@@ -168,698 +169,400 @@ export function PrescriptionModal({
   }
 
   const patientName = appointment.patient?.name || 'Patient'
+  const patientInitial = (patientName.charAt(0) || 'P').toUpperCase()
   const formattedDate = appointment.appointmentDate
     ? new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
       })
-    : 'Recent Date'
+    : 'Scheduled Date'
   const timeSlot = appointment.timeSlot || '10:00 AM'
+
+  const doctorName =
+    (appointment.doctor as any)?.user?.name ||
+    (appointment.doctor as any)?.name ||
+    'Medical Specialist'
+  const doctorLicense =
+    (appointment.doctor as any)?.licenseNumber || 'HG-REG-ACTIVE'
 
   return (
     <div
-      className="dd-modal-overlay"
+      className="rx-modal-overlay"
       onClick={onClose}
       role="presentation"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(15, 23, 42, 0.65)',
-        backdropFilter: 'blur(4px)',
-        zIndex: 10000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-      }}
     >
       <div
-        className="dd-modal-card"
+        className="rx-modal-card"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        style={{
-          background: '#ffffff',
-          borderRadius: '20px',
-          maxWidth: '740px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          padding: '28px 32px',
-        }}
+        aria-labelledby="rx-modal-title"
       >
         {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid #e2e8f0',
-            paddingBottom: '16px',
-            marginBottom: '20px',
-          }}
-        >
-          <div>
-            <span
-              style={{
-                fontSize: '0.74rem',
-                fontWeight: 800,
-                color: '#0ea5a4',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              Consultation Concluded
+        <div className="rx-modal-header">
+          <div className="rx-header-text">
+            <span className="rx-badge-tag">
+              <span className="rx-badge-dot" />
+              Clinical Portal
             </span>
-            <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', margin: '4px 0 0 0' }}>
+            <h2 id="rx-modal-title" className="rx-modal-title">
               Create Medical Prescription
             </h2>
           </div>
           <button
             type="button"
+            className="rx-btn-close"
             onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              color: '#64748b',
-              padding: '6px',
-            }}
-            aria-label="Close"
+            aria-label="Close prescription dialog"
           >
             <CloseIcon size={18} />
           </button>
         </div>
 
-        {/* Patient & Appointment Summary Card */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '14px 18px',
-            borderRadius: '12px',
-            background: '#f0fdf4',
-            border: '1px solid #bbf7d0',
-            marginBottom: '22px',
-            flexWrap: 'wrap',
-            gap: '12px',
-          }}
-        >
-          <div>
-            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#15803d', fontWeight: 700 }}>
-              Patient
-            </span>
-            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#14532d' }}>
-              {patientName}
-            </div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#15803d', fontWeight: 700 }}>
-              Appointment Session
-            </span>
-            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#166534' }}>
-              {formattedDate} • {timeSlot}
-            </div>
-          </div>
-        </div>
-
-        {/* Feedback Alert */}
-        {feedback && (
-          <div
-            style={{
-              padding: '12px 16px',
-              borderRadius: '10px',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              background: feedback.type === 'success' ? '#dcfce7' : '#fee2e2',
-              color: feedback.type === 'success' ? '#15803d' : '#b91c1c',
-              border: `1px solid ${feedback.type === 'success' ? '#86efac' : '#fca5a5'}`,
-              fontSize: '0.88rem',
-              fontWeight: 600,
-            }}
-          >
-            {feedback.type === 'success' ? <CheckCircleIcon size={18} /> : <AlertTriangleIcon size={18} />}
-            <span>{feedback.message}</span>
-          </div>
-        )}
-
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <p style={{ color: '#64748b' }}>Loading consultation records...</p>
+          <div className="rx-loading-box">
+            <div className="rx-spinner" />
+            <p>Loading consultation & prescription records...</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
-            {/* Diagnosis / Clinical Notes */}
-            <div style={{ marginBottom: '22px' }}>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '0.86rem',
-                  fontWeight: 700,
-                  color: '#334155',
-                  marginBottom: '6px',
-                }}
-              >
-                Diagnosis / Clinical Notes <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <textarea
-                rows={3}
-                placeholder="Enter diagnosis, symptoms, clinical observations..."
-                value={diagnosis}
-                onChange={(e) => setDiagnosis(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1.5px solid #cbd5e1',
-                  fontSize: '0.9rem',
-                  fontFamily: 'inherit',
-                  resize: 'vertical',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-
-            {/* Medicines List */}
-            <div style={{ marginBottom: '22px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '10px',
-                }}
-              >
-                <label style={{ fontSize: '0.86rem', fontWeight: 700, color: '#334155' }}>
-                  Medicines <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={handleAddMedicine}
-                  style={{
-                    background: '#f0fdfa',
-                    color: '#0d9488',
-                    border: '1px solid #99f6e4',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  + Add Medicine
-                </button>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+            {/* Scrollable Body */}
+            <div className="rx-modal-body">
+              {/* Patient & Appointment Summary Card */}
+              <div className="rx-patient-card">
+                <div className="rx-patient-profile">
+                  <div className="rx-patient-avatar">
+                    {patientInitial}
+                  </div>
+                  <div className="rx-patient-info">
+                    <span className="rx-meta-label">Patient Record</span>
+                    <span className="rx-patient-name">{patientName}</span>
+                  </div>
+                </div>
+                <div className="rx-session-info">
+                  <span className="rx-meta-label">Appointment Session</span>
+                  <div className="rx-session-date">{formattedDate}</div>
+                  <div className="rx-session-slot">{timeSlot} • Video Consultation</div>
+                </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {medicines.map((med, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '12px',
-                      padding: '14px 16px',
-                      position: 'relative',
-                    }}
+              {/* Feedback Alert */}
+              {feedback && (
+                <div className={`rx-feedback-alert ${feedback.type}`} role="alert">
+                  {feedback.type === 'success' ? (
+                    <CheckCircleIcon size={18} />
+                  ) : (
+                    <AlertTriangleIcon size={18} />
+                  )}
+                  <span>{feedback.message}</span>
+                </div>
+              )}
+
+              {/* Diagnosis / Clinical Notes */}
+              <div className="rx-form-section">
+                <div className="rx-section-header">
+                  <label htmlFor="rx-diagnosis-field" className="rx-section-label">
+                    Diagnosis / Clinical Notes
+                    <span className="rx-required-star">*</span>
+                  </label>
+                  <span className="rx-section-hint">Required for valid prescription</span>
+                </div>
+                <textarea
+                  id="rx-diagnosis-field"
+                  className="rx-textarea"
+                  rows={3}
+                  placeholder="Enter clinical observations, diagnosis, chief complaints, and examination notes..."
+                  value={diagnosis}
+                  onChange={(e) => setDiagnosis(e.target.value)}
+                  required
+                />
+              </div>
+
+              {/* Medicines List */}
+              <div className="rx-form-section">
+                <div className="rx-section-header">
+                  <label className="rx-section-label">
+                    Prescribed Medicines
+                    <span className="rx-required-star">*</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--hg-text-muted, #64748b)' }}>
+                      ({medicines.length})
+                    </span>
+                  </label>
+                  <button
+                    type="button"
+                    className="rx-btn-add-med"
+                    onClick={handleAddMedicine}
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginBottom: '10px',
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: '0.78rem',
-                          fontWeight: 800,
-                          color: '#0d5c63',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        Medicine #{index + 1}
-                      </span>
-                      {medicines.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveMedicine(index)}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: '#ef4444',
-                            fontSize: '0.78rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          ✕ Remove
-                        </button>
-                      )}
-                    </div>
+                    + Add Another Medicine
+                  </button>
+                </div>
 
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                        gap: '10px',
-                      }}
-                    >
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
-                          Medicine Name *
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Paracetamol"
-                          value={med.name}
-                          onChange={(e) => handleMedicineChange(index, 'name', e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            borderRadius: '8px',
-                            border: '1px solid #cbd5e1',
-                            fontSize: '0.85rem',
-                            boxSizing: 'border-box',
-                            marginTop: '3px',
-                          }}
-                        />
+                <div className="rx-medicines-list">
+                  {medicines.map((med, index) => (
+                    <div key={index} className="rx-medicine-card">
+                      <div className="rx-medicine-card-header">
+                        <span className="rx-med-badge">
+                          <span className="rx-med-num-dot">{index + 1}</span>
+                          Medicine #{index + 1}
+                        </span>
+                        {medicines.length > 1 && (
+                          <button
+                            type="button"
+                            className="rx-btn-remove-med"
+                            onClick={() => handleRemoveMedicine(index)}
+                            title="Remove medicine entry"
+                          >
+                            ✕ Remove
+                          </button>
+                        )}
                       </div>
 
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
-                          Dosage
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. 500 mg"
-                          value={med.dosage}
-                          onChange={(e) => handleMedicineChange(index, 'dosage', e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            borderRadius: '8px',
-                            border: '1px solid #cbd5e1',
-                            fontSize: '0.85rem',
-                            boxSizing: 'border-box',
-                            marginTop: '3px',
-                          }}
-                        />
+                      <div className="rx-med-grid">
+                        <div className="rx-field-wrap">
+                          <label className="rx-field-label">
+                            Medicine Name *
+                          </label>
+                          <input
+                            type="text"
+                            className="rx-input"
+                            placeholder="e.g. Amoxicillin, Paracetamol"
+                            value={med.name}
+                            onChange={(e) => handleMedicineChange(index, 'name', e.target.value)}
+                            required={index === 0}
+                          />
+                        </div>
+
+                        <div className="rx-field-wrap">
+                          <label className="rx-field-label">
+                            Dosage
+                          </label>
+                          <input
+                            type="text"
+                            className="rx-input"
+                            placeholder="e.g. 500mg, 10ml"
+                            value={med.dosage}
+                            onChange={(e) => handleMedicineChange(index, 'dosage', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="rx-field-wrap">
+                          <label className="rx-field-label">
+                            Frequency
+                          </label>
+                          <input
+                            type="text"
+                            className="rx-input"
+                            placeholder="e.g. Twice daily (1-0-1)"
+                            value={med.frequency}
+                            onChange={(e) => handleMedicineChange(index, 'frequency', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="rx-field-wrap">
+                          <label className="rx-field-label">
+                            Duration
+                          </label>
+                          <input
+                            type="text"
+                            className="rx-input"
+                            placeholder="e.g. 5 days, 2 weeks"
+                            value={med.duration}
+                            onChange={(e) => handleMedicineChange(index, 'duration', e.target.value)}
+                          />
+                        </div>
                       </div>
 
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
-                          Frequency
+                      <div className="rx-med-instructions-wrap">
+                        <label className="rx-field-label">
+                          Specific Instructions / Precautions
                         </label>
                         <input
                           type="text"
-                          placeholder="e.g. 2 times daily"
-                          value={med.frequency}
-                          onChange={(e) => handleMedicineChange(index, 'frequency', e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            borderRadius: '8px',
-                            border: '1px solid #cbd5e1',
-                            fontSize: '0.85rem',
-                            boxSizing: 'border-box',
-                            marginTop: '3px',
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
-                          Duration
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. 5 days"
-                          value={med.duration}
-                          onChange={(e) => handleMedicineChange(index, 'duration', e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            borderRadius: '8px',
-                            border: '1px solid #cbd5e1',
-                            fontSize: '0.85rem',
-                            boxSizing: 'border-box',
-                            marginTop: '3px',
-                          }}
-                        />
-                      </div>
-
-                      <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
-                          Instructions
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. After food, avoid dairy, with warm water..."
+                          className="rx-input"
+                          placeholder="e.g. After food with warm water, avoid dairy, take before bedtime..."
                           value={med.instructions}
                           onChange={(e) => handleMedicineChange(index, 'instructions', e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            borderRadius: '8px',
-                            border: '1px solid #cbd5e1',
-                            fontSize: '0.85rem',
-                            boxSizing: 'border-box',
-                            marginTop: '3px',
-                          }}
                         />
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Lab Tests & Diagnostic Investigations */}
-            <div style={{ marginBottom: '24px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '8px',
-                }}
-              >
-                <label style={{ fontSize: '0.86rem', fontWeight: 700, color: '#334155' }}>
-                  🔬 Prescribed Lab Tests & Investigations ({labTests.length})
-                </label>
-                <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
-                  Click to add common investigations or type below
-                </span>
+                  ))}
+                </div>
               </div>
 
-              {/* Quick-add chips */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
-                {[
-                  'Complete Blood Count (CBC)',
-                  'Lipid Profile',
-                  'Chest X-Ray PA View',
-                  'Fasting Blood Sugar / HbA1c',
-                  'Liver Function Test (LFT)',
-                  'Thyroid Profile (TSH)',
-                  'Kidney Function Test (KFT)',
-                  'Urine Routine & Microscopic',
-                  'ECG 12-Lead',
-                  'Ultrasound Abdomen',
-                ].map((test) => {
-                  const isAdded = labTests.includes(test)
-                  return (
-                    <button
-                      key={test}
-                      type="button"
-                      onClick={() => {
-                        if (isAdded) {
-                          setLabTests((prev) => prev.filter((t) => t !== test))
-                        } else {
-                          setLabTests((prev) => [...prev, test])
+              {/* Lab Tests & Diagnostic Investigations */}
+              <div className="rx-form-section">
+                <div className="rx-section-header">
+                  <label className="rx-section-label">
+                    🔬 Prescribed Lab Tests & Investigations
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--hg-text-muted, #64748b)' }}>
+                      ({labTests.length})
+                    </span>
+                  </label>
+                  <span className="rx-section-hint">Select common tests or type a custom one</span>
+                </div>
+
+                {/* Quick-add chips */}
+                <div className="rx-lab-chips-wrap">
+                  {[
+                    'Complete Blood Count (CBC)',
+                    'Lipid Profile',
+                    'Chest X-Ray PA View',
+                    'Fasting Blood Sugar / HbA1c',
+                    'Liver Function Test (LFT)',
+                    'Thyroid Profile (TSH)',
+                    'Kidney Function Test (KFT)',
+                    'Urine Routine & Microscopic',
+                    'ECG 12-Lead',
+                    'Ultrasound Abdomen',
+                  ].map((test) => {
+                    const isAdded = labTests.includes(test)
+                    return (
+                      <button
+                        key={test}
+                        type="button"
+                        className={`rx-lab-chip ${isAdded ? 'active' : ''}`}
+                        onClick={() => {
+                          if (isAdded) {
+                            setLabTests((prev) => prev.filter((t) => t !== test))
+                          } else {
+                            setLabTests((prev) => [...prev, test])
+                          }
+                        }}
+                      >
+                        {isAdded ? '✓' : '+'} {test}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Custom Test Input Row */}
+                <div className="rx-custom-lab-row">
+                  <input
+                    type="text"
+                    className="rx-input"
+                    placeholder="Type custom test (e.g. Vitamin D3, MRI Brain, Serum Ferritin)..."
+                    value={customTestInput}
+                    onChange={(e) => setCustomTestInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        if (customTestInput.trim() && !labTests.includes(customTestInput.trim())) {
+                          setLabTests((prev) => [...prev, customTestInput.trim()])
+                          setCustomTestInput('')
                         }
-                      }}
-                      style={{
-                        padding: '4px 10px',
-                        borderRadius: '20px',
-                        fontSize: '0.76rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        border: isAdded ? '1px solid #0d9488' : '1px solid #cbd5e1',
-                        background: isAdded ? '#ccfbf1' : '#f8fafc',
-                        color: isAdded ? '#0f766e' : '#475569',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      {isAdded ? '✓ ' : '+ '}
-                      {test}
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Custom Test Input */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                <input
-                  type="text"
-                  placeholder="Type custom test (e.g. Vitamin D3, MRI Brain, Serum Ferritin)..."
-                  value={customTestInput}
-                  onChange={(e) => setCustomTestInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="rx-btn-add-test"
+                    onClick={() => {
                       if (customTestInput.trim() && !labTests.includes(customTestInput.trim())) {
                         setLabTests((prev) => [...prev, customTestInput.trim()])
                         setCustomTestInput('')
                       }
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.86rem',
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (customTestInput.trim() && !labTests.includes(customTestInput.trim())) {
-                      setLabTests((prev) => [...prev, customTestInput.trim()])
-                      setCustomTestInput('')
-                    }
-                  }}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    background: '#0d5c63',
-                    color: '#ffffff',
-                    border: 'none',
-                    fontWeight: 700,
-                    fontSize: '0.82rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  + Add Test
-                </button>
+                    }}
+                  >
+                    + Add Test
+                  </button>
+                </div>
+
+                {/* Currently Selected Tests List */}
+                {labTests.length > 0 && (
+                  <div className="rx-selected-tests-list">
+                    {labTests.map((test, idx) => (
+                      <span key={idx} className="rx-selected-test-pill">
+                        🔬 {test}
+                        <button
+                          type="button"
+                          className="rx-btn-remove-pill"
+                          onClick={() => setLabTests((prev) => prev.filter((_, i) => i !== idx))}
+                          title="Remove test"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Currently Selected Tests List */}
-              {labTests.length > 0 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '8px',
-                    padding: '10px 12px',
-                    background: '#f0fdf4',
-                    border: '1px solid #bbf7d0',
-                    borderRadius: '10px',
-                  }}
-                >
-                  {labTests.map((test, idx) => (
-                    <span
-                      key={idx}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '4px 10px',
-                        background: '#ffffff',
-                        border: '1px solid #86efac',
-                        borderRadius: '16px',
-                        fontSize: '0.8rem',
-                        fontWeight: 700,
-                        color: '#166534',
-                      }}
-                    >
-                      🔬 {test}
-                      <button
-                        type="button"
-                        onClick={() => setLabTests((prev) => prev.filter((_, i) => i !== idx))}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#ef4444',
-                          cursor: 'pointer',
-                          fontWeight: 800,
-                          fontSize: '0.85rem',
-                          padding: '0 2px',
-                        }}
-                        title="Remove test"
-                      >
-                        ✕
-                      </button>
-                    </span>
-                  ))}
+              {/* Additional Advice & Follow-up Date */}
+              <div className="rx-bottom-grid">
+                <div className="rx-form-section">
+                  <label htmlFor="rx-advice-field" className="rx-section-label">
+                    Additional Dietary / Lifestyle Advice
+                  </label>
+                  <textarea
+                    id="rx-advice-field"
+                    className="rx-textarea"
+                    rows={2}
+                    placeholder="e.g. Rest well, hydrate at least 2.5L daily, follow low-sodium diet, review reports..."
+                    value={additionalAdvice}
+                    onChange={(e) => setAdditionalAdvice(e.target.value)}
+                  />
                 </div>
-              )}
-            </div>
 
-            {/* Additional Advice & Follow-up Date */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                gap: '16px',
-                marginBottom: '24px',
-              }}
-            >
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '0.86rem',
-                    fontWeight: 700,
-                    color: '#334155',
-                    marginBottom: '6px',
-                  }}
-                >
-                  Additional Advice
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. Rest well, hydrate, review reports..."
-                  value={additionalAdvice}
-                  onChange={(e) => setAdditionalAdvice(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    border: '1.5px solid #cbd5e1',
-                    fontSize: '0.9rem',
-                    fontFamily: 'inherit',
-                    resize: 'vertical',
-                    boxSizing: 'border-box',
-                  }}
-                />
+                <div className="rx-form-section">
+                  <label htmlFor="rx-followup-field" className="rx-section-label">
+                    Follow-up Date (Optional)
+                  </label>
+                  <input
+                    id="rx-followup-field"
+                    type="date"
+                    className="rx-input"
+                    value={followUpDate}
+                    onChange={(e) => setFollowUpDate(e.target.value)}
+                  />
+                  <span className="rx-section-hint">Patient will be reminded on this date</span>
+                </div>
               </div>
 
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '0.86rem',
-                    fontWeight: 700,
-                    color: '#334155',
-                    marginBottom: '6px',
-                  }}
-                >
-                  Follow-up Date (Optional)
-                </label>
-                <input
-                  type="date"
-                  value={followUpDate}
-                  onChange={(e) => setFollowUpDate(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    border: '1.5px solid #cbd5e1',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Doctor Digital Signature & Legal Authenticity Stamp */}
-            <div
-              style={{
-                padding: '14px 18px',
-                borderRadius: '12px',
-                background: '#f8fafc',
-                border: '1.5px dashed #cbd5e1',
-                marginBottom: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '12px',
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 800 }}>
-                  Doctor's Digital Signature & Registration Stamp
+              {/* Doctor Digital Signature & Legal Authenticity Stamp */}
+              <div className="rx-signature-card">
+                <div className="rx-signature-details">
+                  <span className="rx-signature-title">
+                    Digital Signature & Verification
+                  </span>
+                  <span className="rx-signature-name">
+                    Dr. {doctorName.replace(/^Dr\.?\s*/i, '')}
+                  </span>
+                  <span className="rx-signature-reg">
+                    Council Reg No: <strong>{doctorLicense}</strong>
+                  </span>
                 </div>
-                <div style={{ fontFamily: 'cursive', fontSize: '1.25rem', color: '#0d5c63', fontWeight: 700, margin: '2px 0' }}>
-                  Dr. {(appointment.doctor as any)?.user?.name || (appointment.doctor as any)?.name || 'Medical Specialist'}
-                </div>
-                <div style={{ fontSize: '0.78rem', color: '#475569' }}>
-                  Medical Council Reg No: <strong>{(appointment.doctor as any)?.licenseNumber || 'HG-REG-ACTIVE'}</strong>
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '5px 12px',
-                    borderRadius: '20px',
-                    background: '#dcfce7',
-                    border: '1px solid #86efac',
-                    color: '#15803d',
-                    fontWeight: 700,
-                    fontSize: '0.78rem',
-                  }}
-                >
-                  ✓ Legally Verified Rx
-                </span>
-                <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '3px' }}>
-                  Automatically signed on save
+                <div className="rx-signature-badge-wrap">
+                  <span className="rx-signature-badge">
+                    ✓ Legally Verified Rx
+                  </span>
+                  <span className="rx-signature-sub">
+                    Auto-stamped upon saving
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Actions */}
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            {/* Sticky Action Footer */}
+            <div className="rx-modal-footer">
               <button
                 type="button"
+                className="rx-btn-cancel"
                 onClick={onClose}
                 disabled={submitting}
-                style={{
-                  background: '#f1f5f9',
-                  color: '#475569',
-                  border: 'none',
-                  padding: '11px 20px',
-                  borderRadius: '10px',
-                  fontWeight: 700,
-                  fontSize: '0.9rem',
-                  cursor: 'pointer',
-                }}
               >
-                Skip for Now
+                Cancel & Close
               </button>
               <button
                 type="submit"
+                className="rx-btn-submit"
                 disabled={submitting}
-                style={{
-                  background: 'linear-gradient(135deg, #0d5c63 0%, #0ea5a4 100%)',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '11px 26px',
-                  borderRadius: '10px',
-                  fontWeight: 700,
-                  fontSize: '0.9rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(13, 92, 99, 0.25)',
-                }}
               >
-                {submitting ? 'Saving Prescription...' : 'Save Prescription'}
+                {submitting ? (
+                  <>Saving Prescription...</>
+                ) : (
+                  <>📄 Save & Issue Prescription</>
+                )}
               </button>
             </div>
           </form>
