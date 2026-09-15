@@ -1,6 +1,6 @@
 import { useEffect, useState, useId } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   getMyDoctorProfile,
   getMyPatientProfile,
@@ -9,6 +9,11 @@ import {
   updateDoctorProfile,
   updatePatientProfile,
   getFriendlyErrorMessage,
+  getMyDoctorHospitalsApi,
+  searchHospitalsForDoctorApi,
+  requestJoinHospitalApi,
+  type Hospital,
+  type HospitalDoctorItem,
 } from '../api/auth.api'
 import {
   UserIcon,
@@ -22,6 +27,8 @@ import {
   CalendarIcon,
   CreditCardIcon,
   AwardIcon,
+  SearchIcon,
+  ClockIcon,
 } from '../components/common/Icons'
 import './ProfilePage.css'
 
@@ -85,10 +92,32 @@ const normalizeList = (value: string) =>
 
 function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const role = user?.role || 'patient'
   const fileInputId = useId()
 
-  const [activeTab, setActiveTab] = useState<'personal' | 'clinical' | 'security'>('personal')
+  const tabParam = searchParams.get('tab')
+  const [activeTab, setActiveTabState] = useState<'personal' | 'clinical' | 'hospitals' | 'security'>(() => {
+    if (tabParam === 'hospitals' && role === 'doctor') return 'hospitals'
+    if (tabParam === 'clinical') return 'clinical'
+    if (tabParam === 'security') return 'security'
+    return 'personal'
+  })
+
+  const setActiveTab = (tab: 'personal' | 'clinical' | 'hospitals' | 'security') => {
+    setActiveTabState(tab)
+    setSearchParams({ tab })
+  }
+
+  useEffect(() => {
+    const currentTab = searchParams.get('tab')
+    if (currentTab === 'hospitals' && role === 'doctor') {
+      setActiveTabState('hospitals')
+    } else if (currentTab === 'clinical' || currentTab === 'personal' || currentTab === 'security') {
+      setActiveTabState(currentTab)
+    }
+  }, [searchParams, role])
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -100,6 +129,79 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
   const [doctorForm, setDoctorForm] = useState<DoctorFormState>(defaultDoctorForm)
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
   const todayDateString = new Date().toISOString().slice(0, 10)
+
+  // Doctor Hospital Affiliations State
+  const [docHospitalTab, setDocHospitalTab] = useState<'my' | 'search' | 'pending' | 'rejected' | 'history'>('my')
+  const [hospitalDocs, setHospitalDocs] = useState<HospitalDoctorItem[]>([])
+  const [loadingHospitals, setLoadingHospitals] = useState(false)
+  const [hospitalSearchResults, setHospitalSearchResults] = useState<Hospital[]>([])
+  const [hospitalSearchQuery, setHospitalSearchQuery] = useState('')
+  const [searchingHospitals, setSearchingHospitals] = useState(false)
+  const [joinModalHospital, setJoinModalHospital] = useState<Hospital | null>(null)
+  const [joinDepartment, setJoinDepartment] = useState('')
+  const [submittingJoin, setSubmittingJoin] = useState(false)
+  const [hospitalFeedback, setHospitalFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  const fetchDoctorHospitals = async () => {
+    const token = localStorage.getItem('helthgate_token')
+    if (!token) return
+    setLoadingHospitals(true)
+    try {
+      const res = await getMyDoctorHospitalsApi(token)
+      if (res.all) {
+        setHospitalDocs(res.all)
+      }
+    } catch (e) {
+      console.error('Failed to load doctor hospitals', e)
+    } finally {
+      setLoadingHospitals(false)
+    }
+  }
+
+  const handleSearchHospitals = async (query: string = hospitalSearchQuery) => {
+    const token = localStorage.getItem('helthgate_token')
+    if (!token) return
+    setSearchingHospitals(true)
+    try {
+      const res = await searchHospitalsForDoctorApi(token, query)
+      if (res.hospitals) {
+        setHospitalSearchResults(res.hospitals)
+      }
+    } catch (e) {
+      console.error('Failed to search hospitals', e)
+    } finally {
+      setSearchingHospitals(false)
+    }
+  }
+
+  const handleOpenJoinModal = (h: Hospital) => {
+    setJoinModalHospital(h)
+    setJoinDepartment(h.departments && h.departments.length > 0 ? h.departments[0] : 'General Practice')
+  }
+
+  const handleConfirmJoinHospital = async () => {
+    const token = localStorage.getItem('helthgate_token')
+    if (!joinModalHospital || !token) return
+    setSubmittingJoin(true)
+    setHospitalFeedback(null)
+    try {
+      await requestJoinHospitalApi({ hospitalId: joinModalHospital._id || '', department: joinDepartment }, token)
+      setHospitalFeedback({
+        type: 'success',
+        message: `Join request for ${joinModalHospital.name} submitted successfully! Awaiting Main Admin verification.`,
+      })
+      setJoinModalHospital(null)
+      void fetchDoctorHospitals()
+      void handleSearchHospitals(hospitalSearchQuery)
+    } catch (e) {
+      setHospitalFeedback({
+        type: 'error',
+        message: e instanceof Error ? e.message : 'Failed to submit join request',
+      })
+    } finally {
+      setSubmittingJoin(false)
+    }
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('helthgate_token')
@@ -114,6 +216,8 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
         setErrorMessage('')
 
         if (role === 'doctor') {
+          void fetchDoctorHospitals()
+          void handleSearchHospitals('')
           const data = await getMyDoctorProfile(token)
           const profile = data.doctor ?? null
           setDoctorProfile(profile)
@@ -160,6 +264,10 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
 
     void fetchProfile()
   }, [onRequireAuth, role])
+
+  const activeHospitals = hospitalDocs.filter((h) => h.status === 'ACTIVE')
+  const pendingHospitals = hospitalDocs.filter((h) => h.status === 'PENDING')
+  const rejectedHospitals = hospitalDocs.filter((h) => h.status === 'REJECTED')
 
   // Compute profile completeness percentage
   const computeCompleteness = () => {
@@ -478,6 +586,33 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
                 <span>{role === 'doctor' ? 'Clinical Credentials' : role === 'admin' ? 'Admin Privileges' : 'Medical Details'}</span>
               </button>
 
+              {role === 'doctor' && (
+                <button
+                  type="button"
+                  id="pf-tab-hospitals"
+                  className={`pf-tab-btn ${activeTab === 'hospitals' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('hospitals')}
+                >
+                  <HospitalIcon size={16} />
+                  <span>Hospital Affiliations</span>
+                  {pendingHospitals.length > 0 && (
+                    <span
+                      style={{
+                        marginLeft: '4px',
+                        fontSize: '0.72rem',
+                        background: '#fef3c7',
+                        color: '#b45309',
+                        padding: '1px 6px',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                      }}
+                    >
+                      {pendingHospitals.length}
+                    </span>
+                  )}
+                </button>
+              )}
+
               <button
                 type="button"
                 className={`pf-tab-btn ${activeTab === 'security' ? 'active' : ''}`}
@@ -549,9 +684,438 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
                   </div>
                 </div>
               ) : role === 'doctor' ? (
-                /* DOCTOR FORM */
-                <form onSubmit={handleDoctorSubmit}>
-                  {activeTab === 'personal' && (
+                activeTab === 'hospitals' ? (
+                  /* DOCTOR HOSPITAL AFFILIATIONS SECTION */
+                  <div className="pf-hospital-management">
+                    <div className="pf-section-header">
+                      <h2 className="pf-section-title">Hospital Affiliations & Clinical Network</h2>
+                      <p className="pf-section-desc">
+                        Manage your hospital affiliations, search HealthGate partner hospitals to join, and monitor request approvals.
+                      </p>
+                    </div>
+
+                    {hospitalFeedback && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '12px 16px',
+                          borderRadius: '8px',
+                          marginBottom: '20px',
+                          fontSize: '0.88rem',
+                          fontWeight: 500,
+                          background: hospitalFeedback.type === 'success' ? '#ecfdf5' : '#fef2f2',
+                          color: hospitalFeedback.type === 'success' ? '#065f46' : '#991b1b',
+                          border: `1px solid ${hospitalFeedback.type === 'success' ? '#a7f3d0' : '#fecaca'}`,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {hospitalFeedback.type === 'success' ? <CheckCircleIcon size={18} /> : <AlertCircleIcon size={18} />}
+                          <span>{hospitalFeedback.message}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setHospitalFeedback(null)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
+                        >
+                          <CloseIcon size={14} />
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="dd-hosp-tabs">
+                      <button
+                        type="button"
+                        className={`dd-hosp-tab ${docHospitalTab === 'my' ? 'active' : ''}`}
+                        onClick={() => setDocHospitalTab('my')}
+                      >
+                        <HospitalIcon size={16} />
+                        <span>My Affiliations ({activeHospitals.length})</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`dd-hosp-tab ${docHospitalTab === 'search' ? 'active' : ''}`}
+                        onClick={() => {
+                          setDocHospitalTab('search')
+                          if (hospitalSearchResults.length === 0) {
+                            void handleSearchHospitals()
+                          }
+                        }}
+                      >
+                        <SearchIcon size={16} />
+                        <span>Find & Join Hospitals</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`dd-hosp-tab ${docHospitalTab === 'pending' ? 'active' : ''}`}
+                        onClick={() => setDocHospitalTab('pending')}
+                      >
+                        <ClockIcon size={16} />
+                        <span>Pending Requests ({pendingHospitals.length})</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`dd-hosp-tab ${docHospitalTab === 'rejected' ? 'active' : ''}`}
+                        onClick={() => setDocHospitalTab('rejected')}
+                      >
+                        <AlertCircleIcon size={16} />
+                        <span>Rejected ({rejectedHospitals.length})</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`dd-hosp-tab ${docHospitalTab === 'history' ? 'active' : ''}`}
+                        onClick={() => setDocHospitalTab('history')}
+                      >
+                        <CalendarIcon size={16} />
+                        <span>Affiliation History ({hospitalDocs.length})</span>
+                      </button>
+                    </div>
+
+                    {/* SUBTAB 1: My Active Affiliations */}
+                    {docHospitalTab === 'my' && (
+                      <div>
+                        {loadingHospitals ? (
+                          <div style={{ textAlign: 'center', padding: '36px 0', color: '#64748b' }}>
+                            <div className="pf-spinner" style={{ margin: '0 auto 12px', borderColor: '#0d5c63', borderTopColor: 'transparent' }} />
+                            <p>Loading affiliated hospitals...</p>
+                          </div>
+                        ) : activeHospitals.length === 0 ? (
+                          <div className="dd-empty-state">
+                            <span className="dd-empty-icon"><HospitalIcon size={36} /></span>
+                            <h3 className="dd-empty-title">No active hospital affiliations</h3>
+                            <p className="dd-empty-desc">
+                              You are currently practicing independently. You can search verified hospitals in the HealthGate network and submit a request to join.
+                            </p>
+                            <button
+                              type="button"
+                              className="pf-btn-primary"
+                              style={{ marginTop: '16px', width: 'auto', padding: '10px 22px' }}
+                              onClick={() => {
+                                setDocHospitalTab('search')
+                                void handleSearchHospitals()
+                              }}
+                            >
+                              <SearchIcon size={16} /> Browse & Join Hospitals
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="dd-hosp-grid">
+                            {activeHospitals.map((item) => {
+                              const h = item.hospital as Hospital
+                              return (
+                                <div key={item._id} className="dd-hosp-card">
+                                  <div className="dd-hosp-card-header">
+                                    <div>
+                                      <h4 className="dd-hosp-card-title">{h?.name || 'Hospital'}</h4>
+                                      <span className="dd-hosp-card-sub">{h?.address?.city || ''}, {h?.address?.state || ''}</span>
+                                    </div>
+                                    <span className="dd-status-badge-active">ACTIVE</span>
+                                  </div>
+                                  <div className="dd-hosp-card-body">
+                                    <div className="dd-hosp-info-row">
+                                      <span className="dd-hosp-info-lbl">Department</span>
+                                      <span className="dd-hosp-info-val" style={{ fontWeight: 700, color: '#0d5c63' }}>
+                                        {item.department || 'General Practice'}
+                                      </span>
+                                    </div>
+                                    <div className="dd-hosp-info-row">
+                                      <span className="dd-hosp-info-lbl">License</span>
+                                      <span className="dd-hosp-info-val">{h?.licenseNumber || 'Verified'}</span>
+                                    </div>
+                                    <div className="dd-hosp-info-row">
+                                      <span className="dd-hosp-info-lbl">Joined On</span>
+                                      <span className="dd-hosp-info-val">
+                                        {new Date(item.joinedAt || item.createdAt || '').toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                    <div className="dd-hosp-info-row">
+                                      <span className="dd-hosp-info-lbl">Association Mode</span>
+                                      <span className="dd-hosp-info-val">
+                                        {item.requestedBy === 'ADMIN' ? 'Assigned by Main Admin' : 'Requested by Doctor'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* SUBTAB 2: Search Hospitals */}
+                    {docHospitalTab === 'search' && (
+                      <div>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                          <div style={{ position: 'relative', flex: 1 }}>
+                            <input
+                              type="text"
+                              placeholder="Search hospitals by name, city, department, or license..."
+                              value={hospitalSearchQuery}
+                              onChange={(e) => setHospitalSearchQuery(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && void handleSearchHospitals()}
+                              className="pf-input"
+                              style={{ paddingLeft: '38px' }}
+                            />
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>
+                              <SearchIcon size={16} />
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="pf-btn-primary"
+                            style={{ width: 'auto', padding: '0 20px', whiteSpace: 'nowrap' }}
+                            onClick={() => void handleSearchHospitals()}
+                            disabled={searchingHospitals}
+                          >
+                            {searchingHospitals ? 'Searching...' : 'Search'}
+                          </button>
+                        </div>
+
+                        {searchingHospitals ? (
+                          <div style={{ textAlign: 'center', padding: '36px 0', color: '#64748b' }}>
+                            <div className="pf-spinner" style={{ margin: '0 auto 12px', borderColor: '#0d5c63', borderTopColor: 'transparent' }} />
+                            <p>Searching hospitals network...</p>
+                          </div>
+                        ) : hospitalSearchResults.length === 0 ? (
+                          <div className="dd-empty-state">
+                            <span className="dd-empty-icon"><SearchIcon size={36} /></span>
+                            <h3 className="dd-empty-title">No hospitals found</h3>
+                            <p className="dd-empty-desc">Try modifying your search keywords or clear the filter to view all verified partner hospitals.</p>
+                          </div>
+                        ) : (
+                          <div className="dd-hosp-grid">
+                            {hospitalSearchResults.map((h) => {
+                              const existing = hospitalDocs.find(
+                                (hd) => ((hd.hospital as any)?._id === h._id || (hd.hospital as any) === h._id)
+                              )
+                              return (
+                                <div key={h._id} className="dd-hosp-card">
+                                  <div className="dd-hosp-card-header">
+                                    <div>
+                                      <h4 className="dd-hosp-card-title">{h.name}</h4>
+                                      <span className="dd-hosp-card-sub">{h.address?.city}, {h.address?.state}</span>
+                                    </div>
+                                    {existing ? (
+                                      <span className={`dd-status-badge-${existing.status.toLowerCase()}`}>
+                                        {existing.status}
+                                      </span>
+                                    ) : (
+                                      <span className="dd-status-badge-available">Available</span>
+                                    )}
+                                  </div>
+                                  <div className="dd-hosp-card-body">
+                                    <div className="dd-hosp-info-row">
+                                      <span className="dd-hosp-info-lbl">License</span>
+                                      <span className="dd-hosp-info-val">{h.licenseNumber || 'Verified'}</span>
+                                    </div>
+                                    <div className="dd-hosp-info-row">
+                                      <span className="dd-hosp-info-lbl">Active Doctors</span>
+                                      <span className="dd-hosp-info-val">{h.activeDoctorsCount ?? 0} affiliated</span>
+                                    </div>
+                                    <div className="dd-hosp-info-row">
+                                      <span className="dd-hosp-info-lbl">Departments</span>
+                                      <span className="dd-hosp-info-val" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                        {h.departments && h.departments.length > 0 ? (
+                                          h.departments.map((d) => (
+                                            <span key={d} style={{ fontSize: '0.72rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '8px' }}>
+                                              {d}
+                                            </span>
+                                          ))
+                                        ) : (
+                                          <span style={{ color: '#94a3b8' }}>General</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="dd-hosp-card-footer">
+                                    {existing?.status === 'ACTIVE' ? (
+                                      <span style={{ fontSize: '0.82rem', color: '#059669', fontWeight: 600 }}>
+                                        ✓ Active Member ({existing.department || 'General'})
+                                      </span>
+                                    ) : existing?.status === 'PENDING' ? (
+                                      <span style={{ fontSize: '0.82rem', color: '#d97706', fontWeight: 600 }}>
+                                        ⏳ Join request pending Main Admin approval
+                                      </span>
+                                    ) : existing?.status === 'REJECTED' ? (
+                                      <button
+                                        type="button"
+                                        className="dd-btn-join"
+                                        onClick={() => handleOpenJoinModal(h)}
+                                      >
+                                        Re-apply to Join
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        className="dd-btn-join"
+                                        onClick={() => handleOpenJoinModal(h)}
+                                      >
+                                        Request to Join
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* SUBTAB 3: Pending Requests */}
+                    {docHospitalTab === 'pending' && (
+                      <div>
+                        {pendingHospitals.length === 0 ? (
+                          <div className="dd-empty-state">
+                            <span className="dd-empty-icon"><ClockIcon size={36} /></span>
+                            <h3 className="dd-empty-title">No pending requests</h3>
+                            <p className="dd-empty-desc">You do not have any hospital join requests waiting for Main Admin review.</p>
+                          </div>
+                        ) : (
+                          <div className="dd-hosp-grid">
+                            {pendingHospitals.map((item) => {
+                              const h = item.hospital as Hospital
+                              return (
+                                <div key={item._id} className="dd-hosp-card">
+                                  <div className="dd-hosp-card-header">
+                                    <div>
+                                      <h4 className="dd-hosp-card-title">{h?.name || 'Hospital'}</h4>
+                                      <span className="dd-hosp-card-sub">{h?.address?.city}, {h?.address?.state}</span>
+                                    </div>
+                                    <span className="dd-status-badge-pending">PENDING</span>
+                                  </div>
+                                  <div className="dd-hosp-card-body">
+                                    <div className="dd-hosp-info-row">
+                                      <span className="dd-hosp-info-lbl">Requested Department</span>
+                                      <span className="dd-hosp-info-val" style={{ fontWeight: 700, color: '#0d5c63' }}>
+                                        {item.department || 'General'}
+                                      </span>
+                                    </div>
+                                    <div className="dd-hosp-info-row">
+                                      <span className="dd-hosp-info-lbl">Submitted On</span>
+                                      <span className="dd-hosp-info-val">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recent'}</span>
+                                    </div>
+                                    <div className="dd-hosp-info-row">
+                                      <span className="dd-hosp-info-lbl">Status</span>
+                                      <span className="dd-hosp-info-val" style={{ color: '#d97706' }}>Under Admin Review</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* SUBTAB 4: Rejected Requests */}
+                    {docHospitalTab === 'rejected' && (
+                      <div>
+                        {rejectedHospitals.length === 0 ? (
+                          <div className="dd-empty-state">
+                            <span className="dd-empty-icon"><CheckCircleIcon size={36} /></span>
+                            <h3 className="dd-empty-title">No rejected requests</h3>
+                            <p className="dd-empty-desc">You have no rejected hospital association requests.</p>
+                          </div>
+                        ) : (
+                          <div className="dd-hosp-grid">
+                            {rejectedHospitals.map((item) => {
+                              const h = item.hospital as Hospital
+                              return (
+                                <div key={item._id} className="dd-hosp-card">
+                                  <div className="dd-hosp-card-header">
+                                    <div>
+                                      <h4 className="dd-hosp-card-title">{h?.name || 'Hospital'}</h4>
+                                      <span className="dd-hosp-card-sub">{h?.address?.city}, {h?.address?.state}</span>
+                                    </div>
+                                    <span className="dd-status-badge-rejected">REJECTED</span>
+                                  </div>
+                                  <div className="dd-hosp-card-body">
+                                    <div className="dd-hosp-info-row">
+                                      <span className="dd-hosp-info-lbl">Department</span>
+                                      <span className="dd-hosp-info-val">{item.department || 'General'}</span>
+                                    </div>
+                                    <div className="dd-hosp-info-row">
+                                      <span className="dd-hosp-info-lbl">Decision Date</span>
+                                      <span className="dd-hosp-info-val">{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : 'Recent'}</span>
+                                    </div>
+                                    {item.rejectionReason && (
+                                      <div style={{ marginTop: '8px', padding: '10px', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '0.8rem', color: '#991b1b' }}>
+                                        <strong>Reason:</strong> {item.rejectionReason}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="dd-hosp-card-footer">
+                                    <button
+                                      type="button"
+                                      className="dd-btn-join"
+                                      onClick={() => handleOpenJoinModal(h)}
+                                    >
+                                      Re-apply
+                                    </button>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* SUBTAB 5: Affiliation History */}
+                    {docHospitalTab === 'history' && (
+                      <div>
+                        {hospitalDocs.length === 0 ? (
+                          <div className="dd-empty-state">
+                            <span className="dd-empty-icon"><ClockIcon size={36} /></span>
+                            <h3 className="dd-empty-title">No affiliation history</h3>
+                            <p className="dd-empty-desc">Your past hospital requests and associations will appear here.</p>
+                          </div>
+                        ) : (
+                          <div className="dd-hosp-table-wrap">
+                            <table className="dd-hosp-table">
+                              <thead>
+                                <tr>
+                                  <th>Hospital</th>
+                                  <th>Department</th>
+                                  <th>Status</th>
+                                  <th>Requested By</th>
+                                  <th>Joined / Decided</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {hospitalDocs.map((item) => {
+                                  const h = item.hospital as Hospital
+                                  return (
+                                    <tr key={item._id}>
+                                      <td>
+                                        <strong>{h?.name || 'Hospital'}</strong>
+                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{h?.address?.city}, {h?.address?.state}</div>
+                                      </td>
+                                      <td>{item.department || 'General'}</td>
+                                      <td>
+                                        <span className={`dd-status-badge-${item.status.toLowerCase()}`}>
+                                          {item.status}
+                                        </span>
+                                      </td>
+                                      <td>{item.requestedBy}</td>
+                                      <td>{new Date(item.updatedAt || item.createdAt || '').toLocaleDateString()}</td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* DOCTOR FORM */
+                  <form onSubmit={handleDoctorSubmit}>
+                    {activeTab === 'personal' && (
                     <div>
                       <div className="pf-section-header">
                         <h2 className="pf-section-title">Practitioner Profile</h2>
@@ -657,15 +1221,41 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
                         </div>
 
                         <div className="pf-field-group">
-                          <label className="pf-label">Affiliated Hospital</label>
+                          <label className="pf-label">Affiliated Hospital(s)</label>
                           <div className="pf-input-wrap">
                             <span className="pf-input-icon"><HospitalIcon size={16} /></span>
                             <input
                               className="pf-input"
                               type="text"
-                              value={doctorProfile?.hospital?.name || 'Independent Practice'}
+                              value={
+                                activeHospitals.length > 0
+                                  ? activeHospitals
+                                      .map((h) => `${(h.hospital as Hospital)?.name || 'Hospital'} (${h.department || 'General'})`)
+                                      .join(', ')
+                                  : (doctorProfile?.hospital?.name || 'Independent Practice')
+                              }
                               disabled
                             />
+                          </div>
+                          <div style={{ marginTop: '8px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab('hospitals')}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#0d5c63',
+                                fontSize: '0.82rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                padding: 0,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                              }}
+                            >
+                              <HospitalIcon size={14} /> Manage Hospital Affiliations ({activeHospitals.length} active) →
+                            </button>
                           </div>
                         </div>
 
@@ -769,7 +1359,8 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
                     </button>
                   </div>
                 </form>
-              ) : (
+              )
+            ) : (
                 /* PATIENT FORM */
                 <form onSubmit={handlePatientSubmit}>
                   {activeTab === 'personal' && (
@@ -1060,6 +1651,12 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
                         {doctorForm.available ? 'Available' : 'Unavailable'}
                       </span>
                     </div>
+                    <div className="pf-side-row">
+                      <span className="pf-side-label">Hospital Affiliations</span>
+                      <span className="pf-side-val" style={{ fontWeight: 600, color: '#0d5c63' }}>
+                        {activeHospitals.length > 0 ? `${activeHospitals.length} Active` : 'Independent Practice'}
+                      </span>
+                    </div>
                   </>
                 )}
 
@@ -1131,6 +1728,106 @@ function ProfilePage({ user, onLogout, onRequireAuth }: ProfilePageProps) {
           </aside>
         </div>
       </main>
+
+      {/* JOIN HOSPITAL MODAL */}
+      {joinModalHospital && (
+        <div className="dd-modal-overlay" onClick={() => setJoinModalHospital(null)}>
+          <div className="dd-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="dd-modal-header">
+              <div>
+                <span style={{ fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0d5c63' }}>
+                  Organization Network
+                </span>
+                <h3 className="dd-modal-title">Request to Join Hospital</h3>
+              </div>
+              <button
+                type="button"
+                className="dd-btn-close"
+                onClick={() => setJoinModalHospital(null)}
+                aria-label="Close modal"
+              >
+                <CloseIcon size={16} />
+              </button>
+            </div>
+
+            <div style={{ padding: '14px 16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+              <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a' }}>{joinModalHospital.name}</h4>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                {joinModalHospital.address?.street ? `${joinModalHospital.address.street}, ` : ''}
+                {joinModalHospital.address?.city}, {joinModalHospital.address?.state}
+              </p>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#0d5c63', fontWeight: 600 }}>
+                License: {joinModalHospital.licenseNumber || 'Verified'}
+              </p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                void handleConfirmJoinHospital()
+              }}
+            >
+              <div className="pf-field-group" style={{ marginBottom: '16px' }}>
+                <label className="pf-label">Select Department to Practice In</label>
+                {joinModalHospital.departments && joinModalHospital.departments.length > 0 ? (
+                  <select
+                    value={joinDepartment}
+                    onChange={(e) => setJoinDepartment(e.target.value)}
+                    className="pf-select"
+                    style={{ paddingLeft: '12px' }}
+                  >
+                    {joinModalHospital.departments.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={joinDepartment}
+                    onChange={(e) => setJoinDepartment(e.target.value)}
+                    placeholder="e.g. General Practice, Cardiology"
+                    className="pf-input"
+                  />
+                )}
+              </div>
+
+              <div
+                style={{
+                  padding: '12px',
+                  background: '#eff6ff',
+                  borderRadius: '10px',
+                  fontSize: '0.82rem',
+                  color: '#1e40af',
+                  marginBottom: '16px',
+                  lineHeight: 1.5,
+                }}
+              >
+                ℹ️ Once submitted, this request will be sent to the HealthGate Main Admin for verification. You will be able to take patient appointments at this hospital once approved.
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="pf-btn-secondary"
+                  onClick={() => setJoinModalHospital(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="pf-btn-primary"
+                  disabled={submittingJoin}
+                  style={{ minWidth: '160px' }}
+                >
+                  {submittingJoin ? 'Submitting...' : 'Send Join Request'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
