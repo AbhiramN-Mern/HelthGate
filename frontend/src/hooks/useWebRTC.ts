@@ -132,6 +132,10 @@ export const useWebRTC = ({
           },
         })
       } catch (err1: any) {
+        if (err1?.name === 'NotAllowedError' || err1?.name === 'PermissionDeniedError') {
+          setMediaError('Camera and microphone permission was denied. Please allow camera and microphone permissions in your browser settings to proceed with the consultation.')
+          return null
+        }
         console.warn('[WebRTC] HD getUserMedia failed, attempting basic constraints:', err1?.name)
         // Attempt 2: Basic video + audio
         try {
@@ -140,6 +144,10 @@ export const useWebRTC = ({
             audio: true,
           })
         } catch (err2: any) {
+          if (err2?.name === 'NotAllowedError' || err2?.name === 'PermissionDeniedError') {
+            setMediaError('Camera and microphone permission was denied. Please allow camera and microphone permissions in your browser settings to proceed with the consultation.')
+            return null
+          }
           console.warn('[WebRTC] Basic video failed, checking if audio is accessible:', err2?.name)
           // Attempt 3: Audio only + synthetic video track (e.g. camera is locked by another tab)
           try {

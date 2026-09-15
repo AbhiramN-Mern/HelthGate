@@ -15,6 +15,7 @@ import {
   AlertCircleIcon,
   BellIcon,
 } from '../../components/common/Icons'
+import { Pagination } from '../../components/common/Pagination'
 
 type DoctorPatientsPageProps = {
   user?: AuthUser | null
@@ -62,14 +63,6 @@ function DoctorPatientsPage({ user, onLogout, onRequireAuth }: DoctorPatientsPag
   const [patientAppointments, setPatientAppointments] = useState<AppointmentItem[]>([])
   const [modalFeedback, setModalFeedback] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!token) {
-      onRequireAuth()
-      return
-    }
-    fetchData()
-  }, [token])
-
   const fetchData = async () => {
     setLoading(true)
     setError(null)
@@ -86,6 +79,14 @@ function DoctorPatientsPage({ user, onLogout, onRequireAuth }: DoctorPatientsPag
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!token) {
+      onRequireAuth()
+      return
+    }
+    fetchData()
+  }, [token])
 
   const handleViewPatientDetails = async (patientId: string) => {
     setPatientModalLoading(true)
@@ -116,6 +117,15 @@ function DoctorPatientsPage({ user, onLogout, onRequireAuth }: DoctorPatientsPag
     if (visitFilter === 'single') return p.totalVisits === 1
     return true
   })
+
+  // Pagination for Recent Patients
+  const [patientPage, setPatientPage] = useState(1)
+  const PATIENTS_PER_PAGE = 6
+  const totalPatientPages = Math.ceil(filteredPatients.length / PATIENTS_PER_PAGE) || 1
+  const pagedPatients = filteredPatients.slice(
+    (patientPage - 1) * PATIENTS_PER_PAGE,
+    patientPage * PATIENTS_PER_PAGE,
+  )
 
   const doctorName = doctor?.user?.name || user?.name || 'Doctor'
   const totalVisitsCount = patients.reduce((acc, p) => acc + (p.totalVisits || 1), 0)
@@ -259,7 +269,10 @@ function DoctorPatientsPage({ user, onLogout, onRequireAuth }: DoctorPatientsPag
               className="dsub-search-input"
               placeholder="Search patients by name or email..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setPatientPage(1)
+              }}
             />
           </div>
 
@@ -267,21 +280,30 @@ function DoctorPatientsPage({ user, onLogout, onRequireAuth }: DoctorPatientsPag
             <button
               type="button"
               className={`dsub-chip ${visitFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setVisitFilter('all')}
+              onClick={() => {
+                setVisitFilter('all')
+                setPatientPage(1)
+              }}
             >
               All ({patients.length})
             </button>
             <button
               type="button"
               className={`dsub-chip ${visitFilter === 'returning' ? 'active' : ''}`}
-              onClick={() => setVisitFilter('returning')}
+              onClick={() => {
+                setVisitFilter('returning')
+                setPatientPage(1)
+              }}
             >
               Returning (&gt;1 Visit) ({patients.filter((p) => p.totalVisits > 1).length})
             </button>
             <button
               type="button"
               className={`dsub-chip ${visitFilter === 'single' ? 'active' : ''}`}
-              onClick={() => setVisitFilter('single')}
+              onClick={() => {
+                setVisitFilter('single')
+                setPatientPage(1)
+              }}
             >
               First-Time ({patients.filter((p) => p.totalVisits === 1).length})
             </button>
@@ -324,7 +346,7 @@ function DoctorPatientsPage({ user, onLogout, onRequireAuth }: DoctorPatientsPag
           </div>
         ) : (
           <div className="dsub-patients-grid">
-            {filteredPatients.map((p) => (
+            {pagedPatients.map((p) => (
               <div key={p.patientId} className="dsub-patient-card">
                 <div>
                   <div className="dsub-patient-header">
@@ -376,6 +398,18 @@ function DoctorPatientsPage({ user, onLogout, onRequireAuth }: DoctorPatientsPag
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {totalPatientPages > 1 && !loading && (
+          <div style={{ marginTop: '28px' }}>
+            <Pagination
+              currentPage={patientPage}
+              totalPages={totalPatientPages}
+              totalItems={filteredPatients.length}
+              itemsPerPage={PATIENTS_PER_PAGE}
+              onPageChange={(p) => setPatientPage(p)}
+            />
           </div>
         )}
       </main>

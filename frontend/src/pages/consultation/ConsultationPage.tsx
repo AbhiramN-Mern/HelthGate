@@ -125,6 +125,27 @@ export default function ConsultationPage() {
     fetchSession()
   }, [fetchSession])
 
+  // Real-time synchronization: When the doctor starts the consultation while the patient is waiting, auto-join
+  useEffect(() => {
+    if (!token || !meetingNotStarted) return
+    const socket = getSocket(token)
+
+    const handleDoctorStarted = (data: any) => {
+      console.log('[ConsultationPage] Doctor has started the video consultation:', data)
+      setMeetingNotStarted(false)
+      fetchSession()
+    }
+
+    socket.on('video-call-incoming', handleDoctorStarted)
+    socket.on('doctor-started', handleDoctorStarted)
+
+    return () => {
+      socket.off('video-call-incoming', handleDoctorStarted)
+      socket.off('doctor-started', handleDoctorStarted)
+    }
+  }, [token, meetingNotStarted, fetchSession])
+
+
   // Call End Handler
   const handleCallEndedEvent = useCallback(
     async (data: { endedBy: string; reason?: string }) => {

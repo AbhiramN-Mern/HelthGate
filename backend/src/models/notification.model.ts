@@ -53,6 +53,8 @@ const notificationSchema = new Schema(
   },
 );
 
+notificationSchema.index({ recipient: 1, isRead: 1, createdAt: -1 });
+
 export type Notification = InferSchemaType<typeof notificationSchema> & {
   recipient: Types.ObjectId;
   appointment?: Types.ObjectId;

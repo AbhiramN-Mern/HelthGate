@@ -18,6 +18,7 @@ import {
   type HospitalDoctorItem,
 } from '../../api/auth.api'
 import { PrescriptionModal } from '../../components/prescription/PrescriptionModal'
+import { Pagination } from '../../components/common/Pagination'
 import './DoctorDashboardPage.css'
 import {
   CalendarIcon,
@@ -59,6 +60,24 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
   })
   const [todayAppointments, setTodayAppointments] = useState<AppointmentItem[]>([])
   const [upcomingAppointments, setUpcomingAppointments] = useState<AppointmentItem[]>([])
+
+  // Dashboard appointments pagination
+  const [todayPage, setTodayPage] = useState(1)
+  const TODAY_PER_PAGE = 6
+  const totalTodayPages = Math.ceil(todayAppointments.length / TODAY_PER_PAGE) || 1
+  const pagedTodayAppointments = todayAppointments.slice(
+    (todayPage - 1) * TODAY_PER_PAGE,
+    todayPage * TODAY_PER_PAGE,
+  )
+
+  const [upcomingPage, setUpcomingPage] = useState(1)
+  const UPCOMING_PER_PAGE = 6
+  const totalUpcomingPages = Math.ceil(upcomingAppointments.length / UPCOMING_PER_PAGE) || 1
+  const pagedUpcomingAppointments = upcomingAppointments.slice(
+    (upcomingPage - 1) * UPCOMING_PER_PAGE,
+    upcomingPage * UPCOMING_PER_PAGE,
+  )
+
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [availability, setAvailability] = useState<DoctorAvailability>({
     workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
@@ -900,8 +919,9 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               </p>
             </div>
           ) : (
-            <div className="dd-appointments-grid">
-              {todayAppointments.map((appt) => {
+            <>
+              <div className="dd-appointments-grid">
+                {pagedTodayAppointments.map((appt) => {
                 const patientName = appt.patient?.name || 'Patient'
                 const statusClass = appt.status || 'scheduled'
                 const isCompleted = appt.status === 'completed'
@@ -1042,7 +1062,15 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                   </div>
                 )
               })}
-            </div>
+              </div>
+              <Pagination
+                currentPage={todayPage}
+                totalPages={totalTodayPages}
+                onPageChange={setTodayPage}
+                totalItems={todayAppointments.length}
+                itemsPerPage={TODAY_PER_PAGE}
+              />
+            </>
           )}
         </section>
 
@@ -1067,8 +1095,9 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               </p>
             </div>
           ) : (
-            <div className="dd-appointments-grid">
-              {upcomingAppointments.map((appt) => {
+            <>
+              <div className="dd-appointments-grid">
+                {pagedUpcomingAppointments.map((appt) => {
                 const patientName = appt.patient?.name || 'Patient'
                 const formattedDate = appt.appointmentDate
                   ? new Date(appt.appointmentDate).toLocaleDateString('en-US', {
@@ -1204,7 +1233,15 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                   </div>
                 )
               })}
-            </div>
+              </div>
+              <Pagination
+                currentPage={upcomingPage}
+                totalPages={totalUpcomingPages}
+                onPageChange={setUpcomingPage}
+                totalItems={upcomingAppointments.length}
+                itemsPerPage={UPCOMING_PER_PAGE}
+              />
+            </>
           )}
         </section>
 

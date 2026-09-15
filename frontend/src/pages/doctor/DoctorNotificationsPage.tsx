@@ -18,6 +18,7 @@ import {
   SettingsIcon,
   CheckCircleIcon,
 } from '../../components/common/Icons'
+import { Pagination } from '../../components/common/Pagination'
 
 type DoctorNotificationsPageProps = {
   user?: AuthUser | null
@@ -39,14 +40,6 @@ function DoctorNotificationsPage({ user, onLogout, onRequireAuth }: DoctorNotifi
   // Filter tab: all, unread, appointment, reschedule, cancellation, system
   const [filterType, setFilterType] = useState<string>('all')
 
-  useEffect(() => {
-    if (!token) {
-      onRequireAuth()
-      return
-    }
-    fetchData()
-  }, [token])
-
   const fetchData = async () => {
     setLoading(true)
     setError(null)
@@ -61,6 +54,14 @@ function DoctorNotificationsPage({ user, onLogout, onRequireAuth }: DoctorNotifi
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!token) {
+      onRequireAuth()
+      return
+    }
+    fetchData()
+  }, [token])
 
   const handleMarkRead = async (id: string) => {
     try {
@@ -100,6 +101,15 @@ function DoctorNotificationsPage({ user, onLogout, onRequireAuth }: DoctorNotifi
     if (filterType === 'system') return n.type === 'system'
     return true
   })
+
+  // Pagination for Doctor Notifications
+  const [notifPage, setNotifPage] = useState(1)
+  const NOTIFS_PER_PAGE = 8
+  const totalNotifPages = Math.ceil(filteredNotifications.length / NOTIFS_PER_PAGE) || 1
+  const pagedNotifications = filteredNotifications.slice(
+    (notifPage - 1) * NOTIFS_PER_PAGE,
+    notifPage * NOTIFS_PER_PAGE,
+  )
 
   const doctorName = doctor?.user?.name || user?.name || 'Doctor'
 
@@ -255,42 +265,60 @@ function DoctorNotificationsPage({ user, onLogout, onRequireAuth }: DoctorNotifi
             <button
               type="button"
               className={`dsub-chip ${filterType === 'all' ? 'active' : ''}`}
-              onClick={() => setFilterType('all')}
+              onClick={() => {
+                setFilterType('all')
+                setNotifPage(1)
+              }}
             >
               All ({notifications.length})
             </button>
             <button
               type="button"
               className={`dsub-chip ${filterType === 'unread' ? 'active' : ''}`}
-              onClick={() => setFilterType('unread')}
+              onClick={() => {
+                setFilterType('unread')
+                setNotifPage(1)
+              }}
             >
               Unread ({unreadCount})
             </button>
             <button
               type="button"
               className={`dsub-chip ${filterType === 'appointment' ? 'active' : ''}`}
-              onClick={() => setFilterType('appointment')}
+              onClick={() => {
+                setFilterType('appointment')
+                setNotifPage(1)
+              }}
             >
               Appointments
             </button>
             <button
               type="button"
               className={`dsub-chip ${filterType === 'rescheduled' ? 'active' : ''}`}
-              onClick={() => setFilterType('rescheduled')}
+              onClick={() => {
+                setFilterType('rescheduled')
+                setNotifPage(1)
+              }}
             >
               Reschedules
             </button>
             <button
               type="button"
               className={`dsub-chip ${filterType === 'cancellation' ? 'active' : ''}`}
-              onClick={() => setFilterType('cancellation')}
+              onClick={() => {
+                setFilterType('cancellation')
+                setNotifPage(1)
+              }}
             >
               Cancellations
             </button>
             <button
               type="button"
               className={`dsub-chip ${filterType === 'system' ? 'active' : ''}`}
-              onClick={() => setFilterType('system')}
+              onClick={() => {
+                setFilterType('system')
+                setNotifPage(1)
+              }}
             >
               System
             </button>
@@ -345,7 +373,7 @@ function DoctorNotificationsPage({ user, onLogout, onRequireAuth }: DoctorNotifi
           </div>
         ) : (
           <div className="dsub-notifications-list">
-            {filteredNotifications.map((n) => (
+            {pagedNotifications.map((n) => (
               <div
                 key={n._id}
                 className={`dsub-notif-card ${!n.isRead ? 'unread' : ''}`}
@@ -395,6 +423,18 @@ function DoctorNotificationsPage({ user, onLogout, onRequireAuth }: DoctorNotifi
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {totalNotifPages > 1 && !loading && (
+          <div style={{ marginTop: '28px' }}>
+            <Pagination
+              currentPage={notifPage}
+              totalPages={totalNotifPages}
+              totalItems={filteredNotifications.length}
+              itemsPerPage={NOTIFS_PER_PAGE}
+              onPageChange={(p) => setNotifPage(p)}
+            />
           </div>
         )}
       </main>

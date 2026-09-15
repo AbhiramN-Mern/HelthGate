@@ -359,14 +359,21 @@ export class DoctorService {
       throw new NotFoundError("Doctor profile not found");
     }
 
-    const userObj = await this.userRepo.findById(patientId);
-    const patientProfile = await this.patientRepo.findByUserId(patientId, false);
-
     const history = await this.appointmentRepo.find(
       { doctor: doctor._id, patient: patientId },
       true,
       { appointmentDate: -1 },
     );
+
+    // Strict clinical privacy: A doctor cannot query records of patients who have never consulted with them
+    if (!history || history.length === 0) {
+      throw new ForbiddenError(
+        "Unauthorized: You can only view clinical records of patients who have scheduled consultations with your practice.",
+      );
+    }
+
+    const userObj = await this.userRepo.findById(patientId);
+    const patientProfile = await this.patientRepo.findByUserId(patientId, false);
 
     return {
       patient: {

@@ -241,6 +241,12 @@ const appointmentSchema = new Schema(
   },
 );
 
+// High-performance compound indexes for slot availability, schedule queries, and patient isolation
+appointmentSchema.index({ doctor: 1, appointmentDate: 1, timeSlot: 1, status: 1 });
+appointmentSchema.index({ patient: 1, appointmentDate: -1 });
+appointmentSchema.index({ status: 1 });
+appointmentSchema.index({ "videoCall.roomId": 1 });
+
 export type Appointment = InferSchemaType<typeof appointmentSchema> & {
   patient: Types.ObjectId;
   doctor: Types.ObjectId;

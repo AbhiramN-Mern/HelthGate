@@ -1342,18 +1342,42 @@ export const getPrescriptionByAppointmentApi = async (
   )
 }
 
+export const createAppointmentApi = async (
+  data: {
+    doctor: string
+    appointmentDate: string
+    timeSlot: string
+    reason?: string
+    consultationType: 'online' | 'offline'
+    type?: string
+    hospital?: string
+    department?: string
+  },
+  token: string,
+): Promise<{ success: boolean; message: string; appointment?: AppointmentItem }> => {
+  return request<{ success: boolean; message: string; appointment?: AppointmentItem }>(
+    '/api/appointments',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    },
+    token,
+  )
+}
+
 export const getMyPrescriptionsApi = async (
   token: string,
-): Promise<{ success: boolean; message?: string; prescriptions?: PrescriptionItem[] }> => {
-  return request<{ success: boolean; message?: string; prescriptions?: PrescriptionItem[] }>(
-    `/api/prescriptions/my`,
+  params?: { page?: number; limit?: number },
+): Promise<{ success: boolean; message?: string; prescriptions?: PrescriptionItem[] } & PaginatedResponse<PrescriptionItem>> => {
+  const query = new URLSearchParams()
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.limit) query.set('limit', String(params.limit))
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request<{ success: boolean; message?: string; prescriptions?: PrescriptionItem[] } & PaginatedResponse<PrescriptionItem>>(
+    `/api/prescriptions/my${qs}`,
     {
       method: 'GET',
     },
     token,
   )
 }
-
-
-
-

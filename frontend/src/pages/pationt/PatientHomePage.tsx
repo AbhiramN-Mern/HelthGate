@@ -12,6 +12,7 @@ import {
   markPatientNotificationReadApi,
   getVideoCallDetailsApi,
   createPaymentOrderApi,
+  createAppointmentApi,
   getFriendlyErrorMessage,
   type AuthUser,
   type PatientProfile,
@@ -235,6 +236,25 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
     return true
   })
 
+  // Upcoming appointments client pagination
+  const [upcomingPage, setUpcomingPage] = useState(1)
+  const UPCOMING_PER_PAGE = 4
+  const totalUpcomingPages = Math.ceil(upcomingAppointments.length / UPCOMING_PER_PAGE) || 1
+  const pagedUpcomingAppointments = upcomingAppointments.slice(
+    (upcomingPage - 1) * UPCOMING_PER_PAGE,
+    upcomingPage * UPCOMING_PER_PAGE,
+  )
+
+  // Past appointment history client pagination
+  const [pastPage, setPastPage] = useState(1)
+  const PAST_PER_PAGE = 6
+  const totalPastPages = Math.ceil(filteredPastAppointments.length / PAST_PER_PAGE) || 1
+  const pagedPastAppointments = filteredPastAppointments.slice(
+    (pastPage - 1) * PAST_PER_PAGE,
+    pastPage * PAST_PER_PAGE,
+  )
+
+
   // Fetch doctor's booked slots whenever bookingDoctor or calMonth changes
   useEffect(() => {
     if (!bookingDoctor?._id || !token) {
@@ -331,7 +351,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
 
   const fetchAppointments = async () => {
     try {
-      const res = await getMyAppointments(token)
+      const res = await getMyAppointments(token, { limit: 100 })
       setAppointments(res.appointments || [])
     } catch (err) {
       console.warn('Failed to load appointments:', err)
@@ -357,6 +377,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
 
     const handleIncomingCall = (data: any) => {
       console.log('[PatientHome] Received video consultation incoming call:', data)
+      setNotStartedModal(null) // Dismiss waiting modal immediately when call starts
       setIncomingCall(data)
 
       // Add to notifications dropdown immediately without requiring a manual refresh
@@ -762,26 +783,17 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
     setBookingFeedback(null)
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/appointments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      const data = await createAppointmentApi(
+        {
           doctor: bookingDoctor._id,
           appointmentDate: bookingDate,
           timeSlot: bookingTime,
           reason: bookingReason.trim() || 'General Consultation',
           consultationType,
           type: consultationType === 'online' ? 'Video' : 'In-Person',
-        }),
-      })
-
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to book appointment')
-      }
+        },
+        token,
+      )
 
       // Re-fetch patient's appointments immediately so upcoming appointments section appears!
       await fetchAppointments()
@@ -800,6 +812,9 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
       const confirmedTime = bookingTime
       const confirmedReason = bookingReason.trim() || 'General Consultation'
       const appt = data.appointment
+      if (!appt || !appt._id) {
+        throw new Error(data.message || 'Failed to create appointment.')
+      }
 
       // 1. Create payment order immediately for this new pending_payment booking
       const paymentOrderRes = await createPaymentOrderApi(appt._id, token)
@@ -1455,7 +1470,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
             )}
 
             <div className="php-appointments-grid">
-              {upcomingAppointments.map((appt) => {
+              {pagedUpcomingAppointments.map((appt) => {
                 const docName = appt.doctor?.user?.name || 'Doctor'
                 const docSpec = appt.doctor?.specialization || 'Specialist'
                 const formattedDate = appt.appointmentDate
@@ -1728,6 +1743,18 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 )
               })}
             </div>
+
+            {totalUpcomingPages > 1 && (
+              <div style={{ marginTop: '24px' }}>
+                <Pagination
+                  currentPage={upcomingPage}
+                  totalPages={totalUpcomingPages}
+                  totalItems={upcomingAppointments.length}
+                  itemsPerPage={UPCOMING_PER_PAGE}
+                  onPageChange={(p) => setUpcomingPage(p)}
+                />
+              </div>
+            )}
           </section>
         ) : pastAppointments.length > 0 ? (
           <section id="appointments" className="php-appointments-section php-appointments-empty" aria-label="Upcoming Appointments">
@@ -1796,7 +1823,10 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
               <button
                 type="button"
                 className={`php-history-filter-pill ${historyFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setHistoryFilter('all')}
+                onClick={() => {
+                  setHistoryFilter('all')
+                  setPastPage(1)
+                }}
               >
                 All Past ({pastAppointments.length})
               </button>
@@ -1804,7 +1834,10 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 <button
                   type="button"
                   className={`php-history-filter-pill completed ${historyFilter === 'completed' ? 'active' : ''}`}
-                  onClick={() => setHistoryFilter('completed')}
+                  onClick={() => {
+                    setHistoryFilter('completed')
+                    setPastPage(1)
+                  }}
                 >
                   Completed ({completedCount})
                 </button>
@@ -1813,7 +1846,10 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 <button
                   type="button"
                   className={`php-history-filter-pill cancelled ${historyFilter === 'cancelled' ? 'active' : ''}`}
-                  onClick={() => setHistoryFilter('cancelled')}
+                  onClick={() => {
+                    setHistoryFilter('cancelled')
+                    setPastPage(1)
+                  }}
                 >
                   Cancelled ({cancelledCount})
                 </button>
@@ -1827,8 +1863,9 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                 </p>
               </div>
             ) : (
-              <div className="php-appointments-grid">
-                {filteredPastAppointments.map((appt) => {
+              <>
+                <div className="php-appointments-grid">
+                  {pagedPastAppointments.map((appt) => {
                   const docName = appt.doctor?.user?.name || 'Doctor'
                   const docSpec = appt.doctor?.specialization || 'Specialist'
                   const formattedDate = appt.appointmentDate
@@ -1995,8 +2032,21 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   )
                 })}
               </div>
-            )}
-          </section>
+
+              {totalPastPages > 1 && (
+                <div style={{ marginTop: '24px' }}>
+                  <Pagination
+                    currentPage={pastPage}
+                    totalPages={totalPastPages}
+                    totalItems={filteredPastAppointments.length}
+                    itemsPerPage={PAST_PER_PAGE}
+                    onPageChange={(p) => setPastPage(p)}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </section>
         )}
 
         {/* ========================================================
