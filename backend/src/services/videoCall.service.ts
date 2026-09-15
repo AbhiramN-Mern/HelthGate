@@ -1,9 +1,8 @@
-import crypto from "node:crypto";
+import crypto from "crypto";
 import type { Types } from "mongoose";
 import type { IAppointmentRepository } from "../repositories/interfaces/IAppointmentRepository.js";
 import type { IDoctorRepository } from "../repositories/interfaces/IDoctorRepository.js";
 import type { ICallSessionRepository } from "../repositories/interfaces/ICallSessionRepository.js";
-import { MongoCallSessionRepository } from "../repositories/implementations/MongoCallSessionRepository.js";
 import type { NotificationService } from "./notification.service.js";
 import {
   BadRequestError,
@@ -36,18 +35,13 @@ export interface IceServerConfig {
 
 export class VideoCallService {
   private socketBroadcaster?: (event: string, roomOrUser: string, data: any) => void;
-  private callSessionRepo?: ICallSessionRepository;
-  private notificationService?: NotificationService;
 
   constructor(
     private appointmentRepo: IAppointmentRepository,
-    callSessionRepo?: ICallSessionRepository,
-    notificationService?: NotificationService,
+    private callSessionRepo?: ICallSessionRepository,
+    private notificationService?: NotificationService,
     private doctorRepo?: IDoctorRepository,
-  ) {
-    this.callSessionRepo = callSessionRepo;
-    this.notificationService = notificationService;
-  }
+  ) {}
 
   /**
    * Set socket broadcaster hook from server/socket layer
@@ -351,6 +345,9 @@ export class VideoCallService {
     }
 
     const activeSession = session!;
+    await this.appointmentRepo.findByIdAndUpdate(appointment._id, {
+      "videoCall.roomId": activeSession.roomId,
+    });
     const cleanDoctorName = doctorName.replace(/^Dr\.?\s*/i, "");
 
     // 6. Persistent & Real-Time Notification for Patient
@@ -429,15 +426,17 @@ export class VideoCallService {
     if (!session) {
       const appt = await this.appointmentRepo.findById(callSessionId, true);
       if (appt) {
+        const participants = await this.resolveAppointmentParticipants(appt);
         session = {
           _id: appt._id,
           appointmentId: appt._id,
-          doctorId: (appt.doctor as any)?.user?._id || (appt.doctor as any)?.user,
-          patientId: appt.patient?._id || appt.patient,
+          doctorId: participants.doctorUserId,
+          patientId: participants.patientUserId,
           roomId: appt.videoCall?.roomId || `room-${crypto.randomUUID()}`,
-          status: "active",
-          initiatedBy: (appt.doctor as any)?.user?._id || (appt.doctor as any)?.user,
-          startedAt: new Date(),
+          status: appt.videoCall?.meetingStatus || "NOT_STARTED",
+          meetingStatus: appt.videoCall?.meetingStatus || "NOT_STARTED",
+          initiatedBy: participants.doctorUserId,
+          startedAt: appt.videoCall?.startedAt || new Date(),
         } as any;
       }
     }
@@ -447,7 +446,7 @@ export class VideoCallService {
     }
 
     // Verify patient authorization
-    if (session.patientId.toString() !== patientUserId.toString()) {
+    if (String(session.patientId) !== patientUserId.toString()) {
       throw new ForbiddenError(
         "Unauthorized: You are not authorized to join this consultation.",
       );
@@ -475,7 +474,11 @@ export class VideoCallService {
     }
 
     // If session was DOCTOR_STARTED (or ringing), mark as PATIENT_JOINED when patient joins
-    if (session.status === "DOCTOR_STARTED" || session.status === "ringing") {
+    if (
+      session.status === "DOCTOR_STARTED" ||
+      session.meetingStatus === "DOCTOR_STARTED" ||
+      session.status === "ringing"
+    ) {
       const now = new Date();
       if (this.callSessionRepo) {
         const updated = await this.callSessionRepo.updateStatus(session._id, "PATIENT_JOINED", {
