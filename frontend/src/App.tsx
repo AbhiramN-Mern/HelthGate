@@ -9,6 +9,8 @@ import HomePage from './pages/HomePage'
 import PatientHomePage from './pages/pationt/PatientHomePage'
 import PatientPaymentsPage from './pages/pationt/PatientPaymentsPage'
 import DoctorDashboardPage from './pages/doctor/DoctorDashboardPage'
+import DoctorPatientsPage from './pages/doctor/DoctorPatientsPage'
+import DoctorNotificationsPage from './pages/doctor/DoctorNotificationsPage'
 import ConsultationPage from './pages/consultation/ConsultationPage'
 import ErrorPage from './pages/error page/ErrorPage'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -120,6 +122,34 @@ function AppShell() {
         <Route
           path="/doctor"
           element={<Navigate to="/doctor/dashboard" replace />}
+        />
+        <Route
+          path="/doctor/patients"
+          element={
+            localStorage.getItem('helthgate_token') ? (
+              <DoctorPatientsPage user={user} onLogout={handleLogout} onRequireAuth={requireAuth} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/doctor/care-history"
+          element={<Navigate to="/doctor/patients" replace />}
+        />
+        <Route
+          path="/doctor/notifications"
+          element={
+            localStorage.getItem('helthgate_token') ? (
+              <DoctorNotificationsPage user={user} onLogout={handleLogout} onRequireAuth={requireAuth} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/doctor/alerts"
+          element={<Navigate to="/doctor/notifications" replace />}
         />
         <Route
           path="/video-call/:callSessionId"

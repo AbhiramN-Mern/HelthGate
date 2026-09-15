@@ -4,7 +4,6 @@ import {
   getDoctorDashboard,
   updateDoctorAvailabilityApi,
   updateAppointmentStatusApi,
-  getDoctorPatientDetailsApi,
   markNotificationReadApi,
   getDoctorBookedSlotsApi,
   requestAppointmentRescheduleApi,
@@ -129,20 +128,6 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
 
   // Appointment Details Modal State
   const [viewingAppt, setViewingAppt] = useState<AppointmentItem | null>(null)
-
-  // 6. Patient Details Modal State (Protected View)
-  const [patientModalLoading, setPatientModalLoading] = useState(false)
-  const [selectedPatient, setSelectedPatient] = useState<{
-    id: string
-    name: string
-    email: string
-    gender?: string
-    phone?: string
-    bloodGroup?: string
-    dateOfBirth?: string
-    address?: string
-  } | null>(null)
-  const [patientAppointments, setPatientAppointments] = useState<AppointmentItem[]>([])
 
   // Reschedule Modal State
   const [rescheduleModalAppt, setRescheduleModalAppt] = useState<AppointmentItem | null>(null)
@@ -442,27 +427,6 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
     }
   }
 
-  // View Patient Details (Safely fetched without leaking medical records on cards)
-  const handleViewPatientDetails = async (patientId: string) => {
-    setPatientModalLoading(true)
-    setSelectedPatient(null)
-    setPatientAppointments([])
-    setDocFeedback(null)
-
-    try {
-      const data = await getDoctorPatientDetailsApi(patientId, token)
-      if (data.patient) setSelectedPatient(data.patient)
-      if (data.appointments) setPatientAppointments(data.appointments)
-    } catch (err) {
-      setDocFeedback({
-        type: 'error',
-        message: getFriendlyErrorMessage(err, 'Unable to load patient records. Please try again.'),
-      })
-    } finally {
-      setPatientModalLoading(false)
-    }
-  }
-
   // Mark Notification Read
   const handleMarkNotificationRead = async (id: string) => {
     try {
@@ -630,6 +594,50 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               </button>
 
               <button
+                id="doc-nav-patients-btn"
+                type="button"
+                className="dd-btn-profile"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => navigate('/doctor/patients')}
+                title="View Patients & Care History"
+              >
+                <UsersIcon size={15} />
+                <span>Patients</span>
+              </button>
+
+              <button
+                id="doc-nav-notifs-btn"
+                type="button"
+                className="dd-btn-profile"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  position: 'relative',
+                }}
+                onClick={() => navigate('/doctor/notifications')}
+                title="View Alerts & Notifications"
+              >
+                <BellIcon size={15} />
+                <span>Notifications</span>
+                {notifications.filter((n) => !n.isRead).length > 0 && (
+                  <span
+                    style={{
+                      background: '#ef4444',
+                      color: '#ffffff',
+                      borderRadius: '999px',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      padding: '1px 6px',
+                      lineHeight: '1.2',
+                    }}
+                  >
+                    {notifications.filter((n) => !n.isRead).length}
+                  </span>
+                )}
+              </button>
+
+              <button
                 id="doc-nav-profile-btn"
                 type="button"
                 className="dd-btn-profile"
@@ -771,7 +779,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               </div>
             </div>
 
-            <div className="dd-stat-card" onClick={() => scrollToSection('recent-patients')}>
+            <div className="dd-stat-card" onClick={() => scrollToSection('today-appointments')}>
               <div className="dd-stat-icon-wrap completed"><CheckCircleIcon size={20} /></div>
               <div className="dd-stat-info">
                 <span className="dd-stat-val">{loading ? '-' : stats.completedAppointments}</span>
@@ -779,7 +787,7 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               </div>
             </div>
 
-            <div className="dd-stat-card" onClick={() => scrollToSection('recent-patients')}>
+            <div className="dd-stat-card" onClick={() => navigate('/doctor/patients')}>
               <div className="dd-stat-icon-wrap patients"><UsersIcon size={20} /></div>
               <div className="dd-stat-info">
                 <span className="dd-stat-val">{loading ? '-' : stats.totalPatients}</span>
@@ -858,10 +866,37 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
               id="doc-quick-view-patients-btn"
               type="button"
               className="dd-quick-btn"
-              onClick={() => scrollToSection('recent-patients')}
+              onClick={() => navigate('/doctor/patients')}
             >
               <span className="dd-quick-icon"><UserIcon size={18} /></span>
               <span>View Patients</span>
+            </button>
+
+            <button
+              id="doc-quick-view-notifs-btn"
+              type="button"
+              className="dd-quick-btn"
+              onClick={() => navigate('/doctor/notifications')}
+            >
+              <span className="dd-quick-icon"><BellIcon size={18} /></span>
+              <span>
+                Alerts & Updates
+                {notifications.filter((n) => !n.isRead).length > 0 && (
+                  <span
+                    style={{
+                      marginLeft: '6px',
+                      background: '#ef4444',
+                      color: '#fff',
+                      borderRadius: '999px',
+                      padding: '1px 6px',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {notifications.filter((n) => !n.isRead).length}
+                  </span>
+                )}
+              </span>
             </button>
           </div>
         </section>
@@ -1287,113 +1322,6 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
           </div>
         </section>
 
-        {/* ========================================================
-            6. RECENT PATIENTS & 8. NOTIFICATIONS (Split 2-Column Section)
-            ======================================================== */}
-        <div className="dd-split-grid">
-          {/* 6. RECENT PATIENTS */}
-          <section id="recent-patients" className="dd-section" aria-label="Recent Patients">
-            <div className="dd-section-header">
-              <div className="dd-section-title-wrap">
-                <span className="dd-section-tag">Care History</span>
-                <h2 className="dd-section-title">Recent Patients</h2>
-              </div>
-              <span className="dd-section-badge">{recentPatients.length} Patients</span>
-            </div>
-
-            <div className="dd-patients-card">
-              {recentPatients.length === 0 ? (
-                <div className="dd-empty-state">
-                  <span className="dd-empty-icon"><UsersIcon size={32} /></span>
-                  <h4 className="dd-empty-title">No patient visits recorded yet</h4>
-                  <p className="dd-empty-desc">
-                    Patients who book consultations with you will be listed here.
-                  </p>
-                </div>
-              ) : (
-                recentPatients.map((p) => (
-                  <div key={p.patientId} className="dd-patient-item">
-                    <div className="dd-patient-col">
-                      <div className="dd-patient-avatar" style={{ width: '38px', height: '38px', fontSize: '0.88rem' }}>
-                        {p.name.charAt(0).toUpperCase() || 'P'}
-                      </div>
-                      <div className="dd-patient-text">
-                        <span className="dd-patient-name-text">{p.name}</span>
-                        <span className="dd-patient-sub-text">
-                          Last visit:{' '}
-                          {new Date(p.lastAppointmentDate).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                          })}{' '}
-                          • {p.totalVisits} appointment{p.totalVisits > 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="dd-btn-view-patient"
-                      onClick={() => handleViewPatientDetails(p.patientId)}
-                    >
-                      View Patient
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
-
-          {/* 8. NOTIFICATIONS */}
-          <section id="notifications" className="dd-section" aria-label="Notifications">
-            <div className="dd-section-header">
-              <div className="dd-section-title-wrap">
-                <span className="dd-section-tag">Alerts & Updates</span>
-                <h2 className="dd-section-title">Notifications</h2>
-              </div>
-              <span className="dd-section-badge">
-                {notifications.filter((n) => !n.isRead).length} New
-              </span>
-            </div>
-
-            <div className="dd-notifications-card">
-              {notifications.length === 0 ? (
-                <div className="dd-empty-state">
-                  <span className="dd-empty-icon"><BellIcon size={32} /></span>
-                  <h4 className="dd-empty-title">No new notifications</h4>
-                  <p className="dd-empty-desc">Appointment updates will appear here.</p>
-                </div>
-              ) : (
-                notifications.map((n) => {
-                  const renderNotifIcon = () => {
-                    if (n.type === 'cancellation') return <AlertCircleIcon size={16} />
-                    if (n.type === 'rescheduled') return <RefreshIcon size={16} />
-                    if (n.type === 'system') return <SettingsIcon size={16} />
-                    return <CalendarIcon size={16} />
-                  }
-
-                  return (
-                    <div
-                      key={n._id}
-                      className={`dd-notif-item ${!n.isRead ? 'unread' : ''}`}
-                      onClick={() => !n.isRead && handleMarkNotificationRead(n._id)}
-                      title={!n.isRead ? 'Click to mark as read' : ''}
-                      style={{ cursor: !n.isRead ? 'pointer' : 'default' }}
-                    >
-                      <span className="dd-notif-icon">{renderNotifIcon()}</span>
-                      <div className="dd-notif-content">
-                        <h4 className="dd-notif-title">{n.title}</h4>
-                        <p className="dd-notif-msg">{n.message}</p>
-                        <span className="dd-notif-time">
-                          {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent'}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </section>
-        </div>
       </main>
 
       {/* ========================================================
@@ -1822,104 +1750,6 @@ function DoctorDashboardPage({ user, onLogout, onRequireAuth }: DoctorDashboardP
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. PROTECTED PATIENT DETAILS MODAL (Requires View Patient action) */}
-      {(patientModalLoading || selectedPatient) && (
-        <div
-          className="dd-modal-overlay"
-          onClick={() => {
-            setSelectedPatient(null)
-            setPatientModalLoading(false)
-          }}
-        >
-          <div className="dd-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="dd-modal-header">
-              <div>
-                <span className="dd-section-tag">Protected Patient Profile</span>
-                <h3 className="dd-modal-title">
-                  {patientModalLoading ? 'Loading Details...' : selectedPatient?.name}
-                </h3>
-              </div>
-              <button
-                type="button"
-                className="dd-btn-close"
-                onClick={() => {
-                  setSelectedPatient(null)
-                  setPatientModalLoading(false)
-                }}
-                aria-label="Close"
-              >
-                <CloseIcon size={16} />
-              </button>
-            </div>
-
-            {patientModalLoading ? (
-              <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Fetching patient information...</p>
-            ) : selectedPatient ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '12px' }}>
-                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700 }}>Email</span>
-                    <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>{selectedPatient.email || 'N/A'}</div>
-                  </div>
-
-                  <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '12px' }}>
-                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700 }}>Phone</span>
-                    <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>{selectedPatient.phone || 'Not provided'}</div>
-                  </div>
-
-                  <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '12px' }}>
-                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700 }}>Gender</span>
-                    <div style={{ fontWeight: 700, fontSize: '0.88rem', textTransform: 'capitalize' }}>
-                      {selectedPatient.gender || 'Not specified'}
-                    </div>
-                  </div>
-
-                  <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '12px' }}>
-                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700 }}>Blood Group</span>
-                    <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>
-                      {selectedPatient.bloodGroup || 'Not specified'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Consultation History with this Doctor */}
-                <div>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1b2430', marginBottom: '8px' }}>
-                    Consultation History With You ({patientAppointments.length})
-                  </h4>
-                  <div style={{ display: 'grid', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
-                    {patientAppointments.map((pa) => (
-                      <div
-                        key={pa._id}
-                        style={{
-                          padding: '10px 12px',
-                          borderRadius: '10px',
-                          background: '#f8fafc',
-                          fontSize: '0.82rem',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <div>
-                          <strong>
-                            {pa.appointmentDate ? new Date(pa.appointmentDate).toLocaleDateString() : 'Recent'}
-                          </strong>{' '}
-                          • {pa.timeSlot}
-                        </div>
-                        <span className={`dd-status-pill ${pa.status || 'scheduled'}`}>
-                          {pa.status || 'Scheduled'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
       )}
