@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { registerUser, getFriendlyErrorMessage } from '../api/auth.api'
+import GoogleAuthButton from '../components/GoogleAuthButton'
 
 type RegisterPageProps = {
   onSuccess: (user: { name?: string; email?: string; role?: string }, token?: string) => void
@@ -104,6 +105,21 @@ function RegisterPage({ onSuccess, onSwitchToLogin }: RegisterPageProps) {
             <p className="welcome-tag">Join now</p>
             <h2>Create your account</h2>
           </div>
+
+          {role === 'patient' && (
+            <>
+              <div className="patient-google-block">
+                <GoogleAuthButton
+                  onSuccess={onSuccess}
+                  label="Continue with Google"
+                />
+              </div>
+
+              <div className="auth-divider">
+                <span>or register with email</span>
+              </div>
+            </>
+          )}
 
           <form onSubmit={handleSubmit} className="login-form">
             <label className="input-group">

@@ -1,6 +1,7 @@
 // Infrastructure & Core Security
 import { BcryptPasswordHasher } from "./infrastructure/security/BcryptPasswordHasher.js";
 import { JwtTokenService } from "./infrastructure/security/JwtTokenService.js";
+import { GoogleAuthService } from "./infrastructure/security/GoogleAuthService.js";
 
 // Repositories
 import { MongoUserRepository } from "./repositories/implementations/MongoUserRepository.js";
@@ -43,6 +44,7 @@ import { PrescriptionService } from "./services/prescription.service.js";
 // 1. Security & Core utilities
 export const passwordHasher = new BcryptPasswordHasher();
 export const tokenService = new JwtTokenService();
+export const googleAuthService = new GoogleAuthService();
 
 // 2. Gateways & Outbound Messaging
 export const mockPaymentGateway = new MockPaymentGateway();
@@ -78,7 +80,13 @@ roleRegistry.register("doctor", new DoctorRoleHandler(doctorRepo));
 roleRegistry.register("admin", new AdminRoleHandler(adminRepo));
 
 // 5. Services (Wired with Inverted Dependencies)
-export const authService = new AuthService(userRepo, passwordHasher, tokenService, roleRegistry);
+export const authService = new AuthService(
+  userRepo,
+  passwordHasher,
+  tokenService,
+  roleRegistry,
+  googleAuthService,
+);
 export const notificationService = new NotificationService(
   notificationRepo,
   emailService,

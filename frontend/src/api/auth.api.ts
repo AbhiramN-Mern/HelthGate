@@ -195,6 +195,19 @@ export const loginUser = async (payload: {
   })
 }
 
+export const loginPatientWithGoogle = async (credential: string): Promise<AuthResponse> => {
+  return request<AuthResponse>('/api/auth/patient/google', {
+    method: 'POST',
+    body: JSON.stringify({ credential }),
+  })
+}
+
+export const getGoogleAuthUrlApi = async (): Promise<{ success: boolean; url?: string }> => {
+  return request<{ success: boolean; url?: string }>('/api/auth/patient/google/url', {
+    method: 'GET',
+  })
+}
+
 export const getMyPatientProfile = async (token: string): Promise<{ success: boolean; patient?: PatientProfile }> => {
   return request<{ success: boolean; patient?: PatientProfile }>('/api/patients/me', { method: 'GET' }, token)
 }

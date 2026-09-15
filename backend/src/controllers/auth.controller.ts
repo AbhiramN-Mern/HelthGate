@@ -81,3 +81,64 @@ export const getMe = async (req: AuthenticatedRequest, res: Response) => {
     });
   }
 };
+
+export const googlePatientAuth = async (req: Request, res: Response) => {
+  try {
+    const { credential } = req.body as { credential?: string };
+
+    const result = await authService.loginPatientWithGoogle(credential);
+
+    return res.status(200).json({
+      success: true,
+      message: "Google authentication successful",
+      ...result,
+    });
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Google authentication failed",
+      error: error.message || "Unknown error",
+    });
+  }
+};
+
+export const getGoogleAuthUrl = async (_req: Request, res: Response) => {
+  try {
+    const url = authService.getGoogleAuthUrl();
+    return res.status(200).json({ success: true, url });
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to generate Google auth URL",
+      error: error.message || "Unknown error",
+    });
+  }
+};
+
+export const googleCallback = async (req: Request, res: Response) => {
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  try {
+    const { code, error } = req.query as { code?: string; error?: string };
+
+    if (error) {
+      return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(error)}`);
+    }
+
+    if (!code) {
+      return res.redirect(`${frontendUrl}/login?error=No%20authorization%20code%20received%20from%20Google`);
+    }
+
+    const result = await authService.loginPatientWithGoogleCode(code);
+    const userEncoded = encodeURIComponent(JSON.stringify(result.user));
+    return res.redirect(
+      `${frontendUrl}/login?google_token=${encodeURIComponent(result.token)}&google_user=${userEncoded}`
+    );
+  } catch (err: any) {
+    const errorMsg = encodeURIComponent(err.message || "Google authentication failed");
+    return res.redirect(`${frontendUrl}/login?error=${errorMsg}`);
+  }
+};
+
+

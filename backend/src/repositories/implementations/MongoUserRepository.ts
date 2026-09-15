@@ -15,9 +15,18 @@ export class MongoUserRepository implements IUserRepository {
     return (await UserModel.findById(id).exec()) as (User & { _id: Types.ObjectId; id: string }) | null;
   }
 
+  async findByGoogleId(googleId: string): Promise<(User & { _id: Types.ObjectId; id: string }) | null> {
+    return (await UserModel.findOne({ googleId }).exec()) as (User & { _id: Types.ObjectId; id: string }) | null;
+  }
+
   async create(userData: Partial<User>): Promise<User & { _id: Types.ObjectId; id: string }> {
     const user = await UserModel.create(userData);
     return user as unknown as (User & { _id: Types.ObjectId; id: string });
+  }
+
+  async update(id: string | Types.ObjectId, userData: Partial<User>): Promise<(User & { _id: Types.ObjectId; id: string }) | null> {
+    const user = await UserModel.findByIdAndUpdate(id, { $set: userData }, { new: true }).exec();
+    return user as unknown as (User & { _id: Types.ObjectId; id: string }) | null;
   }
 
   async findAll(): Promise<(User & { _id: Types.ObjectId; id: string })[]> {

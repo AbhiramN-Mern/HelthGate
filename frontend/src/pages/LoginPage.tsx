@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { loginUser, getFriendlyErrorMessage } from '../api/auth.api'
+import GoogleAuthButton from '../components/GoogleAuthButton'
 
 type LoginPageProps = {
   onSuccess: (user: { name?: string; email?: string; role?: string }, token?: string) => void
@@ -11,8 +12,39 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(true)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const urlError = params.get('error')
+      return urlError ? decodeURIComponent(urlError) : ''
+    }
+    return ''
+  })
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const googleToken = params.get('google_token')
+    const googleUserData = params.get('google_user')
+    const urlError = params.get('error')
+
+    if (urlError) {
+      window.history.replaceState({}, document.title, window.location.pathname)
+      return
+    }
+
+    if (googleToken && googleUserData) {
+      try {
+        const parsedUser = JSON.parse(decodeURIComponent(googleUserData))
+        localStorage.setItem('helthgate_token', googleToken)
+        localStorage.setItem('helthgate_user', JSON.stringify(parsedUser))
+        window.history.replaceState({}, document.title, window.location.pathname)
+        onSuccess(parsedUser, googleToken)
+      } catch (e) {
+        console.error('Failed to parse Google user payload from redirect', e)
+      }
+    }
+  }, [onSuccess])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -69,6 +101,17 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
           <div className="form-header">
             <p className="welcome-tag">Welcome back</p>
             <h2>Sign in to your account</h2>
+          </div>
+
+          <div className="patient-google-block">
+            <GoogleAuthButton
+              onSuccess={onSuccess}
+              label="Continue with Google"
+            />
+          </div>
+
+          <div className="auth-divider">
+            <span>or sign in with email</span>
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">

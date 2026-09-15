@@ -16,7 +16,9 @@ const userSchema = new Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: function (this: any) {
+        return this.authProvider !== "google";
+      },
       minlength: 6,
       select: false,
     },
@@ -24,6 +26,16 @@ const userSchema = new Schema(
       type: String,
       enum: ["patient", "doctor", "admin"],
       default: "patient",
+    },
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
+    googleId: {
+      type: String,
+      sparse: true,
+      index: true,
     },
   },
   {

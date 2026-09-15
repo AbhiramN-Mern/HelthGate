@@ -21,8 +21,9 @@ HealthGate is a full-stack hospital management and healthcare consultation platf
 
 ## Recent Updates
 * **Clean Architecture Migration:** Decoupled backend into distinct layers: Controllers, Services (Use Cases), Repository Interfaces, and Infrastructure Implementations.
+* **Patient-Only Google Authentication (OAuth 2.0):** Secure "Continue with Google" sign-in and sign-up for Patients only, featuring server-side Google token verification (`google-auth-library`), safe account linking, strict role protection (doctors and admins cannot authenticate via Google), and unified JWT sessions.
 * **SOLID Principles Implementation:**
-  * **SRP:** Dedicated services for password hashing, JWT tokens, and standardized domain errors.
+  * **SRP:** Dedicated services for password hashing, JWT tokens, Google authentication, and standardized domain errors.
   * **OCP:** Role handler strategy pattern for extensible role management.
   * **LSP:** Pure repository abstraction contracts with zero leaked ORM calls.
   * **ISP & DIP:** Centralized Composition Root (`src/container.ts`) for dependency injection.
