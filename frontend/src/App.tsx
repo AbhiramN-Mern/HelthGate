@@ -182,6 +182,20 @@ function AppShell() {
           }
         />
         <Route
+          path="/forgot-password"
+          element={
+            localStorage.getItem('helthgate_token') ? (
+              <Navigate to={getRoleHomeRoute(currentRole)} replace />
+            ) : (
+              <LoginPage
+                initialView="forgot-password"
+                onSuccess={handleAuthSuccess}
+                onSwitchToRegister={() => navigate('/register')}
+              />
+            )
+          }
+        />
+        <Route
           path="/register"
           element={
             localStorage.getItem('helthgate_token') ? (

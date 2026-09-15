@@ -18,6 +18,12 @@ const otpSchema = new Schema(
       required: true,
       index: { expires: 0 }, // MongoDB TTL index: automatically deletes document when expiresAt <= current time
     },
+    purpose: {
+      type: String,
+      enum: ["email_verification", "password_reset"],
+      default: "email_verification",
+      index: true,
+    },
     attempts: {
       type: Number,
       default: 0,
@@ -32,8 +38,8 @@ const otpSchema = new Schema(
   },
 );
 
-// Fast compound lookup index for latest active OTP by email
-otpSchema.index({ email: 1, createdAt: -1 });
+// Fast compound lookup index for latest active OTP by email and purpose
+otpSchema.index({ email: 1, purpose: 1, createdAt: -1 });
 
 export type OTP = InferSchemaType<typeof otpSchema>;
 

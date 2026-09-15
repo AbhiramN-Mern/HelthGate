@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import type { IEmailService, SendEmailOptions, EmailSendResult } from "./IEmailService.js";
 import { generateOtpEmailHtml } from "./templates/otpVerificationTemplate.js";
+import { generatePasswordResetEmailHtml } from "./templates/passwordResetTemplate.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -98,6 +99,16 @@ export class NodemailerEmailService implements IEmailService {
 
   async sendVerificationOTP(email: string, otp: string): Promise<EmailSendResult> {
     const { html, text, subject } = generateOtpEmailHtml(otp);
+    return this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text,
+    });
+  }
+
+  async sendPasswordResetOTP(email: string, otp: string): Promise<EmailSendResult> {
+    const { html, text, subject } = generatePasswordResetEmailHtml(otp);
     return this.sendEmail({
       to: email,
       subject,

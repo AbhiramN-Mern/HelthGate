@@ -225,6 +225,45 @@ export const sendOtpApi = async (payload: {
   })
 }
 
+export const forgotPasswordApi = async (payload: {
+  email: string
+}): Promise<{ success: boolean; message: string; cooldownSeconds?: number }> => {
+  return request<{ success: boolean; message: string; cooldownSeconds?: number }>('/api/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export const verifyResetOtpApi = async (payload: {
+  email: string
+  otp: string
+}): Promise<{ success: boolean; message: string; resetToken: string; email: string }> => {
+  return request<{ success: boolean; message: string; resetToken: string; email: string }>('/api/auth/forgot-password/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export const resendResetOtpApi = async (payload: {
+  email: string
+}): Promise<{ success: boolean; message: string; cooldownSeconds?: number }> => {
+  return request<{ success: boolean; message: string; cooldownSeconds?: number }>('/api/auth/forgot-password/resend-otp', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export const resetPasswordApi = async (payload: {
+  email?: string
+  resetToken: string
+  newPassword: string
+}): Promise<{ success: boolean; message: string }> => {
+  return request<{ success: boolean; message: string }>('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 
 export const loginPatientWithGoogle = async (credential: string): Promise<AuthResponse> => {
   return request<AuthResponse>('/api/auth/patient/google', {

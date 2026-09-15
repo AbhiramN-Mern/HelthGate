@@ -103,6 +103,69 @@ export const sendOTP = async (req: Request, res: Response) => {
   return resendOTP(req, res);
 };
 
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body as { email?: string };
+
+    const result = await authService.forgotPassword(email || "");
+
+    return res.status(200).json(result);
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to process forgot password request",
+      error: error.message || "Unknown error",
+    });
+  }
+};
+
+export const verifyForgotPasswordOTP = async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body as { email?: string; otp?: string };
+
+    const result = await authService.verifyPasswordResetOTP(email || "", otp || "");
+
+    return res.status(200).json(result);
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to verify password reset code",
+      error: error.message || "Unknown error",
+    });
+  }
+};
+
+export const resendForgotPasswordOTP = async (req: Request, res: Response) => {
+  return forgotPassword(req, res);
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, resetToken, newPassword } = req.body as {
+      email?: string;
+      resetToken?: string;
+      newPassword?: string;
+    };
+
+    const result = await authService.resetPassword({
+      email,
+      resetToken: resetToken || "",
+      newPassword: newPassword || "",
+    });
+
+    return res.status(200).json(result);
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to reset password",
+      error: error.message || "Unknown error",
+    });
+  }
+};
+
 
 export const getMe = async (req: AuthenticatedRequest, res: Response) => {
   try {

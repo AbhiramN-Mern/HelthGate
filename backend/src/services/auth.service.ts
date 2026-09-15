@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import type { UserRole } from "../types/auth.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { IPasswordHasher } from "../core/security/IPasswordHasher.js";
@@ -385,6 +386,139 @@ export class AuthService {
       name: user.name,
       email: user.email,
       role: user.role,
+    };
+  }
+
+  async forgotPassword(email: string) {
+    if (!email || typeof email !== "string") {
+      throw new BadRequestError("Please provide a valid email address");
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      throw new BadRequestError("Please provide a valid email address");
+    }
+
+    if (!this.otpService) {
+      throw new BadRequestError("OTP service is not configured");
+    }
+
+    const user = await this.userRepo.findByEmail(normalizedEmail);
+
+    // ANTI-ENUMERATION:
+    // If the account does not exist, or is not a patient, or was created via Google OAuth (no local password):
+    // Return the exact same generic success response without leaking existence or sending an OTP email.
+    const GENERIC_RESPONSE = {
+      success: true,
+      message: "If an account is associated with this email, a 6-digit password reset code has been sent.",
+      cooldownSeconds: 60,
+    };
+
+    if (!user || user.role !== "patient" || user.authProvider === "google") {
+      return GENERIC_RESPONSE;
+    }
+
+    const result = await this.otpService.generateAndSendPasswordResetOTP(normalizedEmail);
+
+    return {
+      success: true,
+      message: "If an account is associated with this email, a 6-digit password reset code has been sent.",
+      cooldownSeconds: result.cooldownSeconds,
+    };
+  }
+
+  async resendPasswordResetOTP(email: string) {
+    return this.forgotPassword(email);
+  }
+
+  async verifyPasswordResetOTP(email: string, otp: string) {
+    if (!email || !otp) {
+      throw new BadRequestError("Email and verification code are required");
+    }
+
+    if (!this.otpService) {
+      throw new BadRequestError("OTP verification service is not configured");
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await this.userRepo.findByEmail(normalizedEmail);
+
+    if (!user || user.role !== "patient") {
+      throw new BadRequestError("Invalid or expired password reset code. Please request a new code.");
+    }
+
+    // Verify OTP (enforces 10 min expiry, 5 max attempts, invalidation on max attempts)
+    await this.otpService.verifyPasswordResetOTP(normalizedEmail, otp);
+
+    // Generate cryptographically secure random reset token
+    const rawResetToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(rawResetToken).digest("hex");
+    const tokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes validity
+
+    // Store token hash & expiration on user document
+    await this.userRepo.update(user.id, {
+      passwordResetTokenHash: tokenHash,
+      passwordResetExpires: tokenExpiresAt,
+    } as any);
+
+    return {
+      success: true,
+      message: "Verification code confirmed. You can now set your new password.",
+      resetToken: rawResetToken,
+      email: user.email,
+    };
+  }
+
+  async resetPassword(data: { email?: string; resetToken: string; newPassword: string }) {
+    const { email, resetToken, newPassword } = data;
+
+    if (!resetToken || typeof resetToken !== "string" || !resetToken.trim()) {
+      throw new BadRequestError("Reset token is required");
+    }
+
+    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+      throw new BadRequestError("Password must be at least 6 characters long");
+    }
+
+    const rawToken = resetToken.trim();
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+    let user: any = null;
+    if (email && typeof email === "string" && email.trim()) {
+      const normalizedEmail = email.toLowerCase().trim();
+      user = await this.userRepo.findByEmail(normalizedEmail);
+    } else {
+      const users = await this.userRepo.find({ passwordResetTokenHash: tokenHash });
+      user = users[0] || null;
+    }
+
+    if (!user || user.role !== "patient") {
+      throw new BadRequestError("Invalid or expired password reset token. Please request a new code.");
+    }
+
+    // Check token match
+    if (!user.passwordResetTokenHash || user.passwordResetTokenHash !== tokenHash) {
+      throw new BadRequestError("Invalid or already used password reset token. Please request a new code.");
+    }
+
+    // Check token expiration (15 minutes)
+    if (!user.passwordResetExpires || new Date() > new Date(user.passwordResetExpires)) {
+      throw new BadRequestError("Password reset token has expired. Please request a new code.");
+    }
+
+    // Hash the new password using existing password hasher
+    const hashedPassword = await this.passwordHasher.hash(newPassword);
+
+    // Update user: set new password, and clear reset token fields to PREVENT REUSE
+    await this.userRepo.update(user.id, {
+      password: hashedPassword,
+      passwordResetTokenHash: null as any,
+      passwordResetExpires: null as any,
+    } as any);
+
+    return {
+      success: true,
+      message: "Password reset successful. You can now log in with your new password.",
     };
   }
 }

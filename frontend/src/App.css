@@ -798,5 +798,94 @@
   }
 }
 
+/* Forgot Password View & Password Reset Styling */
+.forgot-password-container {
+  width: 100%;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 60px !important;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--hg-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--hg-radius-sm);
+  transition: color 0.15s ease;
+}
+
+.password-toggle-btn:hover {
+  color: var(--hg-primary);
+}
+
+.password-match-hint {
+  font-size: 0.82rem;
+  margin-top: -6px;
+  margin-bottom: 4px;
+}
+
+.match-ok {
+  color: var(--hg-success);
+  font-weight: 500;
+}
+
+.match-fail {
+  color: var(--hg-danger, #ef4444);
+  font-weight: 500;
+}
+
+.reset-success-card {
+  text-align: center;
+  padding: 24px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.success-icon-badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--hg-success-bg, #ecfdf5);
+  color: var(--hg-success, #059669);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  border: 1.5px solid var(--hg-success-border, #a7f3d0);
+  animation: pulse-badge 1.8s infinite ease-in-out;
+}
+
+@keyframes pulse-badge {
+  0% {
+    transform: scale(0.96);
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.25);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(5, 150, 105, 0);
+  }
+  100% {
+    transform: scale(0.96);
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0);
+  }
+}
+
+
 
 

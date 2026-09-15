@@ -42,6 +42,15 @@ export class MockEmailService implements IEmailService {
     });
   }
 
+  async sendPasswordResetOTP(email: string, otp: string): Promise<EmailSendResult> {
+    return this.sendEmail({
+      to: email,
+      subject: "Reset Your Password - HelthGate Hospital Management",
+      html: `<p>Your password reset code is: <strong>${otp}</strong></p>`,
+      text: `Your password reset code is: ${otp}`,
+    });
+  }
+
   clear(): void {
     this.sentEmails = [];
     this.shouldFail = false;

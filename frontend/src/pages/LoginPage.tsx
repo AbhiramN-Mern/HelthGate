@@ -3,18 +3,21 @@ import type { FormEvent } from 'react'
 import { loginUser, getFriendlyErrorMessage } from '../api/auth.api'
 import GoogleAuthButton from '../components/GoogleAuthButton'
 import OTPVerificationView from '../components/OTPVerificationView'
+import ForgotPasswordView from '../components/ForgotPasswordView'
 
 type LoginPageProps = {
   onSuccess: (user: { name?: string; email?: string; role?: string }, token?: string) => void
   onSwitchToRegister: () => void
+  initialView?: 'login' | 'forgot-password'
 }
 
-function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
+function LoginPage({ onSuccess, onSwitchToRegister, initialView = 'login' }: LoginPageProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(true)
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
   const [showOtpView, setShowOtpView] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(initialView === 'forgot-password')
   const [message, setMessage] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
@@ -23,6 +26,7 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
     }
     return ''
   })
+  const [successNotice, setSuccessNotice] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -112,7 +116,21 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
         </div>
 
         <div className="form-panel">
-          {showOtpView ? (
+          {showForgotPassword ? (
+            <ForgotPasswordView
+              initialEmail={email}
+              onBackToLogin={() => {
+                setShowForgotPassword(false)
+              }}
+              onSuccess={(confirmedEmail) => {
+                setShowForgotPassword(false)
+                setEmail(confirmedEmail)
+                setPassword('')
+                setSuccessNotice('Password reset successful! Please sign in with your new password.')
+                setMessage('')
+              }}
+            />
+          ) : showOtpView ? (
             <OTPVerificationView
               email={unverifiedEmail || email}
               onSuccess={onSuccess}
@@ -136,6 +154,12 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
               <div className="auth-divider">
                 <span>or sign in with email</span>
               </div>
+
+              {successNotice && (
+                <div className="otp-info-message" style={{ marginBottom: '16px' }}>
+                  ✓ {successNotice}
+                </div>
+              )}
 
               {unverifiedEmail && (
                 <div className="unverified-login-banner">
@@ -161,7 +185,10 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
                   <input
                     type="email"
                     value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                    onChange={(event) => {
+                      setEmail(event.target.value)
+                      setSuccessNotice('')
+                    }}
                     placeholder="you@example.com"
                     aria-label="Email address"
                   />
@@ -172,7 +199,10 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
                   <input
                     type="password"
                     value={password}
-                    onChange={(event) => setPassword(event.target.value)}
+                    onChange={(event) => {
+                      setPassword(event.target.value)
+                      setSuccessNotice('')
+                    }}
                     placeholder="Enter your password"
                     aria-label="Password"
                   />
@@ -188,7 +218,17 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
                     <span>Remember me</span>
                   </label>
 
-                  <a href="#">Forgot password?</a>
+                  <a
+                    href="#forgot-password"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setShowForgotPassword(true)
+                      setMessage('')
+                      setSuccessNotice('')
+                    }}
+                  >
+                    Forgot password?
+                  </a>
                 </div>
 
                 {message && !unverifiedEmail ? <p className="status-message">{message}</p> : null}
