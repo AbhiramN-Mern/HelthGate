@@ -15,6 +15,7 @@ import { MongoAdminRepository } from "./repositories/implementations/MongoAdminR
 import { MongoCallSessionRepository } from "./repositories/implementations/MongoCallSessionRepository.js";
 import { MongoPaymentRepository } from "./repositories/implementations/MongoPaymentRepository.js";
 import { MongoPrescriptionRepository } from "./repositories/implementations/MongoPrescriptionRepository.js";
+import { MongoOTPRepository } from "./repositories/implementations/MongoOTPRepository.js";
 
 // Gateways & Infrastructure
 import { MockPaymentGateway } from "./infrastructure/payment/mock/MockPaymentGateway.js";
@@ -40,6 +41,7 @@ import { PaymentService } from "./services/payment.service.js";
 import { NotificationService } from "./services/notification.service.js";
 import { VideoCallService } from "./services/videoCall.service.js";
 import { PrescriptionService } from "./services/prescription.service.js";
+import { OTPService } from "./services/otp.service.js";
 
 // 1. Security & Core utilities
 export const passwordHasher = new BcryptPasswordHasher();
@@ -79,6 +81,9 @@ roleRegistry.register("patient", new PatientRoleHandler(patientRepo));
 roleRegistry.register("doctor", new DoctorRoleHandler(doctorRepo));
 roleRegistry.register("admin", new AdminRoleHandler(adminRepo));
 
+export const otpRepo = new MongoOTPRepository();
+export const otpService = new OTPService(otpRepo, emailService);
+
 // 5. Services (Wired with Inverted Dependencies)
 export const authService = new AuthService(
   userRepo,
@@ -86,6 +91,7 @@ export const authService = new AuthService(
   tokenService,
   roleRegistry,
   googleAuthService,
+  otpService,
 );
 export const notificationService = new NotificationService(
   notificationRepo,

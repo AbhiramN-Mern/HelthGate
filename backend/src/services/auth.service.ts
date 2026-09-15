@@ -3,8 +3,16 @@ import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { IPasswordHasher } from "../core/security/IPasswordHasher.js";
 import { ITokenService } from "../core/security/ITokenService.js";
 import { RoleHandlerRegistry } from "../core/auth/handlers/RoleHandlerRegistry.js";
-import { BadRequestError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from "../core/errors/AppError.js";
+import {
+  BadRequestError,
+  ConflictError,
+  EmailVerificationRequiredError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../core/errors/AppError.js";
 import { IGoogleAuthService } from "../infrastructure/security/GoogleAuthService.js";
+import { OTPService } from "./otp.service.js";
 
 export class AuthService {
   constructor(
@@ -13,6 +21,7 @@ export class AuthService {
     private tokenService: ITokenService,
     private roleRegistry: RoleHandlerRegistry,
     private googleAuthService?: IGoogleAuthService,
+    private otpService?: OTPService,
   ) {}
 
   async registerUser(data: {
@@ -32,7 +41,78 @@ export class AuthService {
       throw new BadRequestError("Role must be patient, doctor, or admin");
     }
 
-    const existingUser = await this.userRepo.findByEmail(email);
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingUser = await this.userRepo.findByEmail(normalizedEmail);
+
+    // Patient email verification flow
+    if (role === "patient") {
+      if (existingUser) {
+        if (existingUser.isEmailVerified) {
+          throw new ConflictError("Email is already registered");
+        }
+
+        // Email registered but unverified: update details & resend OTP
+        const hashedPassword = await this.passwordHasher.hash(password);
+        await this.userRepo.update(existingUser.id, {
+          name,
+          password: hashedPassword,
+        });
+
+        if (this.otpService) {
+          await this.otpService.generateAndSendOTP(existingUser.email);
+        }
+
+        return {
+          requiresEmailVerification: true,
+          message: "A verification code has been sent to your email. Please verify to complete registration.",
+          email: existingUser.email,
+          user: {
+            id: existingUser.id,
+            name: existingUser.name,
+            email: existingUser.email,
+            role: existingUser.role,
+          },
+        };
+      }
+
+      // Fresh patient registration
+      const roleHandler = this.roleRegistry.getHandler(role);
+      roleHandler.validateRegistrationProfile(profile);
+
+      const hashedPassword = await this.passwordHasher.hash(password);
+      const user = await this.userRepo.create({
+        name,
+        email: normalizedEmail,
+        password: hashedPassword,
+        role,
+        isEmailVerified: false,
+      });
+
+      try {
+        await roleHandler.createProfile(user.id, profile);
+      } catch (error) {
+        await this.userRepo.findByIdAndDelete(user.id);
+        throw error;
+      }
+
+      if (this.otpService) {
+        await this.otpService.generateAndSendOTP(user.email);
+      }
+
+      return {
+        requiresEmailVerification: true,
+        message: "Registration successful. Please verify your email with the 6-digit code sent to your inbox.",
+        email: user.email,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      };
+    }
+
+    // Non-patient roles (Doctor, Admin) registration
     if (existingUser) {
       throw new ConflictError("Email is already registered");
     }
@@ -43,9 +123,11 @@ export class AuthService {
     const hashedPassword = await this.passwordHasher.hash(password);
     const user = await this.userRepo.create({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       role,
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
     });
 
     try {
@@ -75,7 +157,8 @@ export class AuthService {
       throw new BadRequestError("Email and password are required");
     }
 
-    const user = await this.userRepo.findByEmail(email, true);
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await this.userRepo.findByEmail(normalizedEmail, true);
     if (!user) {
       throw new UnauthorizedError("Invalid email or password");
     }
@@ -83,6 +166,14 @@ export class AuthService {
     const passwordMatches = await this.passwordHasher.compare(password, (user as any).password);
     if (!passwordMatches) {
       throw new UnauthorizedError("Invalid email or password");
+    }
+
+    // Patient email verification guard
+    if (user.role === "patient" && user.authProvider !== "google" && !user.isEmailVerified) {
+      throw new EmailVerificationRequiredError(
+        "Please verify your email before logging in.",
+        user.email,
+      );
     }
 
     if (this.roleRegistry.hasRole(user.role)) {
@@ -100,6 +191,76 @@ export class AuthService {
         email: user.email,
         role: user.role,
       },
+    };
+  }
+
+  async verifyPatientOTP(email: string, otp: string) {
+    if (!email || !otp) {
+      throw new BadRequestError("Email and verification code are required");
+    }
+
+    if (!this.otpService) {
+      throw new BadRequestError("OTP verification service is not configured");
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await this.userRepo.findByEmail(normalizedEmail);
+    if (!user) {
+      throw new NotFoundError("No account found with this email address");
+    }
+
+    // Verify OTP using secure OTP service
+    await this.otpService.verifyOTP(normalizedEmail, otp);
+
+    // Update patient account as verified
+    await this.userRepo.update(user.id, {
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+    });
+
+    if (this.roleRegistry.hasRole(user.role)) {
+      const roleHandler = this.roleRegistry.getHandler(user.role as UserRole);
+      await roleHandler.validateLoginStatus(user.id);
+    }
+
+    const token = this.tokenService.generateToken({ id: user.id, role: user.role as UserRole });
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    };
+  }
+
+  async resendPatientOTP(email: string) {
+    if (!email) {
+      throw new BadRequestError("Email address is required");
+    }
+
+    if (!this.otpService) {
+      throw new BadRequestError("OTP service is not configured");
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await this.userRepo.findByEmail(normalizedEmail);
+    if (!user) {
+      throw new NotFoundError("No account found with this email address");
+    }
+
+    if (user.isEmailVerified) {
+      throw new BadRequestError("This email address is already verified. You can log in directly.");
+    }
+
+    const result = await this.otpService.generateAndSendOTP(normalizedEmail);
+
+    return {
+      success: true,
+      message: "A new verification code has been sent to your email",
+      cooldownSeconds: result.cooldownSeconds,
     };
   }
 
@@ -160,24 +321,31 @@ export class AuthService {
         await roleHandler.validateLoginStatus(user.id);
       }
 
-      // Link Google ID if not yet linked
+      // Mark email as verified for Google OAuth and link Google ID if needed
+      const updateData: Record<string, unknown> = {
+        isEmailVerified: true,
+        emailVerifiedAt: (user as any).emailVerifiedAt || new Date(),
+      };
+
       if (!user.googleId) {
-        const updated = await this.userRepo.update(user.id, {
-          googleId,
-          authProvider: user.authProvider || "google",
-        });
-        if (updated) {
-          user = updated;
-        }
+        updateData.googleId = googleId;
+        updateData.authProvider = user.authProvider || "google";
+      }
+
+      const updated = await this.userRepo.update(user.id, updateData);
+      if (updated) {
+        user = updated;
       }
     } else {
-      // Automatically create new Patient account
+      // Automatically create new Patient account with isEmailVerified: true
       user = await this.userRepo.create({
         name: name || "Patient",
         email,
         role: "patient",
         authProvider: "google",
         googleId,
+        isEmailVerified: true,
+        emailVerifiedAt: new Date(),
       });
 
       // Create Patient profile

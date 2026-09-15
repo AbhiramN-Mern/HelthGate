@@ -565,4 +565,238 @@
   }
 }
 
+/* ==========================================================================
+   Email OTP Verification Component Styles
+   ========================================================================== */
+
+.otp-verification-container {
+  width: 100%;
+  animation: hg-fade-in 0.25s ease-out;
+}
+
+@keyframes hg-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.otp-header {
+  margin-bottom: 24px;
+}
+
+.otp-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--hg-radius-md);
+  background-color: var(--hg-primary-subtle);
+  color: var(--hg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  border: 1px solid var(--hg-primary-border);
+}
+
+.otp-subtitle {
+  font-size: 0.92rem;
+  color: var(--hg-text-secondary);
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.otp-email-text {
+  color: var(--hg-primary);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.otp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.otp-input-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.otp-digit-box {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: monospace;
+  color: var(--hg-text-main);
+  background-color: var(--hg-surface);
+  border: 1.5px solid var(--hg-border);
+  border-radius: var(--hg-radius-md);
+  outline: none;
+  transition: all 0.15s ease-in-out;
+}
+
+.otp-digit-box:focus {
+  border-color: var(--hg-primary);
+  box-shadow: 0 0 0 3px rgba(11, 90, 102, 0.15);
+  background-color: #ffffff;
+}
+
+.otp-digit-box.filled {
+  border-color: var(--hg-primary);
+  background-color: var(--hg-primary-subtle);
+}
+
+.otp-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--hg-text-muted);
+  margin-top: -4px;
+}
+
+.otp-expiry-hint {
+  font-weight: 500;
+}
+
+.otp-security-hint {
+  font-style: italic;
+}
+
+.otp-info-message {
+  padding: 10px 14px;
+  background-color: var(--hg-success-bg);
+  border: 1px solid var(--hg-success-border);
+  border-radius: var(--hg-radius-md);
+  color: var(--hg-success);
+  font-size: 0.88rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.otp-resend-wrapper {
+  text-align: center;
+  margin-top: 6px;
+}
+
+.otp-resend-text {
+  font-size: 0.88rem;
+  color: var(--hg-text-secondary);
+  margin: 0;
+}
+
+.otp-cooldown-timer {
+  color: var(--hg-text-muted);
+  font-weight: 600;
+}
+
+.otp-resend-btn {
+  background: none;
+  border: none;
+  color: var(--hg-primary);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--hg-radius-sm);
+  text-decoration: underline;
+  transition: color 0.15s ease;
+}
+
+.otp-resend-btn:hover:not(:disabled) {
+  color: var(--hg-primary-hover);
+}
+
+.otp-resend-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.otp-back-wrapper {
+  text-align: center;
+  margin-top: 4px;
+}
+
+.otp-back-btn {
+  background: none;
+  border: none;
+  color: var(--hg-text-muted);
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.otp-back-btn:hover {
+  color: var(--hg-text-main);
+  text-decoration: underline;
+}
+
+/* Unverified Patient Login Banner */
+.unverified-login-banner {
+  background-color: var(--hg-warning-bg);
+  border: 1px solid var(--hg-warning-border);
+  border-radius: var(--hg-radius-md);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.unverified-banner-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.unverified-banner-text h4 {
+  margin: 0 0 4px;
+  font-size: 0.92rem;
+  color: var(--hg-warning);
+  font-weight: 600;
+}
+
+.unverified-banner-text p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #78350f;
+  line-height: 1.4;
+}
+
+.unverified-verify-btn {
+  align-self: flex-start;
+  background-color: var(--hg-primary);
+  color: #ffffff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: var(--hg-radius-sm);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.unverified-verify-btn:hover {
+  background-color: var(--hg-primary-hover);
+}
+
+@media (max-width: 480px) {
+  .otp-digit-box {
+    width: 40px;
+    height: 48px;
+    font-size: 1.3rem;
+  }
+}
+
+
 

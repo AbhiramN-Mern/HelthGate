@@ -37,6 +37,14 @@ const userSchema = new Schema(
       sparse: true,
       index: true,
     },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerifiedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

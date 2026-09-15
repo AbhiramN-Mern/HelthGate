@@ -22,7 +22,7 @@ export const register = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       success: true,
-      message: "User registered successfully",
+      message: result.message || "User registered successfully",
       ...result,
     });
   } catch (error: any) {
@@ -55,9 +55,54 @@ export const login = async (req: Request, res: Response) => {
       success: false,
       message: error.message || "Failed to login",
       error: error.message || "Unknown error",
+      requiresEmailVerification: error.requiresEmailVerification || false,
+      ...(error.email ? { email: error.email } : {}),
     });
   }
 };
+
+export const verifyOTP = async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body as { email?: string; otp?: string };
+
+    const result = await authService.verifyPatientOTP(email || "", otp || "");
+
+    return res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+      ...result,
+    });
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to verify OTP",
+      error: error.message || "Unknown error",
+    });
+  }
+};
+
+export const resendOTP = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body as { email?: string };
+
+    const result = await authService.resendPatientOTP(email || "");
+
+    return res.status(200).json(result);
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to resend OTP",
+      error: error.message || "Unknown error",
+    });
+  }
+};
+
+export const sendOTP = async (req: Request, res: Response) => {
+  return resendOTP(req, res);
+};
+
 
 export const getMe = async (req: AuthenticatedRequest, res: Response) => {
   try {

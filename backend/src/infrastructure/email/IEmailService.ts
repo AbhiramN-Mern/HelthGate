@@ -14,4 +14,6 @@ export interface EmailSendResult {
 
 export interface IEmailService {
   sendEmail(options: SendEmailOptions): Promise<EmailSendResult>;
+  sendVerificationOTP?(email: string, otp: string): Promise<EmailSendResult>;
 }
+

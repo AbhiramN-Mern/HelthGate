@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { loginUser, getFriendlyErrorMessage } from '../api/auth.api'
 import GoogleAuthButton from '../components/GoogleAuthButton'
+import OTPVerificationView from '../components/OTPVerificationView'
 
 type LoginPageProps = {
   onSuccess: (user: { name?: string; email?: string; role?: string }, token?: string) => void
@@ -12,6 +13,8 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(true)
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
+  const [showOtpView, setShowOtpView] = useState(false)
   const [message, setMessage] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
@@ -71,8 +74,19 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
       }
 
       onSuccess(user, data.token)
-    } catch (error) {
-      setMessage(getFriendlyErrorMessage(error, 'Invalid email or password. Please verify your credentials and try again.'))
+    } catch (error: any) {
+      const isUnverified =
+        error?.data?.requiresEmailVerification ||
+        error?.code === 'EMAIL_NOT_VERIFIED' ||
+        error?.message?.toLowerCase().includes('verify your email')
+
+      if (isUnverified) {
+        setUnverifiedEmail(error?.data?.email || email)
+        setMessage('Please verify your email before logging in.')
+      } else {
+        setUnverifiedEmail(null)
+        setMessage(getFriendlyErrorMessage(error, 'Invalid email or password. Please verify your credentials and try again.'))
+      }
     } finally {
       setIsLoading(false)
     }
@@ -98,79 +112,108 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
         </div>
 
         <div className="form-panel">
-          <div className="form-header">
-            <p className="welcome-tag">Welcome back</p>
-            <h2>Sign in to your account</h2>
-          </div>
-
-          <div className="patient-google-block">
-            <GoogleAuthButton
+          {showOtpView ? (
+            <OTPVerificationView
+              email={unverifiedEmail || email}
               onSuccess={onSuccess}
-              label="Continue with Google"
+              onCancel={() => setShowOtpView(false)}
+              initialMessage="Enter your 6-digit code to complete email verification and sign in."
             />
-          </div>
+          ) : (
+            <>
+              <div className="form-header">
+                <p className="welcome-tag">Welcome back</p>
+                <h2>Sign in to your account</h2>
+              </div>
 
-          <div className="auth-divider">
-            <span>or sign in with email</span>
-          </div>
-
-          <form onSubmit={handleSubmit} className="login-form">
-            <label className="input-group">
-              <span>Email address</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="you@example.com"
-                aria-label="Email address"
-              />
-            </label>
-
-            <label className="input-group">
-              <span>Password</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Enter your password"
-                aria-label="Password"
-              />
-            </label>
-
-            <div className="form-options">
-              <label className="remember-me">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={() => setRememberMe((current) => !current)}
+              <div className="patient-google-block">
+                <GoogleAuthButton
+                  onSuccess={onSuccess}
+                  label="Continue with Google"
                 />
-                <span>Remember me</span>
-              </label>
+              </div>
 
-              <a href="#">Forgot password?</a>
-            </div>
+              <div className="auth-divider">
+                <span>or sign in with email</span>
+              </div>
 
-            {message ? <p className="status-message">{message}</p> : null}
-
-            <button
-              type="submit"
-              className={`signin-button ${isLoading ? 'btn-loading' : ''}`}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <span className="hg-spinner" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign in'
+              {unverifiedEmail && (
+                <div className="unverified-login-banner">
+                  <div className="unverified-banner-content">
+                    <div className="unverified-banner-text">
+                      <h4>Email Verification Required</h4>
+                      <p>Your patient account is registered but your email has not been verified yet.</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowOtpView(true)}
+                    className="unverified-verify-btn"
+                  >
+                    Verify With Code Now &rarr;
+                  </button>
+                </div>
               )}
-            </button>
-          </form>
 
-          <p className="signup-link">
-            Need an account? <a href="#" onClick={onSwitchToRegister}>Create one</a>
-          </p>
+              <form onSubmit={handleSubmit} className="login-form">
+                <label className="input-group">
+                  <span>Email address</span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="you@example.com"
+                    aria-label="Email address"
+                  />
+                </label>
+
+                <label className="input-group">
+                  <span>Password</span>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Enter your password"
+                    aria-label="Password"
+                  />
+                </label>
+
+                <div className="form-options">
+                  <label className="remember-me">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={() => setRememberMe((current) => !current)}
+                    />
+                    <span>Remember me</span>
+                  </label>
+
+                  <a href="#">Forgot password?</a>
+                </div>
+
+                {message && !unverifiedEmail ? <p className="status-message">{message}</p> : null}
+
+                <button
+                  type="submit"
+                  className={`signin-button ${isLoading ? 'btn-loading' : ''}`}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="hg-spinner" />
+                      Signing in...
+                    </>
+                  ) : (
+                    'Sign in'
+                  )}
+                </button>
+              </form>
+
+              <p className="signup-link">
+                Need an account? <a href="#" onClick={onSwitchToRegister}>Create one</a>
+              </p>
+            </>
+          )}
         </div>
       </section>
     </main>
@@ -178,3 +221,4 @@ function LoginPage({ onSuccess, onSwitchToRegister }: LoginPageProps) {
 }
 
 export default LoginPage
+

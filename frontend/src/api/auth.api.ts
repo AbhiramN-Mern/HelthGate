@@ -12,6 +12,8 @@ export type AuthResponse = {
   message: string
   token?: string
   user?: AuthUser
+  requiresEmailVerification?: boolean
+  email?: string
 }
 
 export type PaginatedResponse<T> = {
@@ -194,6 +196,35 @@ export const loginUser = async (payload: {
     body: JSON.stringify(payload),
   })
 }
+
+export const verifyOtpApi = async (payload: {
+  email: string
+  otp: string
+}): Promise<AuthResponse> => {
+  return request<AuthResponse>('/api/auth/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export const resendOtpApi = async (payload: {
+  email: string
+}): Promise<{ success: boolean; message: string; cooldownSeconds?: number }> => {
+  return request<{ success: boolean; message: string; cooldownSeconds?: number }>('/api/auth/resend-otp', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export const sendOtpApi = async (payload: {
+  email: string
+}): Promise<{ success: boolean; message: string }> => {
+  return request<{ success: boolean; message: string }>('/api/auth/send-otp', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 
 export const loginPatientWithGoogle = async (credential: string): Promise<AuthResponse> => {
   return request<AuthResponse>('/api/auth/patient/google', {

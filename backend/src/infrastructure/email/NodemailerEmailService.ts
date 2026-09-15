@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import type { IEmailService, SendEmailOptions, EmailSendResult } from "./IEmailService.js";
+import { generateOtpEmailHtml } from "./templates/otpVerificationTemplate.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -10,18 +11,20 @@ export class NodemailerEmailService implements IEmailService {
 
   constructor() {
     this.defaultFrom =
+      process.env.SMTP_FROM ||
       process.env.EMAIL_FROM ||
+      process.env.SMTP_USER ||
       process.env.EMAIL_USER ||
-      `"HealthGate Medical System" <noreply@healthgate.com>`;
+      `"HelthGate Hospital Management" <noreply@helthgate.com>`;
 
     this.initializeTransporter();
   }
 
   private initializeTransporter() {
-    const host = process.env.EMAIL_HOST;
-    const port = Number(process.env.EMAIL_PORT) || 587;
-    const user = process.env.EMAIL_USER;
-    const pass = process.env.EMAIL_PASSWORD;
+    const host = process.env.SMTP_HOST || process.env.EMAIL_HOST;
+    const port = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT) || 587;
+    const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+    const pass = process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD;
 
     if (!host || !user || !pass) {
       console.warn(
@@ -92,4 +95,15 @@ export class NodemailerEmailService implements IEmailService {
       };
     }
   }
+
+  async sendVerificationOTP(email: string, otp: string): Promise<EmailSendResult> {
+    const { html, text, subject } = generateOtpEmailHtml(otp);
+    return this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text,
+    });
+  }
 }
+

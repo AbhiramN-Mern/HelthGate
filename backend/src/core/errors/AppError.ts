@@ -42,3 +42,14 @@ export class ConflictError extends AppError {
     super(message, 409);
   }
 }
+
+export class EmailVerificationRequiredError extends AppError {
+  public readonly requiresEmailVerification = true;
+  public readonly email?: string;
+
+  constructor(message = "Please verify your email before logging in.", email?: string) {
+    super(message, 403, true, "EMAIL_NOT_VERIFIED");
+    this.email = email;
+  }
+}
+

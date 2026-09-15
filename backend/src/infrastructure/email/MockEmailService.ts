@@ -33,8 +33,18 @@ export class MockEmailService implements IEmailService {
     };
   }
 
+  async sendVerificationOTP(email: string, otp: string): Promise<EmailSendResult> {
+    return this.sendEmail({
+      to: email,
+      subject: "Verify Your Email - HelthGate Hospital Management",
+      html: `<p>Your verification code is: <strong>${otp}</strong></p>`,
+      text: `Your verification code is: ${otp}`,
+    });
+  }
+
   clear(): void {
     this.sentEmails = [];
     this.shouldFail = false;
   }
 }
+

@@ -28,6 +28,7 @@ export const errorHandler = (
       success: false,
       message: err.message,
       ...(err.code ? { code: err.code } : {}),
+      ...((err as any).requiresEmailVerification ? { requiresEmailVerification: true, email: (err as any).email } : {}),
     });
   }
 
