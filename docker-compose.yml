@@ -1,0 +1,21 @@
+services:
+
+  backend:
+    build:
+      context: ./backend
+    container_name: healthgate_backend
+    env_file:
+      - ./backend/.env
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: healthgate_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
