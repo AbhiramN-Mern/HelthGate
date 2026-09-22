@@ -153,7 +153,7 @@ class MockPrescriptionRepo {
     return existing;
   }
 
-  async count(filter: any = {}) {
+  async count(_filter: any = {}) {
     return this.prescriptions.length;
   }
 }
@@ -600,10 +600,8 @@ describe("HealthGate Consultation Flow & Prescription Tests", () => {
       findByBookingId: async () => [],
     };
 
-    let createdOrderAmount = 0;
     const mockGateway = {
       createOrder: async (opts: any) => {
-        createdOrderAmount = opts.amount;
         return {
           orderId: "order_test_123",
           amount: opts.amount,

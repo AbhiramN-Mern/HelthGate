@@ -2,7 +2,6 @@ import type { Types } from "mongoose";
 import type { IPrescriptionRepository } from "../repositories/interfaces/IPrescriptionRepository.js";
 import type { IAppointmentRepository } from "../repositories/interfaces/IAppointmentRepository.js";
 import type { IDoctorRepository } from "../repositories/interfaces/IDoctorRepository.js";
-import type { INotificationRepository } from "../repositories/interfaces/INotificationRepository.js";
 import type { NotificationService } from "./notification.service.js";
 import {
   BadRequestError,
@@ -147,9 +146,8 @@ export class PrescriptionService {
     // Check if prescription already exists for this appointment
     const existing = await this.prescriptionRepo.findByAppointmentId(appointmentId, false);
 
-    let prescription;
     if (existing) {
-      prescription = await this.prescriptionRepo.updateByAppointmentId(appointmentId, {
+      await this.prescriptionRepo.updateByAppointmentId(appointmentId, {
         diagnosis: diagnosis.trim(),
         medicines: sanitizedMedicines,
         labTests: sanitizedLabTests,
@@ -157,7 +155,7 @@ export class PrescriptionService {
         followUpDate: parsedFollowUpDate,
       });
     } else {
-      prescription = await this.prescriptionRepo.create({
+      await this.prescriptionRepo.create({
         appointment: appointment._id,
         patient: patientUserId as any,
         doctor: doctorId as any,

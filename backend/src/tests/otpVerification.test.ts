@@ -508,7 +508,7 @@ describe("HelthGate Email OTP Verification & Nodemailer Integration Tests", () =
       otpService,
     );
 
-    const doctorUser = await userRepo.create({
+    await userRepo.create({
       name: "Dr. Gregory House",
       email: "house@example.com",
       password: "hashed_vicodin123",

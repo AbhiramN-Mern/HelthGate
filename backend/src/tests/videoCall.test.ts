@@ -12,7 +12,7 @@ import {
 class MockAppointmentRepo {
   public appointments: Map<string, any> = new Map();
 
-  async findById(id: any, populateDetails = true) {
+  async findById(id: any, _populateDetails = true) {
     const key = id.toString();
     const appt = this.appointments.get(key);
     return appt ? JSON.parse(JSON.stringify(appt)) : null;

@@ -162,7 +162,7 @@ export const endCall = async (
  * Exposes ICE servers (STUN/TURN) securely without exposing Metered API keys.
  */
 export const getIceServers = async (
-  req: AuthenticatedRequest,
+  _req: AuthenticatedRequest,
   res: Response,
 ) => {
   try {

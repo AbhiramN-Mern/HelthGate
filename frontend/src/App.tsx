@@ -1,20 +1,51 @@
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import './App.css'
-import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
-import ProfilePage from './pages/ProfilePage'
 import HomePage from './pages/HomePage'
-import PatientHomePage from './pages/pationt/PatientHomePage'
-import PatientPaymentsPage from './pages/pationt/PatientPaymentsPage'
-import DoctorDashboardPage from './pages/doctor/DoctorDashboardPage'
-import DoctorPatientsPage from './pages/doctor/DoctorPatientsPage'
-import DoctorNotificationsPage from './pages/doctor/DoctorNotificationsPage'
-import DoctorPendingApprovalPage from './pages/doctor/DoctorPendingApprovalPage'
-import ConsultationPage from './pages/consultation/ConsultationPage'
-import ErrorPage from './pages/error page/ErrorPage'
 import ErrorBoundary from './components/ErrorBoundary'
+import ErrorPage from './pages/error/ErrorPage'
+
+// Code-split heavy domain pages for production performance
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'))
+const PatientHomePage = lazy(() => import('./pages/patient/PatientHomePage'))
+const PatientPaymentsPage = lazy(() => import('./pages/patient/PatientPaymentsPage'))
+const DoctorDashboardPage = lazy(() => import('./pages/doctor/DoctorDashboardPage'))
+const DoctorPatientsPage = lazy(() => import('./pages/doctor/DoctorPatientsPage'))
+const DoctorNotificationsPage = lazy(() => import('./pages/doctor/DoctorNotificationsPage'))
+const DoctorPendingApprovalPage = lazy(() => import('./pages/doctor/DoctorPendingApprovalPage'))
+const ConsultationPage = lazy(() => import('./pages/consultation/ConsultationPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+
+const PageLoadingFallback = () => (
+  <div
+    style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '60vh',
+      gap: '16px',
+      color: '#0d5c63',
+    }}
+  >
+    <div
+      style={{
+        width: '38px',
+        height: '38px',
+        border: '3px solid rgba(13, 92, 99, 0.15)',
+        borderTopColor: '#0d5c63',
+        borderRadius: '50%',
+        animation: 'hg-app-spin 0.8s linear infinite',
+      }}
+    />
+    <p style={{ fontSize: '0.92rem', fontWeight: 500, color: '#64748b', margin: 0 }}>
+      Loading HealthGate...
+    </p>
+    <style>{`@keyframes hg-app-spin { to { transform: rotate(360deg); } }`}</style>
+  </div>
+)
 
 type AuthUser = {
   id?: string
@@ -87,7 +118,8 @@ function AppShell() {
 
   return (
     <ErrorBoundary>
-      <Routes>
+      <Suspense fallback={<PageLoadingFallback />}>
+        <Routes>
         <Route
           path="/"
           element={
@@ -401,7 +433,8 @@ function AppShell() {
           path="*"
           element={<ErrorPage code={404} title="Page Not Found" message="The page or path you requested could not be found." />}
         />
-      </Routes>
+        </Routes>
+      </Suspense>
     </ErrorBoundary>
   )
 }

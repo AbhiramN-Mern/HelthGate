@@ -10,7 +10,7 @@ import { PatientRoleHandler } from "../core/auth/handlers/PatientRoleHandler.js"
 import { AdminRoleHandler } from "../core/auth/handlers/AdminRoleHandler.js";
 import { MockEmailService } from "../infrastructure/email/MockEmailService.js";
 import { IOTPRepository, OTPDocument } from "../repositories/interfaces/IOTPRepository.js";
-import { BadRequestError, ConflictError, EmailVerificationRequiredError, ForbiddenError } from "../core/errors/AppError.js";
+import { ConflictError, EmailVerificationRequiredError, ForbiddenError } from "../core/errors/AppError.js";
 
 // In-memory OTP Repository
 class MockOTPRepo implements IOTPRepository {

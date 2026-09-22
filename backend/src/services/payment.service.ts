@@ -1,4 +1,3 @@
-import type { Types } from "mongoose";
 import { IPaymentRepository } from "../repositories/interfaces/IPaymentRepository.js";
 import { IAppointmentRepository } from "../repositories/interfaces/IAppointmentRepository.js";
 import { IDoctorRepository } from "../repositories/interfaces/IDoctorRepository.js";

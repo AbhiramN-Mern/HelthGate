@@ -239,7 +239,7 @@ export const deleteDoctor = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllAdmins = async (req: Request, res: Response) => {
+export const getAllAdmins = async (_req: Request, res: Response) => {
   try {
     const admins = await adminService.getAllAdmins();
     return res.status(200).json({ success: true, admins });
@@ -253,7 +253,7 @@ export const getAllAdmins = async (req: Request, res: Response) => {
   }
 };
 
-export const getAdminDashboard = async (req: Request, res: Response) => {
+export const getAdminDashboard = async (_req: Request, res: Response) => {
   try {
     const dashboard = await adminService.getAdminDashboard();
     return res.status(200).json({ success: true, ...dashboard });

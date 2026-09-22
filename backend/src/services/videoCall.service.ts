@@ -547,7 +547,7 @@ export class VideoCallService {
     sessionIdOrApptId,
     appointmentId,
     userId,
-    bypassTimeCheck,
+    bypassTimeCheck: _bypassTimeCheck,
   }: {
     sessionIdOrApptId?: string | Types.ObjectId;
     appointmentId?: string | Types.ObjectId;

@@ -10,9 +10,6 @@ import type { INotificationRepository } from "../repositories/interfaces/INotifi
 import type { IAppointmentRepository } from "../repositories/interfaces/IAppointmentRepository.js";
 import type { IDoctorRepository } from "../repositories/interfaces/IDoctorRepository.js";
 import type { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
-import type { IPatientRepository } from "../repositories/interfaces/IPatientRepository.js";
-import type { IHospitalRepository } from "../repositories/interfaces/IHospitalRepository.js";
-import type { IHospitalDoctorRepository } from "../repositories/interfaces/IHospitalDoctorRepository.js";
 import type { IPaymentRepository } from "../repositories/interfaces/IPaymentRepository.js";
 
 // In-memory test repositories
@@ -88,7 +85,7 @@ class TestAppointmentRepository implements Partial<IAppointmentRepository> {
     return a;
   }
 
-  async find(filter: any = {}) {
+  async find(_filter: any = {}) {
     return [];
   }
 }

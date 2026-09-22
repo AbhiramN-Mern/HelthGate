@@ -8,7 +8,7 @@ import type { IDoctorRepository } from "../repositories/interfaces/IDoctorReposi
 import type { INotificationRepository } from "../repositories/interfaces/INotificationRepository.js";
 import type { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import type { IEmailService } from "../infrastructure/email/IEmailService.js";
-import { ForbiddenError, BadRequestError } from "../core/errors/AppError.js";
+import { ForbiddenError } from "../core/errors/AppError.js";
 
 class MockNotificationRepository implements Partial<INotificationRepository> {
   public notifications: any[] = [];
@@ -29,10 +29,10 @@ class MockEmailService implements IEmailService {
 
 class MockDoctorRepository implements Partial<IDoctorRepository> {
   public doctors: any[] = [];
-  async findById(id: any, populateDetails = false) {
+  async findById(id: any, _populateDetails = false) {
     return this.doctors.find((d) => String(d._id) === String(id)) || null;
   }
-  async findByUserId(userId: any, populateDetails = false) {
+  async findByUserId(userId: any, _populateDetails = false) {
     return this.doctors.find((d) => String(d.user?._id || d.user) === String(userId)) || null;
   }
 }
@@ -183,8 +183,6 @@ describe("Appointment Permissions and Approval Logic Tests", () => {
 
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 10);
-    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const workingDay = dayNames[futureDate.getDay()];
 
     docRepo.doctors.push({
       _id: doctorId,

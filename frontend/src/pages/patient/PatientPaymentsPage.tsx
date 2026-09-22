@@ -61,7 +61,8 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
   } | null>(null)
   const [retryingId, setRetryingId] = useState<string | null>(null)
 
-  const fetchStats = async () => {
+  const fetchStats = React.useCallback(async () => {
+    if (!token) return
     try {
       const res = await getPaymentsApi({}, token)
       if (res.success && res.payments) {
@@ -70,32 +71,36 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
     } catch {
       // ignore
     }
-  }
+  }, [token])
 
-  const fetchPayments = async (targetPage = page, targetStatus = statusFilter) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await getPaymentsApi(
-        {
-          status: targetStatus === 'ALL' ? undefined : targetStatus,
-          page: targetPage,
-          limit: itemsPerPage,
-        },
-        token
-      )
-      if (res.success) {
-        setPayments(res.payments || res.data || [])
-        setTotalPages(res.totalPages || 1)
-        setTotalItems(res.totalItems || 0)
-        setPage(res.currentPage || targetPage)
+  const fetchPayments = React.useCallback(
+    async (targetPage: number = 1, targetStatus: string = 'ALL') => {
+      if (!token) return
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await getPaymentsApi(
+          {
+            status: targetStatus === 'ALL' ? undefined : targetStatus,
+            page: targetPage,
+            limit: itemsPerPage,
+          },
+          token
+        )
+        if (res.success) {
+          setPayments(res.payments || res.data || [])
+          setTotalPages(res.totalPages || 1)
+          setTotalItems(res.totalItems || 0)
+          setPage(res.currentPage || targetPage)
+        }
+      } catch (err: unknown) {
+        setError(getFriendlyErrorMessage(err, 'Failed to load payment records. Please try again.'))
+      } finally {
+        setLoading(false)
       }
-    } catch (err: any) {
-      setError(getFriendlyErrorMessage(err, 'Failed to load payment records. Please try again.'))
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+    [token, itemsPerPage]
+  )
 
   useEffect(() => {
     if (!token && onRequireAuth) {
@@ -104,7 +109,7 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
     }
     fetchStats()
     fetchPayments(1, statusFilter)
-  }, [token])
+  }, [token, onRequireAuth, fetchStats, fetchPayments, statusFilter])
 
   const handleStatusChange = (newStatus: 'ALL' | 'SUCCESS' | 'PENDING' | 'FAILED') => {
     setStatusFilter(newStatus)
