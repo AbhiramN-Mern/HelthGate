@@ -14,6 +14,7 @@ import {
   type PaymentRecord,
   type PaymentOrderResult,
 } from '../../api/auth.api'
+import { ReservationCountdown } from './ReservationCountdown'
 import './MockPaymentModal.css'
 
 export type MockPaymentModalProps = {
@@ -30,6 +31,8 @@ export type MockPaymentModalProps = {
     appointmentDate?: string
     timeSlot?: string
     consultationType?: string
+    paymentExpiresAt?: string
+    bookingExpiresAt?: string
   }
   token: string
 }
@@ -206,6 +209,13 @@ export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({
                 <span>{appointmentDetails.consultationType || 'In-Person'}</span>
               </div>
             </div>
+
+            {(appointmentDetails.paymentExpiresAt || appointmentDetails.bookingExpiresAt) && (
+              <ReservationCountdown
+                expiresAt={appointmentDetails.paymentExpiresAt || appointmentDetails.bookingExpiresAt}
+                showWarningNotice={true}
+              />
+            )}
 
             <div className="mpm-cost-breakdown">
               <div className="mpm-cost-item">

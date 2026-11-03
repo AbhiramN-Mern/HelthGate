@@ -43,6 +43,7 @@ import {
   CreditCardIcon,
 } from '../../components/common/Icons'
 import { MockPaymentModal } from '../../components/payment/MockPaymentModal'
+import { ReservationCountdown } from '../../components/payment/ReservationCountdown'
 import { launchPaymentCheckout } from '../../utils/checkoutLauncher'
 import { Pagination } from '../../components/common/Pagination'
 import { getSocket } from '../../services/socket.service'
@@ -182,11 +183,11 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
   const [showHistory, setShowHistory] = useState(false)
 
   // Appointment History Filter State ('all' | 'completed' | 'cancelled')
-  const [historyFilter, setHistoryFilter] = useState<'all' | 'completed' | 'cancelled'>('all')
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'completed' | 'cancelled' | 'expired'>('all')
 
   // Helper to determine if an appointment is in the past
   const isAppointmentPast = (appt: AppointmentItem): boolean => {
-    if (appt.status === 'completed' || appt.status === 'cancelled') {
+    if (appt.status === 'completed' || appt.status === 'cancelled' || appt.status === 'expired' || appt.status === 'EXPIRED') {
       return true
     }
     if (!appt.appointmentDate) return false
@@ -229,10 +230,12 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
 
   const completedCount = pastAppointments.filter((a) => a.status === 'completed').length
   const cancelledCount = pastAppointments.filter((a) => a.status === 'cancelled').length
+  const expiredCount = pastAppointments.filter((a) => a.status === 'expired' || a.status === 'EXPIRED').length
 
   const filteredPastAppointments = pastAppointments.filter((a) => {
     if (historyFilter === 'completed') return a.status === 'completed'
     if (historyFilter === 'cancelled') return a.status === 'cancelled'
+    if (historyFilter === 'expired') return a.status === 'expired' || a.status === 'EXPIRED'
     return true
   })
 
@@ -505,6 +508,8 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
           appointmentDate: appt?.appointmentDate,
           timeSlot: appt?.timeSlot,
           consultationType: appt?.type || 'In-Person Consultation',
+          paymentExpiresAt: appt?.paymentExpiresAt || (appt as any)?.bookingExpiresAt,
+          bookingExpiresAt: (appt as any)?.bookingExpiresAt || appt?.paymentExpiresAt,
         }
 
         await launchPaymentCheckout({
@@ -844,6 +849,8 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
           (appt?.consultationType || consultationType) === 'online'
             ? 'Online Consultation (Video)'
             : 'Offline Consultation (In-Person)',
+        paymentExpiresAt: appt?.paymentExpiresAt || (appt as any)?.bookingExpiresAt,
+        bookingExpiresAt: (appt as any)?.bookingExpiresAt || appt?.paymentExpiresAt,
       }
 
       const bookingSuccessDetails: BookingSuccessDetails = {
@@ -1486,9 +1493,18 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   <div key={appt._id} className="php-appointment-card upcoming">
                     <div className="php-appt-header">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <span className={`php-appt-status-badge ${appt.status === 'confirmed' ? 'confirmed' : 'pending_payment'}`}>
-                          ● {appt.status === 'confirmed' ? 'Confirmed' : 'Pending Payment'}
+                        <span className={`php-appt-status-badge ${appt.status === 'confirmed' ? 'confirmed' : (appt.status === 'expired' || appt.status === 'EXPIRED') ? 'cancelled' : appt.status === 'cancelled' ? 'cancelled' : 'pending_payment'}`}>
+                          ● {appt.status === 'confirmed' ? 'Confirmed' : (appt.status === 'expired' || appt.status === 'EXPIRED') ? 'Expired' : appt.status === 'cancelled' ? 'Cancelled' : 'Pending Payment'}
                         </span>
+                        {(appt.status === 'pending_payment' || appt.status === 'PENDING_PAYMENT') && (
+                          <ReservationCountdown
+                            expiresAt={appt.paymentExpiresAt || (appt as any)?.bookingExpiresAt}
+                            compact={true}
+                            onExpire={() => {
+                              fetchAppointments()
+                            }}
+                          />
+                        )}
                         <span
                           style={{
                             fontSize: '0.74rem',
@@ -1590,6 +1606,16 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                       </p>
                     )}
 
+                    {(appt.status === 'pending_payment' || appt.status === 'PENDING_PAYMENT') && (
+                      <ReservationCountdown
+                        expiresAt={appt.paymentExpiresAt || (appt as any)?.bookingExpiresAt}
+                        showWarningNotice={true}
+                        onExpire={() => {
+                          fetchAppointments()
+                        }}
+                      />
+                    )}
+
                     {/* Consultation Fee & Payment Action */}
                     <div className="php-card-payment-section" style={{
                       margin: '12px 0 6px',
@@ -1654,6 +1680,35 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           )}
                         </div>
                       ) : (
+                        (appt.status === 'expired' || appt.status === 'EXPIRED') ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.78rem', color: '#b91c1c', fontWeight: 600 }}>
+                            Reservation hold expired (slot released)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (appt.doctor) handleOpenBooking(appt.doctor)
+                            }}
+                            style={{
+                              background: '#f1f5f9',
+                              color: '#334155',
+                              border: '1px solid #cbd5e1',
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Book Again
+                          </button>
+                        </div>
+                      ) : appt.status === 'cancelled' ? (
+                        <span style={{ fontSize: '0.8rem', color: '#b91c1c', fontWeight: 600 }}>
+                          Cancelled ({appt.cancellationReason || 'Slot released'})
+                        </span>
+                      ) : (
                         <button
                           type="button"
                           onClick={() => handleInitiatePayment(appt._id!)}
@@ -1674,8 +1729,9 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                           }}
                         >
                           <CreditCardIcon size={14} />
-                          {payingApptId === appt._id ? 'Connecting...' : 'Pay Now (Retry)'}
+                          {payingApptId === appt._id ? 'Connecting...' : 'Pay Now (5m Hold)'}
                         </button>
+                      )
                       )}
                     </div>
 
@@ -1854,6 +1910,18 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                   Cancelled ({cancelledCount})
                 </button>
               )}
+              {expiredCount > 0 && (
+                <button
+                  type="button"
+                  className={`php-history-filter-pill cancelled ${historyFilter === 'expired' ? 'active' : ''}`}
+                  onClick={() => {
+                    setHistoryFilter('expired')
+                    setPastPage(1)
+                  }}
+                >
+                  Expired ({expiredCount})
+                </button>
+              )}
             </div>
 
             {filteredPastAppointments.length === 0 ? (
@@ -1879,6 +1947,7 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
 
                   const isCompleted = appt.status === 'completed'
                   const isCancelled = appt.status === 'cancelled'
+                  const isExpired = appt.status === 'expired' || appt.status === 'EXPIRED'
 
                   const cardClass = isCompleted
                     ? 'php-appointment-card history completed'
@@ -1894,9 +1963,11 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
 
                   const statusLabel = isCompleted
                     ? 'Completed'
-                    : isCancelled
-                      ? 'Cancelled'
-                      : 'Past Visit'
+                    : isExpired
+                      ? 'Expired (Hold Released)'
+                      : isCancelled
+                        ? 'Cancelled'
+                        : 'Past Visit'
 
                   return (
                     <div key={appt._id} className={cardClass}>
@@ -2017,7 +2088,12 @@ function PatientHomePage({ user, onLogout, onRequireAuth }: PatientHomePageProps
                             </button>
                           </>
                         )}
-                        {isCancelled && (
+                        {isExpired && (
+                          <span className="php-history-card-tag cancelled" style={{ background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>
+                            <ClockIcon size={13} /> Reservation Expired (5m Unpaid)
+                          </span>
+                        )}
+                        {isCancelled && !isExpired && (
                           <span className="php-history-card-tag cancelled">
                             <BlockedIcon size={13} /> Consultation Cancelled
                           </span>

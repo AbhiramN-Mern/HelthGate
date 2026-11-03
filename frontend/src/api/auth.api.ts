@@ -810,6 +810,9 @@ export type AppointmentItem = {
   cancellationReason?: string
   cancelledBy?: 'doctor' | 'patient' | 'admin' | 'system'
   cancelledAt?: string
+  paymentExpiresAt?: string
+  bookingExpiresAt?: string
+  reservationReference?: string
 }
 
 
@@ -1172,6 +1175,9 @@ export type PaymentRecord = {
     status?: string
     reason?: string
     type?: string
+    paymentExpiresAt?: string
+    bookingExpiresAt?: string
+    reservationReference?: string
   }
   patientId: string | {
     _id: string

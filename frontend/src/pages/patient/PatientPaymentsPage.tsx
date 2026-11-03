@@ -19,6 +19,7 @@ import {
   type PaymentOrderResult,
 } from '../../api/auth.api'
 import { MockPaymentModal } from '../../components/payment/MockPaymentModal'
+import { ReservationCountdown } from '../../components/payment/ReservationCountdown'
 import { launchPaymentCheckout } from '../../utils/checkoutLauncher'
 import { Pagination } from '../../components/common/Pagination'
 import './PatientPaymentsPage.css'
@@ -493,6 +494,12 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
               const isSuccess = p.status === 'SUCCESS'
               const isFailed = p.status === 'FAILED'
               const isPending = p.status === 'PENDING'
+              const isApptExpired =
+                appt?.status?.toLowerCase() === 'expired' ||
+                Boolean(
+                  (appt?.paymentExpiresAt && new Date(appt.paymentExpiresAt).getTime() <= Date.now()) ||
+                  (appt?.bookingExpiresAt && new Date(appt.bookingExpiresAt).getTime() <= Date.now())
+                )
 
               return (
                 <div
@@ -596,16 +603,38 @@ export const PatientPaymentsPage: React.FC<PatientPaymentsPageProps> = ({
                       </span>
                     )}
 
-                    {isPending && (
-                      <button
-                        type="button"
-                        className="ppp-btn-pay"
-                        onClick={() => handleRetryPayment(p)}
-                        disabled={retryingId === p._id}
-                      >
-                        {retryingId === p._id ? 'Connecting...' : 'Complete Payment'}
-                      </button>
-                    )}
+                    {isPending && isApptExpired ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="ppp-status-badge expired" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>
+                          <AlertCircleIcon size={12} /> Reservation Expired
+                        </span>
+                        <button
+                          type="button"
+                          className="ppp-btn-retry"
+                          onClick={() => navigate('/patient/home#doctors')}
+                        >
+                          Book Again
+                        </button>
+                      </div>
+                    ) : isPending ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+                        {(appt?.paymentExpiresAt || appt?.bookingExpiresAt) && (
+                          <ReservationCountdown
+                            expiresAt={appt?.paymentExpiresAt || appt?.bookingExpiresAt}
+                            compact
+                            onExpire={() => fetchPayments(page, statusFilter)}
+                          />
+                        )}
+                        <button
+                          type="button"
+                          className="ppp-btn-pay"
+                          onClick={() => handleRetryPayment(p)}
+                          disabled={retryingId === p._id}
+                        >
+                          {retryingId === p._id ? 'Connecting...' : 'Complete Payment'}
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               )

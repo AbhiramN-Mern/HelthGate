@@ -20,6 +20,8 @@ export type LaunchCheckoutParams = {
     appointmentDate?: string
     timeSlot?: string
     consultationType?: string
+    paymentExpiresAt?: string
+    bookingExpiresAt?: string
   }
   user?: {
     name?: string

@@ -362,12 +362,35 @@
   justify-content: center;
 }
 
-.admin-metric-icon.patients { background-color: var(--hg-info-bg); color: var(--hg-info); }
-.admin-metric-icon.doctors { background-color: var(--hg-primary-subtle); color: var(--hg-primary); }
-.admin-metric-icon.hospitals { background-color: #f5f3ff; color: #7c3aed; }
-.admin-metric-icon.appointments { background-color: #e0e7ff; color: #4338ca; }
-.admin-metric-icon.pending { background-color: var(--hg-warning-bg); color: var(--hg-warning); }
-.admin-metric-icon.today { background-color: var(--hg-success-bg); color: var(--hg-success); }
+.admin-metric-icon.patients {
+  background-color: var(--hg-info-bg);
+  color: var(--hg-info);
+}
+
+.admin-metric-icon.doctors {
+  background-color: var(--hg-primary-subtle);
+  color: var(--hg-primary);
+}
+
+.admin-metric-icon.hospitals {
+  background-color: #f5f3ff;
+  color: #7c3aed;
+}
+
+.admin-metric-icon.appointments {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+
+.admin-metric-icon.pending {
+  background-color: var(--hg-warning-bg);
+  color: var(--hg-warning);
+}
+
+.admin-metric-icon.today {
+  background-color: var(--hg-success-bg);
+  color: var(--hg-success);
+}
 
 .admin-metric-tag {
   font-size: 0.68rem;
@@ -377,10 +400,25 @@
   text-transform: uppercase;
 }
 
-.admin-metric-tag.blue { background-color: #eff6ff; color: #1d4ed8; }
-.admin-metric-tag.teal { background-color: var(--hg-primary-subtle); color: var(--hg-primary); }
-.admin-metric-tag.amber { background-color: var(--hg-warning-bg); color: var(--hg-warning); }
-.admin-metric-tag.green { background-color: var(--hg-success-bg); color: var(--hg-success); }
+.admin-metric-tag.blue {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.admin-metric-tag.teal {
+  background-color: var(--hg-primary-subtle);
+  color: var(--hg-primary);
+}
+
+.admin-metric-tag.amber {
+  background-color: var(--hg-warning-bg);
+  color: var(--hg-warning);
+}
+
+.admin-metric-tag.green {
+  background-color: var(--hg-success-bg);
+  color: var(--hg-success);
+}
 
 .admin-metric-val {
   font-size: 1.5rem;
@@ -680,10 +718,25 @@
   flex-shrink: 0;
 }
 
-.admin-status-pill.scheduled { background-color: var(--hg-warning-bg); color: var(--hg-warning); }
-.admin-status-pill.confirmed { background-color: var(--hg-info-bg); color: var(--hg-info); }
-.admin-status-pill.completed { background-color: var(--hg-success-bg); color: var(--hg-success); }
-.admin-status-pill.cancelled { background-color: var(--hg-danger-bg); color: var(--hg-danger); }
+.admin-status-pill.scheduled {
+  background-color: var(--hg-warning-bg);
+  color: var(--hg-warning);
+}
+
+.admin-status-pill.confirmed {
+  background-color: var(--hg-info-bg);
+  color: var(--hg-info);
+}
+
+.admin-status-pill.completed {
+  background-color: var(--hg-success-bg);
+  color: var(--hg-success);
+}
+
+.admin-status-pill.cancelled {
+  background-color: var(--hg-danger-bg);
+  color: var(--hg-danger);
+}
 
 /* Pending Approvals List */
 .admin-pending-item {
@@ -794,9 +847,20 @@
   text-transform: uppercase;
 }
 
-.admin-severity-pill.high { background-color: var(--hg-danger-bg); color: var(--hg-danger); }
-.admin-severity-pill.medium { background-color: var(--hg-warning-bg); color: var(--hg-warning); }
-.admin-severity-pill.low { background-color: #f1f5f9; color: #475569; }
+.admin-severity-pill.high {
+  background-color: var(--hg-danger-bg);
+  color: var(--hg-danger);
+}
+
+.admin-severity-pill.medium {
+  background-color: var(--hg-warning-bg);
+  color: var(--hg-warning);
+}
+
+.admin-severity-pill.low {
+  background-color: #f1f5f9;
+  color: #475569;
+}
 
 .admin-complaint-desc {
   font-size: 0.74rem;
@@ -1240,6 +1304,7 @@
   cursor: pointer;
   transition: all 0.15s ease;
 }
+
 .admin-btn-action-reschedule:hover {
   background: #0284c7;
   color: #ffffff;
@@ -1260,6 +1325,7 @@
   cursor: pointer;
   transition: all 0.15s ease;
 }
+
 .admin-btn-action-cancel:hover {
   background: #dc2626;
   color: #ffffff;
@@ -1294,6 +1360,7 @@
     opacity: 0;
     transform: translateY(8px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1305,5 +1372,3 @@
   justify-content: space-between;
   align-items: flex-start;
 }
-
-
