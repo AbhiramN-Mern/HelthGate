@@ -131,6 +131,9 @@ export const adminService = new AdminService(
   adminRepo,
   passwordHasher,
 );
+import { MongooseTransactionManager } from "./infrastructure/transactions/MongooseTransactionManager.js";
+export const transactionManager = new MongooseTransactionManager();
+
 export const paymentService = new PaymentService(
   paymentRepo,
   appointmentRepo,
@@ -139,6 +142,7 @@ export const paymentService = new PaymentService(
   userRepo,
   activePaymentGateway,
   notificationService,
+  transactionManager,
 );
 
 export const videoCallService = new VideoCallService(
@@ -154,4 +158,25 @@ export const prescriptionService = new PrescriptionService(
   doctorRepo,
   notificationService,
 );
+
+import { ReservationCleanupWorker } from "./workers/reservationCleanupWorker.js";
+import { OutboxProcessorWorker } from "./workers/outboxProcessorWorker.js";
+import { PaymentReconciliationWorker } from "./workers/paymentReconciliationWorker.js";
+
+export const reservationCleanupWorker = new ReservationCleanupWorker(
+  appointmentRepo,
+  notificationRepo,
+);
+
+export const outboxProcessorWorker = new OutboxProcessorWorker(
+  notificationRepo,
+  appointmentRepo,
+  notificationService,
+);
+
+export const paymentReconciliationWorker = new PaymentReconciliationWorker(
+  paymentRepo,
+  activePaymentGateway,
+);
+
 

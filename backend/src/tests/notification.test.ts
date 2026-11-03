@@ -473,10 +473,14 @@ describe("Appointment Notification & Nodemailer Email Service Tests", () => {
   });
 
   it("9. Reschedule requested by doctor → reschedule request email sent with proposed new schedule", async () => {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 7);
+    const futureDateStr = futureDate.toISOString().split("T")[0];
+
     const appt = await apptRepo.create({
       patient: patientUserId,
       doctor: doctorId,
-      appointmentDate: new Date("2026-10-15"),
+      appointmentDate: futureDate,
       timeSlot: "10:00 AM",
       status: "confirmed",
     });
@@ -484,7 +488,7 @@ describe("Appointment Notification & Nodemailer Email Service Tests", () => {
     const result = await appointmentService.requestAppointmentReschedule({
       doctorUserId,
       appointmentId: appt._id,
-      newDate: "2026-10-18",
+      newDate: futureDateStr,
       newTimeSlot: "02:00 PM",
       reason: "Conference attendance",
     });
@@ -500,15 +504,20 @@ describe("Appointment Notification & Nodemailer Email Service Tests", () => {
   });
 
   it("10. Reschedule accepted by patient → reschedule confirmation email sent with updated schedule", async () => {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 7);
+    const newFutureDate = new Date();
+    newFutureDate.setDate(newFutureDate.getDate() + 10);
+
     const appt = await apptRepo.create({
       patient: patientUserId,
       doctor: doctorId,
-      appointmentDate: new Date("2026-10-15"),
+      appointmentDate: futureDate,
       timeSlot: "10:00 AM",
       status: "confirmed",
       rescheduleRequest: {
         status: "pending",
-        proposedDate: new Date("2026-10-18"),
+        proposedDate: newFutureDate,
         proposedTimeSlot: "02:00 PM",
         reason: "Doctor schedule adjustment",
         requestedBy: "doctor",

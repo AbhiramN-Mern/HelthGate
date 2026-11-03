@@ -62,6 +62,15 @@ const appointmentSchema = new Schema(
       default: "10:00 AM",
       trim: true,
     },
+    normalizedDate: {
+      type: String,
+      trim: true,
+      index: true,
+    },
+    normalizedTimeSlot: {
+      type: String,
+      trim: true,
+    },
     status: {
       type: String,
       enum: [
@@ -72,8 +81,26 @@ const appointmentSchema = new Schema(
         "CONFIRMED",
         "completed",
         "cancelled",
+        "expired",
+        "EXPIRED",
       ],
       default: "pending_payment",
+    },
+    paymentExpiresAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    bookingExpiresAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    reservationReference: {
+      type: String,
+      trim: true,
+      default: null,
+      index: true,
     },
     reason: {
       type: String,
@@ -241,8 +268,30 @@ const appointmentSchema = new Schema(
   },
 );
 
+// Compound partial unique index to strictly prevent double-booking active doctor slots
+appointmentSchema.index(
+  { doctor: 1, normalizedDate: 1, normalizedTimeSlot: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: {
+        $in: [
+          "pending_payment",
+          "PENDING_PAYMENT",
+          "scheduled",
+          "confirmed",
+          "CONFIRMED",
+        ],
+      },
+    },
+    name: "unique_active_doctor_slot",
+  },
+);
+
 // High-performance compound indexes for slot availability, schedule queries, and patient isolation
 appointmentSchema.index({ doctor: 1, appointmentDate: 1, timeSlot: 1, status: 1 });
+appointmentSchema.index({ status: 1, paymentExpiresAt: 1 });
+appointmentSchema.index({ status: 1, bookingExpiresAt: 1 });
 appointmentSchema.index({ patient: 1, appointmentDate: -1 });
 appointmentSchema.index({ status: 1 });
 appointmentSchema.index({ "videoCall.roomId": 1 });

@@ -23,6 +23,23 @@ export type VerifyPaymentResult = {
   failureReason?: string;
 };
 
+export type RefundPaymentParams = {
+  providerPaymentId: string;
+  amount: number;
+  currency?: string;
+  reason?: string;
+  notes?: Record<string, any>;
+  idempotencyKey?: string;
+};
+
+export type RefundPaymentResult = {
+  success: boolean;
+  refundId: string;
+  amount?: number;
+  status: "processed" | "pending" | "failed";
+  failureReason?: string;
+};
+
 export interface IPaymentGateway {
   readonly providerName: "MOCK" | "RAZORPAY";
 
@@ -34,4 +51,8 @@ export interface IPaymentGateway {
   }): Promise<PaymentOrderResult>;
 
   verifyPayment(params: VerifyPaymentParams): Promise<VerifyPaymentResult>;
+
+  refundPayment(params: RefundPaymentParams): Promise<RefundPaymentResult>;
+
+  verifyWebhookSignature(rawBody: string | Buffer, signature: string, secret?: string): boolean;
 }

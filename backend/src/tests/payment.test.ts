@@ -65,6 +65,66 @@ class TestPaymentRepository implements IPaymentRepository {
     const results = await this.find(filter);
     return results.length;
   }
+
+  async transitionToSuccess(id: any, providerPaymentId: string) {
+    const p = await this.findById(id);
+    if (!p || p.status !== "PENDING") return null;
+    p.status = "SUCCESS";
+    p.providerPaymentId = providerPaymentId;
+    p.updatedAt = new Date();
+    return p;
+  }
+
+  async transitionToFailed(id: any, failureReason: string) {
+    const p = await this.findById(id);
+    if (!p) return null;
+    p.status = "FAILED";
+    p.failureReason = failureReason;
+    p.updatedAt = new Date();
+    return p;
+  }
+
+  async acquireRefundLock(id: any, idempotencyKey: string, refundPayload: any) {
+    const p = await this.findById(id);
+    if (!p) return null;
+    p.status = "REFUND_REQUESTED";
+    p.refundStatus = "REQUESTED";
+    p.refundIdempotencyKey = idempotencyKey;
+    p.refundPayload = refundPayload;
+    p.updatedAt = new Date();
+    return p;
+  }
+
+  async transitionToRefundPending(id: any, refundId: string) {
+    const p = await this.findById(id);
+    if (!p) return null;
+    p.status = "REFUND_PENDING";
+    p.refundStatus = "PENDING";
+    p.refundId = refundId;
+    p.updatedAt = new Date();
+    return p;
+  }
+
+  async transitionToRefunded(id: any, refundId: string, refundedAt?: Date) {
+    const p = await this.findById(id);
+    if (!p) return null;
+    p.status = "REFUNDED";
+    p.refundStatus = "PROCESSED";
+    p.refundId = refundId;
+    p.refundedAt = refundedAt || new Date();
+    p.updatedAt = new Date();
+    return p;
+  }
+
+  async transitionToRefundFailed(id: any, failureReason: string) {
+    const p = await this.findById(id);
+    if (!p) return null;
+    p.status = "REFUND_FAILED";
+    p.refundStatus = "FAILED";
+    p.failureReason = failureReason;
+    p.updatedAt = new Date();
+    return p;
+  }
 }
 
 class TestAppointmentRepository implements Partial<IAppointmentRepository> {
@@ -78,6 +138,16 @@ class TestAppointmentRepository implements Partial<IAppointmentRepository> {
     const a = await this.findById(id);
     if (!a) return null;
     a.status = status;
+    return a;
+  }
+
+  async atomicConfirmPayment(id: any, now: Date = new Date()) {
+    const a = await this.findById(id);
+    if (!a) return null;
+    if (a.status !== "pending_payment" && a.status !== "PENDING_PAYMENT") return null;
+    if (a.bookingExpiresAt && new Date(a.bookingExpiresAt) <= now) return null;
+    a.status = "confirmed";
+    a.updatedAt = now;
     return a;
   }
 }

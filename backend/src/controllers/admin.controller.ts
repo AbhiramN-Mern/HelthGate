@@ -131,6 +131,8 @@ export const getDoctorById = async (req: Request, res: Response) => {
   }
 };
 
+
+
 export const createDoctor = async (req: Request, res: Response) => {
   try {
     const result = await adminService.createDoctor(req.body || {});
@@ -451,10 +453,12 @@ export const adminRescheduleAppointment = async (
       appointment,
     });
   } catch (error: any) {
-    const statusCode = error.statusCode || 500;
+    const statusCode = error.statusCode || (error.code === 11000 ? 409 : 500);
     return res.status(statusCode).json({
       success: false,
-      message: error.message || "Failed to reschedule appointment",
+      message: error.code === 11000
+        ? "This doctor's time slot is already booked."
+        : (error.message || "Failed to reschedule appointment"),
       error: error.message || "Unknown error",
     });
   }

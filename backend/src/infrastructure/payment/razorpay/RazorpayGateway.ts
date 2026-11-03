@@ -2,6 +2,8 @@ import crypto from "crypto";
 import {
   IPaymentGateway,
   PaymentOrderResult,
+  RefundPaymentParams,
+  RefundPaymentResult,
   VerifyPaymentParams,
   VerifyPaymentResult,
 } from "../IPaymentGateway.js";
@@ -128,5 +130,101 @@ export class RazorpayGateway implements IPaymentGateway {
       success: true,
       providerPaymentId,
     };
+  }
+
+  async refundPayment(params: RefundPaymentParams): Promise<RefundPaymentResult> {
+    const { providerPaymentId, amount, reason, notes, idempotencyKey } = params;
+    const amountInSubunits = Math.round(amount * 100);
+
+    if (
+      this.keyId &&
+      this.keySecret &&
+      this.keyId.startsWith("rzp_") &&
+      !providerPaymentId.startsWith("pay_mock_")
+    ) {
+      try {
+        const authHeader = Buffer.from(`${this.keyId}:${this.keySecret}`).toString("base64");
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${authHeader}`,
+        };
+
+        if (idempotencyKey) {
+          headers["X-Refund-Idempotency"] = idempotencyKey;
+        }
+
+        const response = await fetch(
+          `https://api.razorpay.com/v1/payments/${providerPaymentId}/refund`,
+          {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              amount: amountInSubunits,
+              notes: {
+                reason: reason || "Late payment received after booking reservation expired",
+                ...notes,
+              },
+            }),
+          },
+        );
+
+        if (response.ok) {
+          const data = (await response.json()) as any;
+          const status = data.status === "processed" ? "processed" : "pending";
+          return {
+            success: true,
+            refundId: data.id,
+            amount,
+            status,
+          };
+        } else {
+          const errData = (await response.json()) as any;
+          console.error("Razorpay API refund error:", errData);
+          return {
+            success: false,
+            refundId: "",
+            status: "failed",
+            failureReason: errData?.error?.description || "Razorpay refund request failed",
+          };
+        }
+      } catch (err: any) {
+        console.error("Razorpay API refund exception:", err);
+        return {
+          success: false,
+          refundId: "",
+          status: "failed",
+          failureReason: err.message || "Network error during Razorpay refund",
+        };
+      }
+    }
+
+    // Fallback / Simulated mode:
+    const timestamp = Date.now();
+    const randomHex = crypto.randomBytes(4).toString("hex");
+    return {
+      success: true,
+      refundId: `rfnd_rzp_${timestamp}_${randomHex}`,
+      amount,
+      status: "processed",
+    };
+  }
+
+  verifyWebhookSignature(rawBody: string | Buffer, signature: string, secret?: string): boolean {
+    const webhookSecret = secret || process.env.RAZORPAY_WEBHOOK_SECRET || this.keySecret;
+    if (!webhookSecret || !signature) return false;
+    try {
+      const expectedSignature = crypto
+        .createHmac("sha256", webhookSecret)
+        .update(rawBody)
+        .digest("hex");
+      const expectedBuf = Buffer.from(expectedSignature);
+      const sigBuf = Buffer.from(signature);
+      if (expectedBuf.length !== sigBuf.length) {
+        return false;
+      }
+      return crypto.timingSafeEqual(expectedBuf, sigBuf);
+    } catch {
+      return false;
+    }
   }
 }

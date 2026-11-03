@@ -2,7 +2,10 @@ import { Types } from "mongoose";
 import { Payment } from "../../models/payment.model.js";
 
 export interface IPaymentRepository {
-  create(paymentData: Partial<Payment> & Record<string, unknown>): Promise<any>;
+  create(
+    paymentData: Partial<Payment> & Record<string, unknown>,
+    options?: { session?: any },
+  ): Promise<any>;
   findById(id: string | Types.ObjectId, populateDetails?: boolean): Promise<any | null>;
   findOne(filter: Record<string, unknown>, populateDetails?: boolean): Promise<any | null>;
   findByBookingId(bookingId: string | Types.ObjectId, populateDetails?: boolean): Promise<any[]>;
@@ -13,11 +16,45 @@ export interface IPaymentRepository {
     limit?: number,
     skip?: number,
   ): Promise<any[]>;
-  findByIdAndUpdate(id: string | Types.ObjectId, update: Record<string, unknown>): Promise<any | null>;
+  findByIdAndUpdate(
+    id: string | Types.ObjectId,
+    update: Record<string, unknown>,
+  ): Promise<any | null>;
   updateStatus(
     id: string | Types.ObjectId,
     status: string,
     extra?: Record<string, unknown>,
+  ): Promise<any | null>;
+  transitionToSuccess(
+    paymentId: string | Types.ObjectId,
+    providerPaymentId: string,
+    session?: any,
+  ): Promise<any | null>;
+  transitionToFailed(
+    paymentId: string | Types.ObjectId,
+    failureReason: string,
+    session?: any,
+  ): Promise<any | null>;
+  acquireRefundLock(
+    paymentId: string | Types.ObjectId,
+    idempotencyKey: string,
+    refundPayload: any,
+  ): Promise<any | null>;
+  transitionToRefundPending(
+    paymentId: string | Types.ObjectId,
+    refundId: string,
+    session?: any,
+  ): Promise<any | null>;
+  transitionToRefunded(
+    paymentId: string | Types.ObjectId,
+    refundId: string,
+    refundedAt?: Date,
+    session?: any,
+  ): Promise<any | null>;
+  transitionToRefundFailed(
+    paymentId: string | Types.ObjectId,
+    failureReason: string,
+    session?: any,
   ): Promise<any | null>;
   count(filter?: Record<string, unknown>): Promise<number>;
 }

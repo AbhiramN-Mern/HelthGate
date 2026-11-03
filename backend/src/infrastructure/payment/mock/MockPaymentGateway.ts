@@ -2,6 +2,8 @@ import crypto from "crypto";
 import {
   IPaymentGateway,
   PaymentOrderResult,
+  RefundPaymentParams,
+  RefundPaymentResult,
   VerifyPaymentParams,
   VerifyPaymentResult,
 } from "../IPaymentGateway.js";
@@ -66,5 +68,37 @@ export class MockPaymentGateway implements IPaymentGateway {
       success: true,
       providerPaymentId: payId,
     };
+  }
+
+  async refundPayment(params: RefundPaymentParams): Promise<RefundPaymentResult> {
+    const timestamp = Date.now();
+    const randomHex = crypto.randomBytes(4).toString("hex");
+    const refundId = `rfnd_mock_${timestamp}_${randomHex}`;
+
+    return {
+      success: true,
+      refundId,
+      amount: params.amount,
+      status: "processed",
+    };
+  }
+
+  verifyWebhookSignature(rawBody: string | Buffer, signature: string, secret?: string): boolean {
+    const webhookSecret = secret || this.secretSalt;
+    if (!webhookSecret || !signature) return false;
+    try {
+      const expectedSignature = crypto
+        .createHmac("sha256", webhookSecret)
+        .update(rawBody)
+        .digest("hex");
+      const expectedBuf = Buffer.from(expectedSignature);
+      const sigBuf = Buffer.from(signature);
+      if (expectedBuf.length !== sigBuf.length) {
+        return false;
+      }
+      return crypto.timingSafeEqual(expectedBuf, sigBuf);
+    } catch {
+      return false;
+    }
   }
 }

@@ -208,11 +208,15 @@ export const handleWebhook = async (
 ) => {
   try {
     const signature = req.headers["x-razorpay-signature"] as string | undefined;
+    const eventId = req.headers["x-razorpay-event-id"] as string | undefined;
     const payload = req.body;
+    const rawBody = (req as any).rawBody || JSON.stringify(payload);
 
     const result = await paymentService.handleWebhook({
       signature,
+      eventId,
       payload,
+      rawBody,
     });
 
     return res.status(200).json({

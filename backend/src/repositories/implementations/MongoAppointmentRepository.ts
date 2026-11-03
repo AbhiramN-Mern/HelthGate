@@ -1,6 +1,11 @@
 import { Types } from "mongoose";
 import AppointmentModel, { Appointment } from "../../models/appointment.model.js";
 import { IAppointmentRepository } from "../interfaces/IAppointmentRepository.js";
+import {
+  normalizeAppointmentDate,
+  normalizeTimeSlot,
+  toMidnightUTCDate,
+} from "../../utils/slotNormalizer.js";
 
 export class MongoAppointmentRepository implements IAppointmentRepository {
   private applyStandardPopulate(query: any) {
@@ -17,8 +22,29 @@ export class MongoAppointmentRepository implements IAppointmentRepository {
       .populate("patient", "name email");
   }
 
-  async create(appointmentData: Partial<Appointment> & Record<string, unknown>): Promise<any> {
-    return AppointmentModel.create(appointmentData);
+  async create(
+    appointmentData: Partial<Appointment> & Record<string, unknown>,
+    session?: any,
+  ): Promise<any> {
+    const data = { ...appointmentData };
+    if (data.appointmentDate && !data.normalizedDate) {
+      data.normalizedDate = normalizeAppointmentDate(data.appointmentDate as any);
+      data.appointmentDate = toMidnightUTCDate(data.appointmentDate as any);
+    }
+    if (data.timeSlot && !data.normalizedTimeSlot) {
+      data.normalizedTimeSlot = normalizeTimeSlot(data.timeSlot as string);
+      data.timeSlot = data.normalizedTimeSlot;
+    }
+    if (data.paymentExpiresAt && !data.bookingExpiresAt) {
+      data.bookingExpiresAt = data.paymentExpiresAt;
+    } else if (data.bookingExpiresAt && !data.paymentExpiresAt) {
+      data.paymentExpiresAt = data.bookingExpiresAt;
+    }
+    if (session) {
+      const created = await AppointmentModel.create([data], { session });
+      return created[0];
+    }
+    return AppointmentModel.create(data);
   }
 
   async findById(id: string | Types.ObjectId, populateDetails = true): Promise<any | null> {
@@ -87,10 +113,16 @@ export class MongoAppointmentRepository implements IAppointmentRepository {
     rescheduleRequest: Record<string, unknown>,
     actionHistoryItem?: Record<string, unknown>,
   ): Promise<any | null> {
+    const normalizedDate = normalizeAppointmentDate(appointmentDate);
+    const normalizedSlot = normalizeTimeSlot(timeSlot);
+    const midnightDate = toMidnightUTCDate(appointmentDate);
+
     const updateObj: Record<string, unknown> = {
       $set: {
-        appointmentDate,
-        timeSlot,
+        appointmentDate: midnightDate,
+        timeSlot: normalizedSlot,
+        normalizedDate,
+        normalizedTimeSlot: normalizedSlot,
         status: "confirmed",
         rescheduleRequest,
       },
@@ -133,10 +165,16 @@ export class MongoAppointmentRepository implements IAppointmentRepository {
     rescheduleRequest: Record<string, unknown>,
     actionHistoryItem?: Record<string, unknown>,
   ): Promise<any | null> {
+    const normalizedDate = normalizeAppointmentDate(appointmentDate);
+    const normalizedSlot = normalizeTimeSlot(timeSlot);
+    const midnightDate = toMidnightUTCDate(appointmentDate);
+
     const updateObj: Record<string, unknown> = {
       $set: {
-        appointmentDate,
-        timeSlot,
+        appointmentDate: midnightDate,
+        timeSlot: normalizedSlot,
+        normalizedDate,
+        normalizedTimeSlot: normalizedSlot,
         status: "confirmed",
         rescheduleRequest,
       },
@@ -149,6 +187,148 @@ export class MongoAppointmentRepository implements IAppointmentRepository {
 
   async count(filter: Record<string, unknown> = {}): Promise<number> {
     return AppointmentModel.countDocuments(filter).exec();
+  }
+
+  async findExpiredReservations(now: Date = new Date()): Promise<any[]> {
+    return AppointmentModel.find({
+      status: { $in: ["pending_payment", "PENDING_PAYMENT"] },
+      $or: [
+        { paymentExpiresAt: { $lte: now } },
+        { bookingExpiresAt: { $lte: now } },
+      ],
+    }).exec();
+  }
+
+  async cancelExpiredReservation(
+    id: string | Types.ObjectId,
+    now: Date = new Date(),
+  ): Promise<any | null> {
+    const updateObj: Record<string, unknown> = {
+      $set: {
+        status: "EXPIRED",
+        cancelledBy: "system",
+        cancelledAt: now,
+        cancellationReason:
+          "Reservation expired: payment was not completed within the allowed time limit",
+      },
+      $push: {
+        actionHistory: {
+          action: "cancelled_due_to_payment_timeout",
+          initiatedByRole: "system",
+          approvalStatus: "not_required",
+          timestamp: now,
+          details: {
+            reason: "Reservation expired: payment was not completed within the allowed time limit",
+          },
+        },
+      },
+    };
+
+    return AppointmentModel.findOneAndUpdate(
+      {
+        _id: id,
+        status: { $in: ["pending_payment", "PENDING_PAYMENT"] },
+        $or: [
+          { paymentExpiresAt: { $lte: now } },
+          { bookingExpiresAt: { $lte: now } },
+        ],
+      },
+      updateObj,
+      { new: true },
+    ).exec();
+  }
+
+  async cancelExpiredReservationsForSlot(
+    doctor: string | Types.ObjectId,
+    normalizedDate: string,
+    normalizedTimeSlot: string,
+    now: Date = new Date(),
+  ): Promise<number> {
+    const result = await AppointmentModel.updateMany(
+      {
+        doctor,
+        normalizedDate,
+        normalizedTimeSlot,
+        status: { $in: ["pending_payment", "PENDING_PAYMENT"] },
+        $or: [
+          { paymentExpiresAt: { $lte: now } },
+          { bookingExpiresAt: { $lte: now } },
+        ],
+      },
+      {
+        $set: {
+          status: "EXPIRED",
+          cancelledBy: "system",
+          cancelledAt: now,
+          cancellationReason:
+            "Reservation expired: payment was not completed within the allowed time limit",
+        },
+        $push: {
+          actionHistory: {
+            action: "cancelled_due_to_payment_timeout",
+            initiatedByRole: "system",
+            approvalStatus: "not_required",
+            timestamp: now,
+            details: {
+              reason: "Reservation expired before new booking attempt",
+            },
+          },
+        },
+      },
+    ).exec();
+
+    return result.modifiedCount || 0;
+  }
+
+  async atomicConfirmPayment(
+    id: string | Types.ObjectId,
+    now: Date = new Date(),
+    session?: any,
+  ): Promise<any | null> {
+    const updateObj: Record<string, unknown> = {
+      $set: {
+        status: "confirmed",
+      },
+      $push: {
+        actionHistory: {
+          action: "payment_confirmed",
+          initiatedByRole: "patient",
+          approvalStatus: "approved",
+          timestamp: now,
+          details: {
+            reason: "Payment verified successfully",
+          },
+        },
+      },
+    };
+
+    const options: any = { new: true };
+    if (session) {
+      options.session = session;
+    }
+
+    return AppointmentModel.findOneAndUpdate(
+      {
+        _id: id,
+        status: { $in: ["pending_payment", "PENDING_PAYMENT"] },
+        $and: [
+          {
+            $or: [
+              { paymentExpiresAt: null },
+              { paymentExpiresAt: { $gt: now } },
+            ],
+          },
+          {
+            $or: [
+              { bookingExpiresAt: null },
+              { bookingExpiresAt: { $gt: now } },
+            ],
+          },
+        ],
+      },
+      updateObj,
+      options,
+    ).exec();
   }
 
   async aggregate(pipeline: any[]): Promise<any[]> {

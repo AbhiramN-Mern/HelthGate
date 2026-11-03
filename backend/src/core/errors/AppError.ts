@@ -53,3 +53,10 @@ export class EmailVerificationRequiredError extends AppError {
   }
 }
 
+export class TransactionNotSupportedError extends AppError {
+  constructor(message = "MongoDB transactions are not supported on this deployment.") {
+    super(message, 500, false, "TRANSACTION_NOT_SUPPORTED");
+  }
+}
+
+

@@ -3,13 +3,21 @@ import { Server as SocketIOServer } from "socket.io";
 import app from "./app.js";
 import { connectDB } from "./config/db.js";
 import { initializeVideoSocket } from "./sockets/videoCall.socket.js";
-import { videoCallService } from "./container.js";
+import {
+  reservationCleanupWorker,
+  outboxProcessorWorker,
+  paymentReconciliationWorker,
+  videoCallService,
+} from "./container.js";
 
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
     await connectDB();
+    reservationCleanupWorker.start();
+    outboxProcessorWorker.start();
+    paymentReconciliationWorker.start();
 
     const httpServer = http.createServer(app);
 

@@ -1,7 +1,16 @@
 import { Schema, model, type InferSchemaType, type Types } from "mongoose";
 
-export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED";
+export type PaymentStatus =
+  | "PENDING"
+  | "SUCCESS"
+  | "FAILED"
+  | "REFUND_REQUESTED"
+  | "REFUND_PENDING"
+  | "REFUNDED"
+  | "REFUND_FAILED";
+
 export type PaymentProvider = "MOCK" | "RAZORPAY";
+export type RefundStatus = "NONE" | "REQUESTED" | "PENDING" | "PROCESSED" | "FAILED";
 
 const paymentSchema = new Schema(
   {
@@ -30,7 +39,15 @@ const paymentSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["PENDING", "SUCCESS", "FAILED", "REFUNDED"],
+      enum: [
+        "PENDING",
+        "SUCCESS",
+        "FAILED",
+        "REFUND_REQUESTED",
+        "REFUND_PENDING",
+        "REFUNDED",
+        "REFUND_FAILED",
+      ],
       default: "PENDING",
       index: true,
     },
@@ -43,15 +60,44 @@ const paymentSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      index: true,
     },
     providerPaymentId: {
       type: String,
       default: null,
       trim: true,
-      index: true,
     },
     failureReason: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    refundId: {
+      type: String,
+      default: null,
+      trim: true,
+      index: true,
+    },
+    refundStatus: {
+      type: String,
+      enum: ["NONE", "REQUESTED", "PENDING", "PROCESSED", "FAILED"],
+      default: "NONE",
+      index: true,
+    },
+    refundIdempotencyKey: {
+      type: String,
+      default: null,
+      trim: true,
+      index: true,
+    },
+    refundPayload: {
+      type: Schema.Types.Mixed,
+      default: null,
+    },
+    refundedAt: {
+      type: Date,
+      default: null,
+    },
+    reconciliationNotes: {
       type: String,
       default: null,
       trim: true,
@@ -60,6 +106,22 @@ const paymentSchema = new Schema(
   {
     timestamps: true,
   },
+);
+
+// Unique index for providerOrderId
+paymentSchema.index(
+  { providerOrderId: 1 },
+  { unique: true, name: "unique_provider_order_id" }
+);
+
+// Partial unique index for providerPaymentId (only when non-null and non-empty string)
+paymentSchema.index(
+  { providerPaymentId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { providerPaymentId: { $type: "string", $gt: "" } },
+    name: "unique_provider_payment_id",
+  }
 );
 
 // Compound index for patient payment history

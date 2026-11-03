@@ -40,6 +40,22 @@ export interface IAppointmentRepository {
     rescheduleRequest: Record<string, unknown>,
     actionHistoryItem?: Record<string, unknown>,
   ): Promise<any | null>;
+  findExpiredReservations(now?: Date): Promise<any[]>;
+  cancelExpiredReservation(
+    id: string | Types.ObjectId,
+    now?: Date,
+  ): Promise<any | null>;
+  cancelExpiredReservationsForSlot?(
+    doctor: string | Types.ObjectId,
+    normalizedDate: string,
+    normalizedTimeSlot: string,
+    now?: Date,
+  ): Promise<number>;
+  atomicConfirmPayment(
+    id: string | Types.ObjectId,
+    now?: Date,
+    session?: any,
+  ): Promise<any | null>;
   count(filter?: Record<string, unknown>): Promise<number>;
   aggregate(pipeline: any[]): Promise<any[]>;
 }

@@ -5,10 +5,24 @@ import { IHospitalDoctorRepository } from "../repositories/interfaces/IHospitalD
 import { INotificationRepository } from "../repositories/interfaces/INotificationRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { NotificationService } from "./notification.service.js";
-import { BadRequestError, ForbiddenError, NotFoundError } from "../core/errors/AppError.js";
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../core/errors/AppError.js";
 import { createPaginatedResponse } from "../utils/pagination.js";
+import {
+  normalizeAppointmentDate,
+  normalizeTimeSlot,
+  toMidnightUTCDate,
+} from "../utils/slotNormalizer.js";
 
 export const MAX_BOOKING_DAYS_AHEAD = Number(process.env.MAX_BOOKING_DAYS_AHEAD) || 90;
+export const DEFAULT_RESERVATION_TIMEOUT_MINUTES = 5;
+export const getReservationTimeoutMinutes = (): number => {
+  const envVal = Number(
+    process.env.PAYMENT_EXPIRATION_MINUTES ||
+      process.env.APPOINTMENT_RESERVATION_TIMEOUT_MINUTES ||
+      process.env.BOOKING_RESERVATION_TIMEOUT_MINUTES,
+  );
+  return !isNaN(envVal) && envVal > 0 ? envVal : DEFAULT_RESERVATION_TIMEOUT_MINUTES;
+};
 
 export class AppointmentService {
   constructor(
@@ -83,7 +97,8 @@ export class AppointmentService {
       }
     }
 
-    const cleanTimeSlot = (timeSlot || "10:00 AM").trim();
+    const cleanTimeSlot = normalizeTimeSlot(timeSlot || "10:00 AM");
+    const targetDateStr = normalizeAppointmentDate(date);
 
     const configuredSlots =
       doctorDoc.availability?.availableSlots && doctorDoc.availability.availableSlots.length > 0
@@ -147,7 +162,7 @@ export class AppointmentService {
 
     const query: Record<string, unknown> = {
       doctor: doctorId,
-      status: { $nin: ["cancelled", "completed"] },
+      status: { $nin: ["cancelled", "completed", "expired", "EXPIRED"] },
     };
 
     if (excludeAppointmentId) {
@@ -158,22 +173,25 @@ export class AppointmentService {
       query,
       false,
       { appointmentDate: 1 },
-      "appointmentDate timeSlot rescheduleRequest",
+      "appointmentDate timeSlot rescheduleRequest normalizedDate normalizedTimeSlot status paymentExpiresAt bookingExpiresAt",
     );
 
     const isSlotTaken = candidateAppointments.some((appt) => {
-      if (appt.appointmentDate) {
-        const apptDateIso = new Date(appt.appointmentDate).toISOString().split("T")[0];
-        const apptDateLocal = `${new Date(appt.appointmentDate).getFullYear()}-${String(new Date(appt.appointmentDate).getMonth() + 1).padStart(2, "0")}-${String(new Date(appt.appointmentDate).getDate()).padStart(2, "0")}`;
-        const matchesDate =
-          apptDateIso === dateStr ||
-          apptDateLocal === localDateStr ||
-          apptDateIso === localDateStr ||
-          apptDateLocal === dateStr;
-
-        if (matchesDate && appt.timeSlot?.trim().toLowerCase() === cleanTimeSlot.toLowerCase()) {
-          return true;
+      // An expired pending reservation does not block new bookings
+      const isPending =
+        appt.status === "pending_payment" || appt.status === "PENDING_PAYMENT";
+      if (isPending) {
+        const expiresAt = appt.paymentExpiresAt || appt.bookingExpiresAt;
+        if (expiresAt && new Date(expiresAt) <= now) {
+          return false;
         }
+      }
+
+      const apptDateNorm = appt.normalizedDate || (appt.appointmentDate ? normalizeAppointmentDate(appt.appointmentDate) : null);
+      const apptSlotNorm = appt.normalizedTimeSlot || (appt.timeSlot ? normalizeTimeSlot(appt.timeSlot) : null);
+
+      if (apptDateNorm === targetDateStr && apptSlotNorm === cleanTimeSlot) {
+        return true;
       }
 
       if (
@@ -182,18 +200,10 @@ export class AppointmentService {
         appt.rescheduleRequest.proposedDate &&
         appt.rescheduleRequest.proposedTimeSlot
       ) {
-        const propDateIso = new Date(appt.rescheduleRequest.proposedDate).toISOString().split("T")[0];
-        const propDateLocal = `${new Date(appt.rescheduleRequest.proposedDate).getFullYear()}-${String(new Date(appt.rescheduleRequest.proposedDate).getMonth() + 1).padStart(2, "0")}-${String(new Date(appt.rescheduleRequest.proposedDate).getDate()).padStart(2, "0")}`;
-        const matchesPropDate =
-          propDateIso === dateStr ||
-          propDateLocal === localDateStr ||
-          propDateIso === localDateStr ||
-          propDateLocal === dateStr;
+        const propDateNorm = normalizeAppointmentDate(appt.rescheduleRequest.proposedDate);
+        const propSlotNorm = normalizeTimeSlot(appt.rescheduleRequest.proposedTimeSlot);
 
-        if (
-          matchesPropDate &&
-          appt.rescheduleRequest.proposedTimeSlot.trim().toLowerCase() === cleanTimeSlot.toLowerCase()
-        ) {
+        if (propDateNorm === targetDateStr && propSlotNorm === cleanTimeSlot) {
           return true;
         }
       }
@@ -255,7 +265,9 @@ export class AppointmentService {
       throw new BadRequestError("Doctor and appointmentDate are required");
     }
 
-    const cleanTimeSlot = (timeSlot || "10:00 AM").trim();
+    const cleanTimeSlot = normalizeTimeSlot(timeSlot || "10:00 AM");
+    const normalizedDate = normalizeAppointmentDate(appointmentDate);
+    const midnightDate = toMidnightUTCDate(appointmentDate);
 
     // Validate and resolve consultationType
     let resolvedConsultationType: "online" | "offline" = "online";
@@ -351,22 +363,53 @@ export class AppointmentService {
       }
     }
 
-    const appointment = await this.appointmentRepo.create({
-      patient: patientUserId as any,
-      doctor: doctor as any,
-      hospital: hospitalId,
-      hospitalDoctor: hospitalDoctorId,
-      department: selectedDepartment,
-      isHospitalAppointment,
-      appointmentDate: new Date(appointmentDate),
-      timeSlot: cleanTimeSlot,
-      reason: reason || "General Consultation",
-      type: (type as any) || resolvedLegacyType,
-      consultationType: resolvedConsultationType,
-      tokenNumber,
-      cabinNumber,
-      status: "pending_payment",
-    });
+    const now = new Date();
+    // Atomically release any expired reservations on this exact slot so they don't block new bookings
+    if (this.appointmentRepo.cancelExpiredReservationsForSlot) {
+      await this.appointmentRepo.cancelExpiredReservationsForSlot(
+        doctor,
+        normalizedDate,
+        cleanTimeSlot,
+        now,
+      );
+    }
+
+    const timeoutMinutes = getReservationTimeoutMinutes();
+    const paymentExpiresAt = new Date(now.getTime() + timeoutMinutes * 60 * 1000);
+    const bookingExpiresAt = paymentExpiresAt;
+    const reservationReference = `res_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+    let appointment;
+    try {
+      appointment = await this.appointmentRepo.create({
+        patient: patientUserId as any,
+        doctor: doctor as any,
+        hospital: hospitalId,
+        hospitalDoctor: hospitalDoctorId,
+        department: selectedDepartment,
+        isHospitalAppointment,
+        appointmentDate: midnightDate,
+        timeSlot: cleanTimeSlot,
+        normalizedDate,
+        normalizedTimeSlot: cleanTimeSlot,
+        paymentExpiresAt,
+        bookingExpiresAt,
+        reservationReference,
+        reason: reason || "General Consultation",
+        type: (type as any) || resolvedLegacyType,
+        consultationType: resolvedConsultationType,
+        tokenNumber,
+        cabinNumber,
+        status: "pending_payment",
+      });
+    } catch (createErr: any) {
+      if (createErr?.code === 11000) {
+        throw new ConflictError(
+          "This doctor's time slot has already been booked by another patient. Please select another time slot or date.",
+        );
+      }
+      throw createErr;
+    }
 
     const populated = await this.appointmentRepo.findById(appointment._id, true);
 
@@ -576,18 +619,27 @@ export class AppointmentService {
         },
       };
 
-      await this.appointmentRepo.applyReschedule(
-        appointment._id,
-        appointment.rescheduleRequest.proposedDate,
-        appointment.rescheduleRequest.proposedTimeSlot,
-        {
-          ...appointment.rescheduleRequest,
-          status: "accepted",
-          approvalStatus: "approved",
-          respondedAt: new Date(),
-        },
-        actionHistoryItem,
-      );
+      try {
+        await this.appointmentRepo.applyReschedule(
+          appointment._id,
+          appointment.rescheduleRequest.proposedDate,
+          appointment.rescheduleRequest.proposedTimeSlot,
+          {
+            ...appointment.rescheduleRequest,
+            status: "accepted",
+            approvalStatus: "approved",
+            respondedAt: new Date(),
+          },
+          actionHistoryItem,
+        );
+      } catch (applyErr: any) {
+        if (applyErr?.code === 11000) {
+          throw new ConflictError(
+            "The proposed slot has already been booked by another patient. Please contact your doctor to select an alternate slot.",
+          );
+        }
+        throw applyErr;
+      }
 
       const populated = await this.appointmentRepo.findById(appointment._id, true);
 
@@ -686,7 +738,7 @@ export class AppointmentService {
 
     const query: Record<string, unknown> = {
       doctor,
-      status: { $nin: ["cancelled", "completed"] },
+      status: { $nin: ["cancelled", "completed", "expired", "EXPIRED"] },
     };
 
     if (date && typeof date === "string") {
@@ -717,13 +769,21 @@ export class AppointmentService {
         },
         false,
         { appointmentDate: 1 },
-        "appointmentDate timeSlot rescheduleRequest",
+        "appointmentDate timeSlot rescheduleRequest paymentExpiresAt bookingExpiresAt status",
       );
 
       const dateOnly = date.split("T")[0];
       const bookedSet = new Set<string>();
+      const now = new Date();
 
       appointments.forEach((appt) => {
+        const isPending =
+          appt.status === "pending_payment" || appt.status === "PENDING_PAYMENT";
+        const expiresAt = appt.paymentExpiresAt || appt.bookingExpiresAt;
+        if (isPending && expiresAt && new Date(expiresAt) <= now) {
+          return; // Expired reservation does not count as booked
+        }
+
         if (appt.appointmentDate && appt.timeSlot) {
           const apptIso = new Date(appt.appointmentDate).toISOString().split("T")[0];
           const localStr = `${new Date(appt.appointmentDate).getFullYear()}-${String(new Date(appt.appointmentDate).getMonth() + 1).padStart(2, "0")}-${String(new Date(appt.appointmentDate).getDate()).padStart(2, "0")}`;
@@ -791,11 +851,19 @@ export class AppointmentService {
         },
         false,
         { appointmentDate: 1 },
-        "appointmentDate timeSlot rescheduleRequest",
+        "appointmentDate timeSlot rescheduleRequest paymentExpiresAt bookingExpiresAt status",
       );
 
       const bookedSlotsByDate: Record<string, string[]> = {};
+      const now = new Date();
       appointments.forEach((appt) => {
+        const isPending =
+          appt.status === "pending_payment" || appt.status === "PENDING_PAYMENT";
+        const expiresAt = appt.paymentExpiresAt || appt.bookingExpiresAt;
+        if (isPending && expiresAt && new Date(expiresAt) <= now) {
+          return; // Expired reservation does not count as booked
+        }
+
         if (appt.appointmentDate && appt.timeSlot) {
           const dStr = new Date(appt.appointmentDate).toISOString().split("T")[0];
           if (!bookedSlotsByDate[dStr]) bookedSlotsByDate[dStr] = [];
@@ -1032,13 +1100,22 @@ export class AppointmentService {
       },
     };
 
-    await this.appointmentRepo.adminReschedule(
-      appointment._id,
-      proposedDateObj,
-      cleanTimeSlot,
-      rescheduleRequestData,
-      actionHistoryItem,
-    );
+    try {
+      await this.appointmentRepo.adminReschedule(
+        appointment._id,
+        proposedDateObj,
+        cleanTimeSlot,
+        rescheduleRequestData,
+        actionHistoryItem,
+      );
+    } catch (adminRescheduleErr: any) {
+      if (adminRescheduleErr?.code === 11000) {
+        throw new ConflictError(
+          "This doctor's time slot is already booked. Please choose another date or time slot.",
+        );
+      }
+      throw adminRescheduleErr;
+    }
 
     const populated = await this.appointmentRepo.findById(appointment._id, true);
 

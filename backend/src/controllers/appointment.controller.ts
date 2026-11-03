@@ -75,10 +75,12 @@ export const createAppointment = async (
       appointment,
     });
   } catch (error: any) {
-    const statusCode = error.statusCode || 500;
+    const statusCode = error.statusCode || (error.code === 11000 ? 409 : 500);
     return res.status(statusCode).json({
       success: false,
-      message: error.message || "Failed to create appointment",
+      message: error.code === 11000
+        ? "This doctor's time slot has already been booked by another patient."
+        : (error.message || "Failed to create appointment"),
       error: error.message || "Unknown error",
     });
   }
@@ -142,10 +144,12 @@ export const respondAppointmentReschedule = async (
       ...result,
     });
   } catch (error: any) {
-    const statusCode = error.statusCode || 500;
+    const statusCode = error.statusCode || (error.code === 11000 ? 409 : 500);
     return res.status(statusCode).json({
       success: false,
-      message: error.message || "Failed to respond to reschedule request",
+      message: error.code === 11000
+        ? "The proposed slot has already been booked by another patient."
+        : (error.message || "Failed to respond to reschedule request"),
       error: error.message || "Unknown error",
     });
   }
